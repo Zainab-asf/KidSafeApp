@@ -1,0 +1,146 @@
+@namespace KidSafeApp.Components.Pages.Child
+@page "/child/dashboard"
+@page "/child-dashboard"
+
+<ChildLayout>
+  <ChildHeader />
+
+  <section class="ks-content">
+    <div class="ks-column-left">
+      <div class="ks-metrics-row">
+        <div class="ks-card ks-card-metric">
+          <div class="ks-card-label">Messages Sent</div>
+          <div class="ks-card-value">0</div>
+          <div class="ks-card-subtext">+12.5% from last week</div>
+        </div>
+
+        <div class="ks-card ks-card-metric">
+          <div class="ks-card-label">Courses Completed</div>
+          <div class="ks-card-value">0</div>
+          <div class="ks-card-subtext">Start your first lesson today</div>
+        </div>
+
+        <div class="ks-card ks-card-metric">
+          <div class="ks-card-label">Achievements</div>
+          <div class="ks-card-value">0</div>
+          <div class="ks-card-subtext">Earn badges by staying active</div>
+        </div>
+
+        <div class="ks-card ks-card-metric">
+          <div class="ks-card-label">Days In A Row</div>
+          <div class="ks-card-value">0</div>
+          <div class="ks-card-subtext">You are awesome!</div>
+        </div>
+      </div>
+
+      <div class="ks-card ks-card-highlight">
+        <div class="ks-highlight-title">You are doing great!</div>
+        <div class="ks-highlight-messages">0 Messages</div>
+        <div class="ks-highlight-text">
+          You finished 0 fun lessons. Keep learning!
+        </div>
+        <NavLink href="/child/progress" class="ks-primary-button">See my progress</NavLink>
+      </div>
+
+      <section class="ks-card ks-card-activity">
+        <header class="ks-card-header">
+          <h2>Recent Activity</h2>
+        </header>
+
+        <ul class="ks-activity-list">
+          <li class="ks-activity-item">
+            <div class="ks-activity-main">
+              <div class="ks-activity-title">Sent a message to a friend</div>
+              <div class="ks-activity-time">2 hours ago</div>
+            </div>
+          </li>
+          <li class="ks-activity-item">
+            <div class="ks-activity-main">
+              <div class="ks-activity-title">Finished a fun lesson</div>
+              <div class="ks-activity-time">1 day ago</div>
+            </div>
+          </li>
+          <li class="ks-activity-item">
+            <div class="ks-activity-main">
+              <div class="ks-activity-title">Got a new badge!</div>
+              <div class="ks-activity-time">2 days ago</div>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="ks-column-right">
+      <section class="ks-card">
+        <header class="ks-card-header">
+          <h2>Quick Actions</h2>
+        </header>
+
+        <div class="ks-quick-actions">
+          <NavLink href="/child/messages" class="ks-quick-action">
+            <div class="ks-quick-title">Chat with Friends</div>
+            <div class="ks-quick-text">Start a safe conversation</div>
+          </NavLink>
+
+          <NavLink href="/child/learn" class="ks-quick-action">
+            <div class="ks-quick-title">Fun Lessons</div>
+            <div class="ks-quick-text">Learn something new today</div>
+          </NavLink>
+
+          <NavLink href="/child/progress" class="ks-quick-action">
+            <div class="ks-quick-title">My Progress</div>
+            <div class="ks-quick-text">Track goals and streaks</div>
+          </NavLink>
+
+          <NavLink href="/child/achievements" class="ks-quick-action">
+            <div class="ks-quick-title">My Badges</div>
+            <div class="ks-quick-text">See achievements earned</div>
+          </NavLink>
+        </div>
+      </section>
+
+      <section class="ks-card ks-card-progress">
+        <header class="ks-card-header">
+          <h2>Your Progress</h2>
+        </header>
+
+        <div class="ks-progress-circle">
+          <span>0%</span>
+          <span>Complete</span>
+        </div>
+
+        <div class="ks-progress-details">
+          <div>
+            <div class="ks-progress-label">Courses</div>
+            <div class="ks-progress-value">0</div>
+          </div>
+          <div>
+            <div class="ks-progress-label">Achievements</div>
+            <div class="ks-progress-value">0</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ks-card ks-card-connected">
+        <header class="ks-card-header">
+          <h2>Connected Users</h2>
+        </header>
+
+        <ul class="ks-connected-list">
+          <li class="ks-connected-item">
+            <span class="ks-status-dot"></span>
+            <span>Zainab (You)</span>
+          </li>
+          <li class="ks-connected-item">
+            <span class="ks-status-dot"></span>
+            <span>Alex</span>
+          </li>
+          <li class="ks-connected-item">
+            <span class="ks-status-dot"></span>
+            <span>Sara</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </section>
+</ChildLayout>
