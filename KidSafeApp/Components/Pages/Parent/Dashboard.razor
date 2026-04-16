@@ -1,5 +1,86 @@
 @namespace KidSafeApp.Components.Pages.Parent
 @page "/parent/dashboard"
 
-<h1>Parent Dashboard</h1>
-<p>Coming soon.</p>
+@inject KidSafeApp.States.RoleState RoleState
+@inject NavigationManager NavigationManager
+
+@if (!RoleState.IsRoleLoaded)
+{
+    <Components.Shared.RoleLoading />
+}
+else
+{
+<div class="portal">
+    <header class="portal-header">
+        <div>
+            <h1 class="portal-title">Parent Portal</h1>
+            <div class="portal-subtitle">Monitor & support your child with clarity.</div>
+        </div>
+
+        <div class="portal-actions">
+            <button class="btn btn-outline-secondary" type="button" @onclick="HandleBack">Back</button>
+            <button class="btn btn-outline-danger" type="button" @onclick="HandleLogout">Logout</button>
+        </div>
+    </header>
+
+    <section class="portal-grid">
+        <div class="portal-card">
+            <div class="portal-card-title">Today’s Screen Time</div>
+            <div class="portal-stat">2h 15m</div>
+            <div class="portal-muted">+15m vs yesterday</div>
+        </div>
+
+        <div class="portal-card">
+            <div class="portal-card-title">Safety Alerts</div>
+            <div class="portal-stat">0</div>
+            <div class="portal-muted">No harmful content detected today</div>
+        </div>
+
+        <div class="portal-card">
+            <div class="portal-card-title">Learning Progress</div>
+            <div class="portal-stat">68%</div>
+            <div class="portal-muted">Weekly goal on track</div>
+        </div>
+
+        <div class="portal-card">
+            <div class="portal-card-title">Recent Activity</div>
+            <ul class="portal-list">
+                <li>Completed: Math Quiz</li>
+                <li>Chat: 12 messages</li>
+                <li>Game: Memory Match</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="portal-wide">
+        <div class="portal-card portal-card-wide">
+            <div class="portal-card-title">Quick Controls</div>
+            <div class="portal-controls">
+                <button class="btn btn-primary" type="button" @onclick="GoToSettings">Set Screen Time Limit</button>
+                <button class="btn btn-outline-primary" type="button" @onclick="GoToProgress">View Progress</button>
+                <button class="btn btn-outline-primary" type="button" @onclick="GoToNotifications">View Alerts</button>
+            </div>
+        </div>
+    </section>
+</div>
+}
+
+@code {
+    private void HandleBack()
+    {
+        RoleState.Reset();
+        NavigationManager.NavigateTo("/", replace: true);
+    }
+
+    private void HandleLogout()
+    {
+        RoleState.Reset();
+        NavigationManager.NavigateTo("/", replace: true);
+    }
+
+    private void GoToNotifications() => NavigationManager.NavigateTo("/parent/notifications");
+
+    private void GoToProgress() => NavigationManager.NavigateTo("/parent/progress");
+
+    private void GoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+}

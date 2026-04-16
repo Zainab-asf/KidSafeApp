@@ -7,6 +7,15 @@
   </div>
 
   <div class="ks-header-actions">
+    <button class="ks-icon-button" type="button" title="Back" @onclick="OnBack">
+      ←
+    </button>
+    <button class="ks-icon-button" type="button" title="Logout" @onclick="OnLogout">
+      ⎋
+    </button>
+    <button class="ks-icon-button ks-menu-button" type="button" title="Menu" @onclick="OnToggleMenu">
+      ☰
+    </button>
     <input class="ks-search" placeholder="Search..." />
 
     <button class="ks-icon-button" title="Notifications">
@@ -22,3 +31,11 @@
     </div>
   </div>
 </header>
+
+@code {
+  [Parameter] public EventCallback OnToggleMenu { get; set; }
+
+  [Parameter] public EventCallback OnBack { get; set; }
+
+  [Parameter] public EventCallback OnLogout { get; set; }
+}

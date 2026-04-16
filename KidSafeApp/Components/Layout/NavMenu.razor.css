@@ -17,11 +17,13 @@
 
 .top-row {
     min-height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
+    background: rgba(15, 23, 42, .55);
+    border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
 .navbar-brand {
     font-size: 1.1rem;
+    letter-spacing: .2px;
 }
 
 .bi {
@@ -60,25 +62,32 @@
     }
 
     .nav-item ::deep .nav-link {
-        color: #d7d7d7;
+        color: rgba(232,238,252,.80);
         background: none;
         border: none;
-        border-radius: 4px;
+        border-radius: 10px;
         height: 3rem;
         display: flex;
         align-items: center;
         line-height: 3rem;
         width: 100%;
+        padding-left: .85rem;
+        padding-right: .85rem;
     }
 
 .nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.37);
-    color: white;
+    background: linear-gradient(90deg, rgba(124,58,237,.28), rgba(79,70,229,.18));
+    border: 1px solid rgba(124,58,237,.35);
+    color: rgba(232,238,252,.98);
 }
 
 .nav-item ::deep .nav-link:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
+    background-color: rgba(255,255,255,0.06);
+    color: rgba(232,238,252,.98);
+}
+
+.nav-scrollable {
+    padding: .25rem .75rem 1rem .75rem;
 }
 
 .nav-scrollable {

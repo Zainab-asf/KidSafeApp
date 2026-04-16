@@ -9,26 +9,70 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: rgba(255, 255, 255, 0.92);
+    border-right: 1px solid rgba(15, 23, 42, 0.10);
+    backdrop-filter: blur(10px);
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    justify-content: space-between;
     height: 3.5rem;
     display: flex;
     align-items: center;
+    padding: 0 1.5rem;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: #ffffff;
+}
+
+.hamburger-menu {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: opacity 0.2s;
+    height: fit-content;
+}
+
+.hamburger-menu:hover {
+    opacity: 0.8;
+}
+
+.hamburger-menu span {
+    width: 24px;
+    height: 2.5px;
+    background: white;
+    border-radius: 2px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar-menu {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         white-space: nowrap;
-        margin-left: 1.5rem;
         text-decoration: none;
+        color: rgba(255, 255, 255, 0.9);
     }
 
     .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
         text-decoration: underline;
+        color: #ffffff;
     }
 
     .top-row ::deep a:first-child {
@@ -36,17 +80,30 @@ main {
         text-overflow: ellipsis;
     }
 
-@media (max-width: 640.98px) {
+@media (max-width: 767.98px) {
+    .hamburger-menu {
+        display: flex;
+    }
+
     .top-row {
-        justify-content: space-between;
+        padding: 0 1rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.1rem;
+        gap: 0.75rem;
     }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
+        display: none;
     }
 }
 
-@media (min-width: 641px) {
+@media (min-width: 768px) {
+    .hamburger-menu {
+        display: none;
+    }
+
     .page {
         flex-direction: row;
     }
@@ -74,4 +131,19 @@ main {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }
+
+    .main-with-sidebar {
+        padding-left: 250px;
+    }
+
+    .main-with-sidebar .top-row,
+    .main-with-sidebar article {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+article {
+    background: transparent;
+    padding-top: 1rem;
 }

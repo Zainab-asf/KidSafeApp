@@ -3,6 +3,7 @@ using KidSafeApp.Backend.Data.Entities;
 using KidSafeApp.Shared.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace KidSafeApp.Backend.Controllers
 {
@@ -11,18 +12,22 @@ namespace KidSafeApp.Backend.Controllers
     public class AccountController : ControllerBase
     {
         private readonly DataContext _dataContext;
-        public AccountController(DataContext dataContext)
+        private readonly TokenService _tokenService;
+        public AccountController(DataContext dataContext, TokenService tokenService)
         {
             _dataContext = dataContext;
+            _tokenService = tokenService;
         }
+
+        [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto, CancellationToken cancellationToken)
         {
             var usernameExists = await _dataContext.Users
                                                     .AsNoTracking()
                                                     .AnyAsync(u => u.Username == dto.Username);
-            if (!usernameExists)
+            if (usernameExists)
             {
-                return BadRequest($"{nameof(dto.Username)} already e[ists");
+                return BadRequest($"{nameof(dto.Username)} already exists");
             }
 
             var user = new User
@@ -31,13 +36,19 @@ namespace KidSafeApp.Backend.Controllers
                 AddedOn = DateTime.Now,
                 Name = dto.Name,
                 Password = dto.Password, // Plain Password. Implement your own secure password mechanism
+                Role = "Child",
+                IsApproved = false,
+                IsActive = true,
             };
 
             await _dataContext.Users.AddAsync(user, cancellationToken);
             await _dataContext.SaveChangesAsync(cancellationToken);
 
-            return Ok(user);
+            var token = _tokenService.GenerateJWT(user);
+            var response = new AuthResponseDto(new UserDto(user.Id, user.Name, false), token);
+            return Ok(response);
         }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto, CancellationToken cancellationToken)
         {
@@ -46,7 +57,20 @@ namespace KidSafeApp.Backend.Controllers
             {
                 return BadRequest("Incorrect credentials");
             }
-            return Ok(user);
+
+            if (!user.IsActive)
+            {
+                return BadRequest("Account is disabled. Contact an administrator.");
+            }
+
+            if (!user.IsApproved)
+            {
+                return BadRequest("Account is pending approval. Contact an administrator.");
+            }
+
+            var token = _tokenService.GenerateJWT(user);
+            var response = new AuthResponseDto(new UserDto(user.Id, user.Name, false), token);
+            return Ok(response);
         }
     }
 }

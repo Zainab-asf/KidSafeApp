@@ -1,5 +1,82 @@
 @namespace KidSafeApp.Components.Pages.Teacher
 @page "/teacher/dashboard"
 
-<h1>Teacher Dashboard</h1>
-<p>Coming soon.</p>
+@inject KidSafeApp.States.RoleState RoleState
+@inject NavigationManager NavigationManager
+
+@if (!RoleState.IsRoleLoaded)
+{
+    <Components.Shared.RoleLoading />
+}
+else
+{
+<div class="portal">
+    <header class="portal-header">
+        <div>
+            <h1 class="portal-title">Teacher Portal</h1>
+            <div class="portal-subtitle">Manage learning and track student activity.</div>
+        </div>
+
+        <div class="portal-actions">
+            <button class="btn btn-outline-secondary" type="button" @onclick="HandleBack">Back</button>
+            <button class="btn btn-outline-danger" type="button" @onclick="HandleLogout">Logout</button>
+        </div>
+    </header>
+
+    <section class="portal-grid">
+        <div class="portal-card">
+            <div class="portal-card-title">Active Class</div>
+            <div class="portal-stat">Grade 5-A</div>
+            <div class="portal-muted">24 students</div>
+        </div>
+
+        <div class="portal-card">
+            <div class="portal-card-title">Pending Reviews</div>
+            <div class="portal-stat">5</div>
+            <div class="portal-muted">Quizzes & tasks to review</div>
+        </div>
+
+        <div class="portal-card">
+            <div class="portal-card-title">Assignments</div>
+            <div class="portal-stat">3</div>
+            <div class="portal-muted">Active this week</div>
+        </div>
+
+        <div class="portal-card">
+            <div class="portal-card-title">Student Activity</div>
+            <ul class="portal-list">
+                <li>Zainab finished: Reading Task</li>
+                <li>Ali started: Science Quiz</li>
+                <li>Sara earned: Badge</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="portal-wide">
+        <div class="portal-card portal-card-wide">
+            <div class="portal-card-title">Quick Actions</div>
+            <div class="portal-controls">
+                <button class="btn btn-primary" type="button" @onclick="GoToAssignments">Create Assignment</button>
+                <button class="btn btn-outline-primary" type="button" @onclick="GoToClasses">Open Gradebook</button>
+                <button class="btn btn-outline-primary" type="button" @onclick="GoToReports">View Reports</button>
+            </div>
+        </div>
+    </section>
+</div>
+}
+
+@code {
+    private void HandleBack() => NavigationManager.NavigateTo("/", replace: true);
+
+    private void HandleLogout()
+    {
+        RoleState.Reset();
+        NavigationManager.NavigateTo("/", replace: true);
+    }
+
+    private void GoToClasses() => NavigationManager.NavigateTo("/teacher/classes");
+
+    private void GoToAssignments() => NavigationManager.NavigateTo("/teacher/assignments");
+
+    private void GoToReports() => NavigationManager.NavigateTo("/teacher/reports");
+}

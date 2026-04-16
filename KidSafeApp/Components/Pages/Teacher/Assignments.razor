@@ -1,0 +1,353 @@
+@namespace KidSafeApp.Components.Pages.Teacher
+@page "/teacher/assignments"
+@using KidSafeApp.Shared.DTOs
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject KidSafeApp.States.RoleState RoleState
+@inject NavigationManager NavigationManager
+@inject HttpClient Client
+
+@if (!RoleState.IsRoleLoaded)
+{
+    <Components.Shared.RoleLoading />
+}
+else
+{
+<div class="container py-3 teacher-module">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="h4 mb-1">Teacher Assignments</h1>
+            <div class="text-secondary">Create and track assignments</div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
+            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h6 mb-3">Create Course</h2>
+            <div class="row g-2">
+                <div class="col-12 col-md-4">
+                    <input class="form-control" placeholder="Course title" @bind="_newCourseTitle" />
+                </div>
+                <div class="col-12 col-md-4">
+                    <input class="form-control" placeholder="Subject" @bind="_newCourseSubject" />
+                </div>
+                <div class="col-12 col-md-2">
+                    <input type="number" min="1" max="5" class="form-control" @bind="_newCourseDifficulty" />
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                    <button class="btn btn-primary" @onclick="CreateCourseAsync">Create</button>
+                </div>
+                <div class="col-12">
+                    <textarea class="form-control" rows="2" placeholder="Description" @bind="_newCourseDescription"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h2 class="h6 mb-0">My Courses</h2>
+                <button class="btn btn-sm btn-outline-primary" @onclick="LoadDataAsync">Refresh</button>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="text-secondary">Loading...</div>
+            }
+            else if (_courses.Count == 0)
+            {
+                <div class="text-secondary">No courses yet.</div>
+            }
+            else
+            {
+                @foreach (var course in _courses)
+                {
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                            <div>
+                                <div class="fw-bold">@course.Title</div>
+                                <div class="text-secondary small">@course.Subject • Difficulty @course.DifficultyLevel</div>
+                            </div>
+                            <button class="btn btn-sm @(course.IsPublished ? "btn-outline-danger" : "btn-outline-success")"
+                                    @onclick="() => TogglePublishAsync(course)">
+                                @(course.IsPublished ? "Unpublish" : "Publish")
+                            </button>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(course.Description))
+                        {
+                            <div class="small text-secondary mb-2">@course.Description</div>
+                        }
+
+                        <div class="small fw-semibold mb-1">Lessons (@course.Lessons.Count)</div>
+                        <ul class="small mb-2">
+                            @foreach (var lesson in course.Lessons.OrderBy(l => l.SortOrder))
+                            {
+                                <li class="mb-2">
+                                    <div>@lesson.SortOrder. @lesson.LessonTitle (@lesson.Subject)</div>
+                                    <div class="d-flex gap-2 flex-wrap mt-1">
+                                        @if (!string.IsNullOrWhiteSpace(lesson.PdfUrl))
+                                        {
+                                            <a class="btn btn-sm btn-outline-secondary" href="@lesson.PdfUrl" target="_blank">View PDF</a>
+                                        }
+                                        <InputFile OnChange="@(e => UploadLessonPdfAsync(course.Id, lesson.CourseLessonId, e))" accept=".pdf" />
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <select class="form-select form-select-sm" @bind="_selectedLessonByCourse[course.Id]">
+                                    <option value="0">Select lesson</option>
+                                    @foreach (var lesson in _lessonCatalog)
+                                    {
+                                        <option value="@lesson.Id">@lesson.Title (@lesson.Subject)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <input class="form-control form-control-sm" type="number" min="1" @bind="_sortOrderByCourse[course.Id]" />
+                            </div>
+                            <div class="col-6 col-md-4 d-grid">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => AddLessonAsync(course.Id)">Add Lesson</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+    private async Task UploadLessonPdfAsync(int courseId, int courseLessonId, InputFileChangeEventArgs e)
+    {
+        _error = null;
+        try
+        {
+            var file = e.File;
+            if (file is null)
+            {
+                return;
+            }
+
+            if (!file.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                _error = "Only PDF files are allowed.";
+                return;
+            }
+
+            using var form = new MultipartFormDataContent();
+            await using var stream = file.OpenReadStream(25 * 1024 * 1024);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            form.Add(fileContent, "file", file.Name);
+
+            var response = await Client.PostAsync($"api/teacher/courses/{courseId}/lessons/{courseLessonId}/content", form);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    private List<CourseDto> _courses = new();
+    private List<LessonCatalogItem> _lessonCatalog = new();
+    private readonly Dictionary<int, int> _selectedLessonByCourse = new();
+    private readonly Dictionary<int, int> _sortOrderByCourse = new();
+    private bool _loading;
+    private string? _error;
+
+    private string _newCourseTitle = string.Empty;
+    private string _newCourseSubject = string.Empty;
+    private string _newCourseDescription = string.Empty;
+    private int _newCourseDifficulty = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _courses = await Client.GetFromJsonAsync<List<CourseDto>>("api/teacher/courses") ?? new();
+            _lessonCatalog = await Client.GetFromJsonAsync<List<LessonCatalogItem>>("api/teacher/courses/lessons/catalog") ?? new();
+
+            foreach (var course in _courses)
+            {
+                if (!_selectedLessonByCourse.ContainsKey(course.Id)) _selectedLessonByCourse[course.Id] = 0;
+                if (!_sortOrderByCourse.ContainsKey(course.Id)) _sortOrderByCourse[course.Id] = Math.Max(1, course.Lessons.Count + 1);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CreateCourseAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newCourseTitle)) return;
+
+        _error = null;
+        try
+        {
+            var dto = new CreateCourseDto
+            {
+                Title = _newCourseTitle,
+                Subject = _newCourseSubject,
+                Description = _newCourseDescription,
+                DifficultyLevel = _newCourseDifficulty
+            };
+
+            var response = await Client.PostAsJsonAsync("api/teacher/courses", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            _newCourseTitle = string.Empty;
+            _newCourseSubject = string.Empty;
+            _newCourseDescription = string.Empty;
+            _newCourseDifficulty = 1;
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task TogglePublishAsync(CourseDto course)
+    {
+        _error = null;
+        try
+        {
+            var response = await Client.PutAsync($"api/teacher/courses/{course.Id}/publish?isPublished={!course.IsPublished}", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task AddLessonAsync(int courseId)
+    {
+        _error = null;
+        try
+        {
+            var lessonId = _selectedLessonByCourse.GetValueOrDefault(courseId, 0);
+            if (lessonId <= 0)
+            {
+                _error = "Please select a lesson.";
+                return;
+            }
+
+            var sortOrder = Math.Max(1, _sortOrderByCourse.GetValueOrDefault(courseId, 1));
+            var dto = new AddCourseLessonDto { LessonId = lessonId, SortOrder = sortOrder };
+
+            var response = await Client.PostAsJsonAsync($"api/teacher/courses/{courseId}/lessons", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            _selectedLessonByCourse[courseId] = 0;
+            _sortOrderByCourse[courseId] = sortOrder + 1;
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task UploadLessonPdfAsync(int courseId, int courseLessonId, InputFileChangeEventArgs e)
+    {
+        _error = null;
+        try
+        {
+            var file = e.File;
+            if (file is null)
+            {
+                return;
+            }
+
+            if (!file.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                _error = "Only PDF files are allowed.";
+                return;
+            }
+
+            using var form = new MultipartFormDataContent();
+            await using var stream = file.OpenReadStream(25 * 1024 * 1024);
+            using var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            form.Add(fileContent, "file", file.Name);
+
+            var response = await Client.PostAsync($"api/teacher/courses/{courseId}/lessons/{courseLessonId}/content", form);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private void HandleBack() => NavigationManager.NavigateTo("/teacher/dashboard");
+
+    private void HandleLogout()
+    {
+        RoleState.Reset();
+        NavigationManager.NavigateTo("/", replace: true);
+    }
+
+    private sealed class LessonCatalogItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Subject { get; set; }
+    }
+}

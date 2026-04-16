@@ -1,0 +1,148 @@
+.portal {
+  --portal-primary: #2563eb;
+  --portal-primary-dark: #1e40af;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.portal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.portal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.portal-subtitle {
+  margin: .15rem 0 0 0;
+  color: #475569;
+  font-size: .95rem;
+}
+
+.portal-actions {
+  display: flex;
+  gap: .5rem;
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .85rem;
+}
+
+@media (min-width: 700px) {
+  .portal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .portal-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.portal-card {
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+  padding: 1rem;
+  min-height: 120px;
+}
+
+.portal-stat {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin-top: .35rem;
+  background: linear-gradient(135deg, var(--portal-primary), var(--portal-primary-dark));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.portal-muted {
+  color: #64748b;
+  font-size: .92rem;
+}
+
+.portal-list {
+  margin: .5rem 0 0 0;
+  padding-left: 1rem;
+  color: #475569;
+}
+
+.portal-list li { margin-bottom: .25rem; }
+
+.portal-card-title {
+  margin: 0 0 .4rem 0;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.portal-card p {
+  margin: 0;
+  color: #475569;
+}
+
+.portal-card .portal-card-meta {
+  margin-top: .65rem;
+  color: #64748b;
+  font-size: .9rem;
+}
+
+.portal-controls {
+  margin-top: 1rem;
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+@media (min-width: 700px) {
+  .portal-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.portal-control {
+  border: 1px solid rgba(15, 23, 42, .10);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+  padding: 1rem;
+}
+
+.portal-control-title {
+  margin: 0 0 .75rem 0;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.portal-control-row {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.portal-control-row :deep(button),
+.portal-actions :deep(button) {
+  border-radius: 10px;
+}
+
+.portal :deep(.btn-primary) {
+  background: linear-gradient(135deg, var(--portal-primary), var(--portal-primary-dark));
+  border: none;
+}

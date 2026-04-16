@@ -1,19 +1,66 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #f6f7fb;
+    color: #0f172a;
+}
+
+:root {
+    --ks-accent: #2563eb;
+    --ks-accent-2: #3b82f6;
+    --ks-accent-green: #16a34a;
+    --ks-surface: #ffffff;
+    --ks-border: rgba(15, 23, 42, 0.10);
+    --ks-shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+    --ks-bg: #f6f7fb;
+    --ks-text: #0f172a;
+    --ks-muted: rgba(15, 23, 42, 0.60);
+    --ks-radius: 14px;
 }
 
 a, .btn-link {
-    color: #006bb7;
+    color: var(--ks-accent);
+}
+
+a:hover, .btn-link:hover {
+    color: #1d4ed8;
 }
 
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background: linear-gradient(90deg, var(--ks-accent-2), var(--ks-accent));
+    border-color: transparent;
+}
+
+.btn-outline-primary {
+    color: var(--ks-accent);
+    border-color: rgba(37, 99, 235, 0.55);
+}
+
+.btn-outline-primary:hover {
+    color: #fff;
+    background-color: var(--ks-accent);
+    border-color: var(--ks-accent);
+}
+
+.btn-success {
+    color: #fff;
+    background: linear-gradient(90deg, var(--ks-accent-green), #15803d);
+    border-color: transparent;
+}
+
+.card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: var(--ks-shadow);
+    border-radius: 16px;
+    background: var(--ks-surface);
+}
+
+.form-control {
+    border-radius: 12px;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(37, 99, 235, 0.30);
 }
 
 .content {
@@ -80,6 +127,31 @@ h1:focus {
     text-align: start;
 }
 
+.top-row {
+    background: linear-gradient(90deg, var(--ks-accent-2), var(--ks-accent)) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    padding: 1rem 2rem !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.top-row a {
+    color: #ffffff !important;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+.top-row a:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
 .status-bar-safe-area {
     display: none;
 }
@@ -90,7 +162,7 @@ h1:focus {
         position: sticky;
         top: 0;
         height: env(safe-area-inset-top);
-        background-color: #f7f7f7;
+        background: linear-gradient(90deg, var(--ks-accent-2), var(--ks-accent));
         width: 100%;
         z-index: 1;
     }

@@ -21,7 +21,7 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = (context) =>
         {
-            if (context.Request.Path.StartsWithSegments("/hubs/blazing-chat"))
+            if (context.Request.Path.StartsWithSegments("/hubs/kidsafeapp"))
             {
                 var jwt = context.Request.Query["access_token"];
                 if (!string.IsNullOrWhiteSpace(jwt))
@@ -67,7 +67,7 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapHub<ChatHub>("/hubs/blazing-chat");
+app.MapHub<ChatHub>("/hubs/kidsafeapp");
 app.MapFallbackToFile("index.html");
 
 app.Run();

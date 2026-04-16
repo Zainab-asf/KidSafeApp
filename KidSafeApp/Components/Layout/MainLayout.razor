@@ -1,17 +1,83 @@
-﻿@inherits LayoutComponentBase
+﻿@using System.ComponentModel
+@implements IDisposable
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
+@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.States.AccountManager AccountManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+    <div class="page">
+        @if (RoleState.CurrentRole == KidSafeApp.States.AppRole.None)
+        {
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        }
+
+        <main class="@(RoleState.CurrentRole != KidSafeApp.States.AppRole.None ? "main-with-sidebar" : string.Empty)">
+            @if (!IsLandingPage())
+            {
+                <div class="top-row">
+                    <div class="navbar-brand" style="font-weight: 600; font-size: 1.25rem; color: #ffffff;">
+                        @if (RoleState.CurrentRole != KidSafeApp.States.AppRole.None)
+                        {
+                            <button class="hamburger-menu" @onclick="ToggleSidebarMenu" aria-label="Toggle menu">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </button>
+                        }
+                        KidSafeApp
+                    </div>
+                    <div class="navbar-menu d-flex align-items-center gap-3">
+                        <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+                    </div>
+                </div>
+
+                @if (RoleState.CurrentRole != KidSafeApp.States.AppRole.None)
+                {
+                    <Sidebar @ref="sidebarRef" />
+                }
+            }
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+@code {
+    private Sidebar? sidebarRef;
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    private bool IsLandingPage()
+    {
+        try
+        {
+            return NavigationManager.Uri.EndsWith("/") || NavigationManager.Uri.Contains("/index");
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+
+    private void ToggleSidebarMenu()
+    {
+        try
+        {
+            if (sidebarRef != null)
+            {
+                sidebarRef.ToggleSidebar();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling sidebar: {ex.Message}");
+        }
+    }
+
+    public void Dispose()
+    {
+    }
+}

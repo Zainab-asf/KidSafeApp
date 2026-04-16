@@ -1,0 +1,52 @@
+@namespace KidSafeApp.Components.Chat
+
+<div class="d-flex align-items-center justify-content-between">
+    <h3 class="mb-2">Chats</h3>
+</div>
+
+<input class="form-control form-control-sm mb-2" placeholder="Search chats..." @bind="_query" @bind:event="oninput" />
+<ul class="list-group list-group-flush">
+    @if (Loading)
+    {
+        <li class="list-group-item">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Loading...
+        </li>
+    }
+    else
+    {
+        if (!FilteredChats.Any())
+        {
+            <li class="list-group-item text-muted">No chats yet.</li>
+        }
+        else
+        {
+            @foreach (var chat in FilteredChats)
+            {
+                <li class="list-group-item @(chat.IsSelected ? "bg-success text-white" : "")" @onclick="() => HandleUserClick(chat)">@chat.Name</li>
+            }
+        }
+    }
+</ul>
+
+@code {
+    [Parameter]
+    public IEnumerable<UserDto> Chats { get; set; } = Enumerable.Empty<UserDto>();
+
+    [Parameter]
+    public bool Loading { get; set; }
+
+    [Parameter]
+    public EventCallback<UserDto> OnUserSelected { get; set; }
+
+    private string _query = string.Empty;
+
+    private IEnumerable<UserDto> FilteredChats => string.IsNullOrWhiteSpace(_query)
+        ? Chats
+        : Chats.Where(c => (c.Name ?? string.Empty).Contains(_query, StringComparison.OrdinalIgnoreCase));
+
+    private async Task HandleUserClick(UserDto chat)
+    {
+        await OnUserSelected.InvokeAsync(chat);
+    }
+}

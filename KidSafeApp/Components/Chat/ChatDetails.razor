@@ -1,0 +1,133 @@
+@namespace KidSafeApp.Components.Chat
+@using System.Net.Http.Headers;
+@inject HttpClient Client
+@inject IJSRuntime JsRuntime
+
+@if (SelectedUser is null)
+{
+    <div class="p-3 w-100">
+        <div class="alert alert-info mb-0">
+            Select a user to start a conversation.
+        </div>
+    </div>
+}
+else
+{
+    <div class="flex-grow-1 d-flex flex-column">
+        <div class="header d-flex justify-content-between bg-main">
+            <h4 class="text-white m-0 p-1">@SelectedUser.Name</h4>
+            <button class="btn btn-danger btn-sm" @onclick="HandleCancelClick">x</button>
+        </div>
+        
+        <div class="messages-list">
+            
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <p class="text-danger">@_errorMessage</p>
+            }
+
+            @if (Loading)
+            {
+                <p>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Loading...
+                </p>
+            }
+            else
+            {
+                <div class="d-flex flex-column">
+                    @foreach (var message in Messages)
+                    {
+                        <div class="message-item @(message.FromUserId == AuthenticationState?.User?.Id ? "sent" : "received")">
+                            <div class="message-content">
+                                <div class="message-text">@message.Message</div>
+                                <div class="message-time">@message.SentOn.ToString("t")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="message-input d-flex">
+            <input class="form-control" placeholder="Type a message..." @bind="NewMessage" @bind:event="oninput" />
+            <button class="btn btn-primary" @onclick="SendMessageAsync">Send</button>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter(Name = "AuthenticationState")]
+    public AuthenticationState? AuthenticationState { get; set; }
+
+    [Parameter]
+    public UserDto? SelectedUser { get; set; }
+
+    [Parameter]
+    public MessageDto? NewIncomingMessage { get; set; }
+
+    [Parameter]
+    public EventCallback OnIncomingMessageRecieved { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnCancel { get; set; }
+
+    private string? _errorMessage;
+    private bool Loading;
+    private readonly List<MessageDto> Messages = new();
+    private string NewMessage = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (SelectedUser is null)
+        {
+            Messages.Clear();
+            return;
+        }
+
+        if (NewIncomingMessage is not null)
+        {
+            Messages.Add(NewIncomingMessage);
+            await OnIncomingMessageRecieved.InvokeAsync();
+        }
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (SelectedUser is null || AuthenticationState is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(NewMessage))
+            return;
+
+        try
+        {
+            Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthenticationState.Token);
+
+            var dto = new MessageSendDto(SelectedUser.Id, NewMessage);
+
+            var response = await Client.PostAsJsonAsync("api/messages", dto, JsonConverter.JsonSerializerOptions);
+            if (!response.IsSuccessStatusCode)
+            {
+                _errorMessage = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            // Backend currently returns no body; keep optimistic UI consistent with prior behavior.
+            Messages.Add(new MessageDto(SelectedUser.Id, AuthenticationState.User!.Id, NewMessage, DateTime.Now));
+
+            NewMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task HandleCancelClick()
+    {
+        await OnCancel.InvokeAsync(true);
+    }
+}

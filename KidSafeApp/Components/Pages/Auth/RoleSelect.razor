@@ -1,0 +1,53 @@
+@page "/auth"
+
+@inject NavigationManager Navigation
+@inject KidSafeApp.States.RoleState RoleState
+
+<div class="auth-page">
+  <div class="auth-card">
+    <h1 class="auth-title">Choose Your Role</h1>
+    <p class="auth-subtitle">Select how you want to use KidSafe today.</p>
+
+    <div class="auth-options">
+      <button class="auth-option auth-child" @onclick="GoToChild">
+        <div class="auth-option-title">I am a Child</div>
+        <div class="auth-option-text">Use KidSafe to learn and chat safely.</div>
+      </button>
+
+      <button class="auth-option auth-parent" @onclick="GoToParent">
+        <div class="auth-option-title">I am a Parent</div>
+        <div class="auth-option-text">Monitor messages, progress, and achievements.</div>
+      </button>
+
+      <button class="auth-option auth-teacher" @onclick="GoToTeacher">
+        <div class="auth-option-title">I am a Teacher</div>
+        <div class="auth-option-text">Manage classes, assign lessons, and review activity.</div>
+      </button>
+    </div>
+
+    <p class="auth-hint">You can switch dashboards later from the left navigation.</p>
+  </div>
+</div>
+
+@code {
+  private async Task GoToChild()
+  {
+    RoleState.SelectRole(KidSafeApp.States.AppRole.Child);
+    await RoleState.InitializeAsync(KidSafeApp.States.AppRole.Child);
+ Navigation.NavigateTo("/child/dashboard", replace: true);
+  }
+
+  private async Task GoToParent()
+  {
+    RoleState.SelectRole(KidSafeApp.States.AppRole.Parent);
+    await RoleState.InitializeAsync(KidSafeApp.States.AppRole.Parent);
+ Navigation.NavigateTo("/parent/dashboard", replace: true);
+  }
+
+  private async Task GoToTeacher()
+  {
+    RoleState.SelectRole(KidSafeApp.States.AppRole.Teacher);
+    await RoleState.InitializeAsync(KidSafeApp.States.AppRole.Teacher);
+ Navigation.NavigateTo("/teacher/dashboard", replace: true);
+  }
+}

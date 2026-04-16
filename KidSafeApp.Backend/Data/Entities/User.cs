@@ -21,6 +21,13 @@ namespace KidSafeApp.Backend.Data.Entities
         [Required, MaxLength(20)]
         public string Password { get; set; }
 
+        [Required, Unicode(false), MaxLength(20)]
+        public string Role { get; set; } = "Child";
+
+        public bool IsApproved { get; set; } = false;
+
+        public bool IsActive { get; set; } = true;
+
 
     }
 }

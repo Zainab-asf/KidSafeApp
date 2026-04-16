@@ -1,0 +1,73 @@
+@using KidSafeApp.States
+@inject AccountManager AccountManager
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div class="account-switcher">
+    <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                type="button" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+            👤 Switch Account
+        </button>
+        <ul class="dropdown-menu">
+            @foreach (var (accountId, userName) in AccountManager.GetStoredAccounts())
+            {
+                var isActive = AccountManager.CurrentAccountId == accountId;
+                <li>
+                    <a class="dropdown-item @(isActive ? "active" : "")" 
+                       href="#" 
+                       @onclick="() => HandleSwitchAccount(accountId)" 
+                       @onclick:preventDefault>
+                        @if (isActive)
+                        {
+                            <span>✓ @userName</span>
+                        }
+                        else
+                        {
+                            <span>@userName</span>
+                        }
+                    </a>
+                </li>
+            }
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item text-danger" href="#" @onclick="HandleLogoutAll" @onclick:preventDefault>
+                    Logout All Accounts
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AccountManager.InitializeAsync();
+        AccountManager.OnAccountSwitched += StateHasChanged;
+        AccountManager.OnAccountsChanged += StateHasChanged;
+    }
+
+    private async Task HandleSwitchAccount(string accountId)
+    {
+        await AccountManager.SwitchAccountAsync(accountId);
+        NavigationManager.NavigateTo("/child/dashboard", forceLoad: true);
+    }
+
+    private async Task HandleLogoutAll()
+    {
+        // Clear all accounts
+        foreach (var (accountId, _) in AccountManager.GetStoredAccounts().ToList())
+        {
+            await AccountManager.RemoveAccountAsync(accountId);
+        }
+        NavigationManager.NavigateTo("/login");
+    }
+
+    void IDisposable.Dispose()
+    {
+        AccountManager.OnAccountSwitched -= StateHasChanged;
+        AccountManager.OnAccountsChanged -= StateHasChanged;
+    }
+}

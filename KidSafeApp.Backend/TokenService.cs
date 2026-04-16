@@ -52,6 +52,7 @@ namespace KidSafeApp.Backend
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Name, user.Name),
+                    new Claim(ClaimTypes.Role, string.IsNullOrWhiteSpace(user.Role) ? "Child" : user.Role),
                 };
             if (additionalClaims?.Any() == true)
                 claims.AddRange(additionalClaims);

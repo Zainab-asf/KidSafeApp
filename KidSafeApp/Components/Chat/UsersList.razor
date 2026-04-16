@@ -1,0 +1,57 @@
+@namespace KidSafeApp.Components.Chat
+@using System.Net.Http.Headers
+@inject HttpClient Client
+
+<div class="d-flex align-items-center justify-content-between">
+    <h3 class="mb-2">Users</h3>
+</div>
+
+<input class="form-control form-control-sm mb-2" placeholder="Search users..." @bind="_query" @bind:event="oninput" />
+<ul class="list-group list-group-flush">
+    @if (Loading)
+    {
+        <li class="list-group-item">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Loading...
+        </li>
+    }
+    else
+    {
+        if (!FilteredUsers.Any())
+        {
+            <li class="list-group-item text-muted">No users found.</li>
+        }
+        else
+        {
+            foreach (var user in FilteredUsers)
+            {
+                <li class="list-group-item" @onclick="() => HandleUserClick(user)">
+                    @user.Name
+                    <span class="badge rounded-pill bg-@(user.IsOnline ? "success" : "danger")">.</span>
+                </li>
+            }
+        }
+    }
+</ul>
+
+@code {
+    [Parameter]
+    public EventCallback<UserDto> OnUserSelected { get; set; }
+
+    [Parameter]
+    public bool Loading { get; set; }
+
+    [Parameter]
+    public ICollection<UserDto> Users { get; set; } = default!;
+
+    private string _query = string.Empty;
+
+    private IEnumerable<UserDto> FilteredUsers => string.IsNullOrWhiteSpace(_query)
+        ? Users
+        : Users.Where(u => (u.Name ?? string.Empty).Contains(_query, StringComparison.OrdinalIgnoreCase));
+
+    private async Task HandleUserClick(UserDto user)
+    {
+        await OnUserSelected.InvokeAsync(user);
+    }
+}

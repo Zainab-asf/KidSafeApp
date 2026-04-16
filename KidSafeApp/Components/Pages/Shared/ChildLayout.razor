@@ -1,56 +1,11 @@
 @namespace KidSafeApp.Components.Pages.Shared
 
 <div class="ks-dashboard">
-  <aside class="ks-sidebar">
-    <div class="ks-brand">
-      <div class="ks-logo">KS</div>
-      <div class="ks-brand-text">
-        <div class="ks-app-name">KidSafe App</div>
-        <div class="ks-app-tagline">Learn. Chat. Grow.</div>
-      </div>
-    </div>
-
-    <nav class="ks-nav">
-      <NavLink href="/child/dashboard" class="ks-nav-item" Match="NavLinkMatch.All">
-        <span class="ks-nav-label">Child Dashboard</span>
-      </NavLink>
-
-      <NavLink href="/child/messages" class="ks-nav-item">
-        <span class="ks-nav-label">Messages</span>
-      </NavLink>
-
-      <NavLink href="/child/learn" class="ks-nav-item">
-        <span class="ks-nav-label">Learn</span>
-      </NavLink>
-
-      <NavLink href="/child/progress" class="ks-nav-item">
-        <span class="ks-nav-label">Progress</span>
-      </NavLink>
-
-      <NavLink href="/child/achievements" class="ks-nav-item">
-        <span class="ks-nav-label">Achievements</span>
-      </NavLink>
-
-      <div class="ks-nav-section-label">Help &amp; Settings</div>
-
-      <NavLink href="/child/notifications" class="ks-nav-item">
-        <span class="ks-nav-label">Notifications</span>
-      </NavLink>
-
-      <NavLink href="/child/support" class="ks-nav-item">
-        <span class="ks-nav-label">Support</span>
-      </NavLink>
-
-      <NavLink href="/child/settings" class="ks-nav-item">
-        <span class="ks-nav-label">Settings</span>
-      </NavLink>
-    </nav>
-
-    <button class="ks-theme-toggle">Theme</button>
-  </aside>
-
   <main class="ks-main">
-    @ChildContent
+    @if (ChildContent is not null)
+    {
+      @ChildContent
+    }
   </main>
 </div>
 

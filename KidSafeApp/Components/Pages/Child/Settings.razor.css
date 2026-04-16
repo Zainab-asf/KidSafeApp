@@ -1,0 +1,233 @@
+/* Settings Page Styles */
+.ks-settings-container {
+  padding: 1rem 0;
+}
+
+.ks-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.ks-setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ks-setting-item:last-child {
+  border-bottom: none;
+}
+
+.ks-setting-item:hover {
+  background-color: rgba(37, 99, 235, 0.02);
+}
+
+.ks-setting-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ks-setting-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.ks-setting-item small {
+  display: block;
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* Form Controls in Settings */
+.ks-settings-container .form-control,
+.ks-settings-container .form-select {
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.95rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ks-settings-container .form-control:focus,
+.ks-settings-container .form-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Toggle Switches */
+.form-check-input {
+  width: 2rem;
+  height: 1.15rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-check-input:checked {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.form-check-input:checked:focus {
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+}
+
+/* Tab Navigation */
+.ks-settings-container .d-flex.border-bottom {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.ks-settings-container .btn-link {
+  color: #0f172a;
+  text-decoration: none;
+  padding: 1rem 1.25rem !important;
+  border-bottom: 3px solid transparent;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.ks-settings-container .btn-link:hover {
+  color: #2563eb;
+}
+
+/* Avatar Preview */
+.ks-avatar-preview {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.ks-avatar-preview img {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 50%;
+  border: 3px solid #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+/* Responsive Settings */
+@media (max-width: 768px) {
+  .ks-settings-container .d-flex.border-bottom {
+    gap: 0;
+    padding: 0;
+  }
+
+  .ks-settings-container .btn-link {
+    padding: 0.75rem 1rem !important;
+    font-size: 0.875rem;
+  }
+
+  .ks-setting-item {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .ks-setting-label {
+    font-size: 0.875rem;
+  }
+
+  .row.g-3 {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .ks-setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem;
+  }
+
+  .ks-setting-content {
+    width: 100%;
+  }
+
+  .form-check.form-switch {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .ks-settings-container .form-control,
+  .ks-settings-container .form-select {
+    width: 100%;
+    font-size: 1rem; /* Prevent zoom on iOS */
+  }
+
+  .ks-settings-container .btn-link {
+    padding: 0.75rem 0.875rem !important;
+    font-size: 0.8125rem;
+    margin: 0 2px;
+  }
+
+  .ks-setting-label {
+    font-size: 0.8125rem;
+  }
+
+  .row.g-3 > * {
+    flex: 0 0 100%;
+  }
+
+  .ks-avatar-preview {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .ks-setting-item {
+    background-color: #1e293b;
+  }
+
+  .ks-setting-item:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+  }
+
+  .ks-setting-label,
+  .ks-settings-container .btn-link {
+    color: #f1f5f9;
+  }
+
+  .ks-settings-container .form-control,
+  .ks-settings-container .form-select {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    border-color: rgba(203, 213, 225, 0.2);
+  }
+
+  .ks-settings-container .form-control:focus,
+  .ks-settings-container .form-select:focus {
+    background-color: #0f172a;
+    color: #f1f5f9;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .ks-settings-container .btn-link,
+  .ks-settings-container .btn {
+    display: none;
+  }
+}

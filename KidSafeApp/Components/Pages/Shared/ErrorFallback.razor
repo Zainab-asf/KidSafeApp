@@ -11,9 +11,16 @@
 <button class="btn btn-primary" @onclick="Recover">Reload</button>
 
 @code {
-    [CascadingParameter] public Exception? Exception { get; set; }
+    [Parameter] public Exception? Exception { get; set; }
+
+    [CascadingParameter(Name = "Exception")] public Exception? CascadedException { get; set; }
 
     [CascadingParameter] public ErrorBoundary? ErrorBoundary { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        Exception ??= CascadedException;
+    }
 
     private void Recover() => ErrorBoundary?.Recover();
 }

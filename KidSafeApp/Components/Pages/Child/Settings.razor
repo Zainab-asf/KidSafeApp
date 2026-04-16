@@ -1,16 +1,395 @@
 @namespace KidSafeApp.Components.Pages.Child
 @page "/child/settings"
+@using KidSafeApp.Shared.DTOs
+@inject HttpClient Client
+@inject NavigationManager NavigationManager
 
 <ChildLayout>
-  <ChildHeader />
-
   <section class="ks-content">
-    <div class="ks-card">
-      <header class="ks-card-header">
-        <h2>Settings</h2>
-      </header>
+    <div class="ks-settings-container">
+      <!-- HEADER -->
+      <div class="ks-card mb-4">
+        <div>
+          <h1 class="ks-h1 mb-1">⚙️ Settings</h1>
+          <p class="text-secondary">Customize your learning experience</p>
+        </div>
+      </div>
 
-      <p>Child settings UI goes here.</p>
+      @if (IsLoading)
+      {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      }
+      else if (UserSettings != null)
+      {
+        <!-- TABS -->
+        <div class="ks-card mb-4">
+          <div class="d-flex gap-2 border-bottom flex-wrap">
+            <button class="btn btn-link p-2" 
+                    style="@GetTabStyle("profile")"
+                    @onclick="@(() => ActiveTab = "profile")">
+              👤 Profile
+            </button>
+            <button class="btn btn-link p-2"
+                    style="@GetTabStyle("notifications")"
+                    @onclick="@(() => ActiveTab = "notifications")">
+              🔔 Notifications
+            </button>
+            <button class="btn btn-link p-2"
+                    style="@GetTabStyle("privacy")"
+                    @onclick="@(() => ActiveTab = "privacy")">
+              🔐 Privacy & Safety
+            </button>
+            <button class="btn btn-link p-2"
+                    style="@GetTabStyle("display")"
+                    @onclick="@(() => ActiveTab = "display")">
+              🎨 Display
+            </button>
+          </div>
+        </div>
+
+        <!-- PROFILE SETTINGS -->
+        @if (ActiveTab == "profile")
+        {
+          <div class="ks-card mb-4">
+            <h2 class="ks-h2 mb-4">Profile Settings</h2>
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">Bio</label>
+                <textarea class="form-control" rows="3" placeholder="Tell us about yourself..." 
+                          @bind="UserSettings.Bio"></textarea>
+                <small class="text-secondary">Max 500 characters</small>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Avatar URL</label>
+                <input type="text" class="form-control" placeholder="https://example.com/avatar.png" 
+                       @bind="UserSettings.AvatarUrl" />
+              </div>
+
+              @if (!string.IsNullOrEmpty(UserSettings.AvatarUrl))
+              {
+                <div class="col-12">
+                  <div class="ks-avatar-preview">
+                    <img src="@UserSettings.AvatarUrl" alt="Avatar" style="max-width: 100px; border-radius: 50%; border: 2px solid #2563eb;" />
+                  </div>
+                </div>
+              }
+            </div>
+
+            <button class="btn btn-primary mt-4" @onclick="SaveProfileSettings">Save Profile</button>
+          </div>
+        }
+
+        <!-- NOTIFICATION SETTINGS -->
+        @if (ActiveTab == "notifications")
+        {
+          <div class="ks-card mb-4">
+            <h2 class="ks-h2 mb-4">Notification Settings</h2>
+
+            <div class="ks-settings-group">
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Email Notifications</div>
+                  <small class="text-secondary">Receive updates via email</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" 
+                         @bind="UserSettings.EmailNotificationsEnabled" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Push Notifications</div>
+                  <small class="text-secondary">Get instant notifications</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.PushNotificationsEnabled" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Achievement Notifications</div>
+                  <small class="text-secondary">Get notified about badges and milestones</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.AchievementNotifications" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Message Notifications</div>
+                  <small class="text-secondary">Get notified when you receive messages</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.MessageNotifications" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3">
+                <div>
+                  <div class="ks-setting-label">Course Reminders</div>
+                  <small class="text-secondary">Get reminded to continue your courses</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.CourseReminderNotifications" />
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary mt-4" @onclick="SaveNotificationSettings">Save Notifications</button>
+          </div>
+        }
+
+        <!-- PRIVACY & SAFETY SETTINGS -->
+        @if (ActiveTab == "privacy")
+        {
+          <div class="ks-card mb-4">
+            <h2 class="ks-h2 mb-4">Privacy & Safety Settings</h2>
+
+            <div class="ks-settings-group">
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Public Profile</div>
+                  <small class="text-secondary">Allow others to see your profile</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.IsProfilePublic" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Allow Message Requests</div>
+                  <small class="text-secondary">Let people message you freely</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.AllowMessageRequests" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Block Adult Content</div>
+                  <small class="text-secondary">Filter out mature content</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.BlockAdultContent" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Strict Content Filter</div>
+                  <small class="text-secondary">Extra strong content filtering</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.StrictContentFilter" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item d-flex align-items-center justify-content-between p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Require Parent Approval</div>
+                  <small class="text-secondary">Parents must approve new messages</small>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox"
+                         @bind="UserSettings.RequireParentApprovalForMessages" />
+                </div>
+              </div>
+
+              <div class="ks-setting-item p-3 border-bottom">
+                <div>
+                  <div class="ks-setting-label">Parent Email</div>
+                  <small class="text-secondary">Your parent's email for notifications</small>
+                </div>
+                <input type="email" class="form-control mt-2" placeholder="parent@example.com"
+                       @bind="UserSettings.ParentEmail" />
+              </div>
+
+              <div class="ks-setting-item p-3">
+                <div>
+                  <div class="ks-setting-label">Daily Screen Time Limit</div>
+                  <small class="text-secondary">Minutes per day (0 = unlimited)</small>
+                </div>
+                <input type="number" class="form-control mt-2" min="0" max="600" step="15"
+                       @bind="UserSettings.ScreenTimeLimit" />
+              </div>
+            </div>
+
+            <button class="btn btn-primary mt-4" @onclick="SavePrivacySettings">Save Privacy Settings</button>
+          </div>
+        }
+
+        <!-- DISPLAY SETTINGS -->
+        @if (ActiveTab == "display")
+        {
+          <div class="ks-card mb-4">
+            <h2 class="ks-h2 mb-4">Display Settings</h2>
+
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Theme</label>
+                <select class="form-select" @bind="UserSettings.ThemePreference">
+                  <option value="light">☀️ Light</option>
+                  <option value="dark">🌙 Dark</option>
+                  <option value="system">⚙️ System</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label">Language</label>
+                <select class="form-select" @bind="UserSettings.LanguagePreference">
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 Español</option>
+                  <option value="fr">🇫🇷 Français</option>
+                  <option value="de">🇩🇪 Deutsch</option>
+                  <option value="ar">🇸🇦 العربية</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <div class="ks-setting-item d-flex align-items-center justify-content-between">
+                  <div>
+                    <div class="ks-setting-label">Compact Mode</div>
+                    <small class="text-secondary">Reduce spacing and sizes</small>
+                  </div>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox"
+                           @bind="UserSettings.CompactMode" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary mt-4" @onclick="SaveDisplaySettings">Save Display Settings</button>
+          </div>
+        }
+      }
     </div>
   </section>
 </ChildLayout>
+
+@code {
+    private UserSettingsDto UserSettings;
+    private bool IsLoading = false;
+    private string ActiveTab = "profile";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+    }
+
+    private async Task LoadSettings()
+    {
+        try
+        {
+            IsLoading = true;
+            var response = await Client.GetFromJsonAsync<UserSettingsDto>("api/settings");
+            UserSettings = response ?? new UserSettingsDto();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading settings: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SaveProfileSettings()
+    {
+        try
+        {
+            await Client.PutAsJsonAsync("api/settings/profile", new { UserSettings.Bio, UserSettings.AvatarUrl });
+            await LoadSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving profile: {ex.Message}");
+        }
+    }
+
+    private async Task SaveNotificationSettings()
+    {
+        try
+        {
+            await Client.PutAsJsonAsync("api/settings/notifications", new
+            {
+                UserSettings.EmailNotificationsEnabled,
+                UserSettings.PushNotificationsEnabled,
+                UserSettings.AchievementNotifications,
+                UserSettings.MessageNotifications,
+                UserSettings.CourseReminderNotifications
+            });
+            await LoadSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving notifications: {ex.Message}");
+        }
+    }
+
+    private async Task SavePrivacySettings()
+    {
+        try
+        {
+            await Client.PutAsJsonAsync("api/settings/privacy", new
+            {
+                UserSettings.IsProfilePublic,
+                UserSettings.AllowMessageRequests,
+                UserSettings.BlockAdultContent,
+                UserSettings.StrictContentFilter
+            });
+            await LoadSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving privacy: {ex.Message}");
+        }
+    }
+
+    private async Task SaveDisplaySettings()
+    {
+        try
+        {
+            await Client.PutAsJsonAsync("api/settings/display", new
+            {
+                UserSettings.ThemePreference,
+                UserSettings.LanguagePreference,
+                UserSettings.CompactMode
+            });
+            await LoadSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving display: {ex.Message}");
+        }
+    }
+
+    private string GetTabStyle(string tab)
+    {
+        if (ActiveTab == tab)
+        {
+            return "color: #2563eb; border-bottom: 3px solid #2563eb; text-decoration: none;";
+        }
+        return "color: #0f172a; border-bottom: 3px solid transparent; text-decoration: none;";
+    }
+}

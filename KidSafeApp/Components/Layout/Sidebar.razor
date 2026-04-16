@@ -1,0 +1,188 @@
+@using KidSafeApp.States
+@implements IAsyncDisposable
+@inject NavigationManager NavigationManager
+@inject RoleState RoleState
+
+<div class="sidebar-wrapper @(isOpen ? "open" : "")">
+    <div class="sidebar-header">
+        <h2 class="sidebar-title">Menu</h2>
+        <button class="hamburger-close" @onclick="ToggleSidebar" aria-label="Close menu">
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        @if (RoleState?.CurrentRole == AppRole.Child)
+        {
+            <div class="nav-section">
+                <h3 class="nav-section-title">Learning</h3>
+                <NavLink class="nav-link" href="/child/dashboard" @onclick="HandleNavClick">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/child/learn" @onclick="HandleNavClick">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">Learn</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/child/progress" @onclick="HandleNavClick">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">Progress</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Communication</h3>
+                <NavLink class="nav-link" href="/child/chat" @onclick="HandleNavClick">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-text">Chat</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/child/notifications" @onclick="HandleNavClick">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">Notifications</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Account</h3>
+                <NavLink class="nav-link" href="/child/settings" @onclick="HandleNavClick">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Settings</span>
+                </NavLink>
+                <button class="nav-link logout-btn" @onclick="HandleLogout">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </div>
+        }
+        else if (RoleState?.CurrentRole == AppRole.Parent)
+        {
+            <div class="nav-section">
+                <h3 class="nav-section-title">Management</h3>
+                <NavLink class="nav-link" href="/parent/dashboard" @onclick="HandleNavClick">
+                    <span class="nav-icon">👨‍👧‍👦</span>
+                    <span class="nav-text">Dashboard</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/parent/notifications" @onclick="HandleNavClick">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">Notifications</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/parent/progress" @onclick="HandleNavClick">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">Progress</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/parent/settings" @onclick="HandleNavClick">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Settings</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Account</h3>
+                <NavLink class="nav-link" href="/" @onclick="HandleNavClick">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Landing</span>
+                </NavLink>
+                <button class="nav-link logout-btn" @onclick="HandleLogout">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </div>
+        }
+        else if (RoleState?.CurrentRole == AppRole.Teacher)
+        {
+            <div class="nav-section">
+                <h3 class="nav-section-title">Teaching</h3>
+                <NavLink class="nav-link" href="/teacher/dashboard" @onclick="HandleNavClick">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span class="nav-text">Dashboard</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/teacher/classes" @onclick="HandleNavClick">
+                    <span class="nav-icon">🏫</span>
+                    <span class="nav-text">Classes</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/teacher/assignments" @onclick="HandleNavClick">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Assignments</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/teacher/reports" @onclick="HandleNavClick">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Reports</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Account</h3>
+                <NavLink class="nav-link" href="/" @onclick="HandleNavClick">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Landing</span>
+                </NavLink>
+                <button class="nav-link logout-btn" @onclick="HandleLogout">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </div>
+        }
+    </nav>
+</div>
+
+<div class="sidebar-backdrop @(isOpen ? "visible" : "")" @onclick="ToggleSidebar"></div>
+
+@code {
+    private bool isOpen = false;
+
+    public void ToggleSidebar()
+    {
+        try
+        {
+            isOpen = !isOpen;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling sidebar: {ex.Message}");
+        }
+    }
+
+    public void CloseSidebar()
+    {
+        try
+        {
+            isOpen = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error closing sidebar: {ex.Message}");
+        }
+    }
+
+    private void HandleNavClick()
+    {
+        try
+        {
+            CloseSidebar();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in nav click: {ex.Message}");
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        try
+        {
+            RoleState.Reset();
+            CloseSidebar();
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during logout: {ex.Message}");
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await ValueTask.CompletedTask;
+    }
+}

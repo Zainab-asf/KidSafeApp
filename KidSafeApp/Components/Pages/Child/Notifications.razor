@@ -1,16 +1,260 @@
 @namespace KidSafeApp.Components.Pages.Child
 @page "/child/notifications"
+@using KidSafeApp.Shared.DTOs
+@inject HttpClient Client
+@inject NavigationManager NavigationManager
 
 <ChildLayout>
-  <ChildHeader />
-
   <section class="ks-content">
-    <div class="ks-card">
-      <header class="ks-card-header">
-        <h2>Notifications</h2>
-      </header>
+    <div class="ks-notifications-container">
+      <!-- HEADER -->
+      <div class="ks-card mb-4">
+        <div class="d-flex align-items-start align-items-md-center justify-content-between flex-wrap gap-3">
+          <div>
+            <h1 class="ks-h1 mb-1">🔔 Notifications</h1>
+            <p class="text-secondary">Stay updated with your activity and achievements</p>
+          </div>
+          <div class="d-flex gap-2">
+            @if (NotificationList != null && NotificationList.Any(n => !n.IsRead))
+            {
+              <button class="btn btn-sm btn-outline-primary" @onclick="MarkAllAsRead">
+                Mark all as read
+              </button>
+            }
+            @if (NotificationList != null && NotificationList.Count > 0)
+            {
+              <button class="btn btn-sm btn-outline-danger" @onclick="ClearAll">
+                Clear all
+              </button>
+            }
+          </div>
+        </div>
+      </div>
 
-      <p>Notification list and preferences go here.</p>
+      <!-- NOTIFICATION FILTERS -->
+      <div class="ks-card mb-4">
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-sm" 
+                  style="@GetFilterButtonStyle("all")"
+                  @onclick="@(() => { FilterType = "all"; UpdateFilteredList(); })">
+            All
+          </button>
+          <button class="btn btn-sm" 
+                  style="@GetFilterButtonStyle("Achievement")"
+                  @onclick="@(() => { FilterType = "Achievement"; UpdateFilteredList(); })">
+            Achievements
+          </button>
+          <button class="btn btn-sm" 
+                  style="@GetFilterButtonStyle("Alert")"
+                  @onclick="@(() => { FilterType = "Alert"; UpdateFilteredList(); })">
+            Alerts
+          </button>
+          <button class="btn btn-sm" 
+                  style="@GetFilterButtonStyle("Info")"
+                  @onclick="@(() => { FilterType = "Info"; UpdateFilteredList(); })">
+            Info
+          </button>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS LIST -->
+      <div class="ks-card">
+        @if (IsLoading)
+        {
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        }
+        else if (FilteredNotifications == null || FilteredNotifications.Count == 0)
+        {
+          <div class="alert alert-info">
+            <strong>All caught up!</strong> You have no new notifications.
+          </div>
+        }
+        else
+        {
+          <div class="ks-notifications-list">
+            @foreach (var notification in FilteredNotifications)
+            {
+              <div class="ks-notification-item @(notification.IsRead ? "ks-read" : "ks-unread")">
+                <div class="ks-notification-icon" style="background-color: @GetTypeColor(notification.Type); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  @GetTypeIcon(notification.Type)
+                </div>
+
+                <div class="ks-notification-content flex-grow-1">
+                  <div class="ks-notification-header d-flex align-items-center justify-content-between gap-2">
+                    <h3 class="ks-notification-title mb-0">@notification.Title</h3>
+                    @if (!notification.IsRead)
+                    {
+                      <span class="ks-unread-dot" style="width: 8px; height: 8px; background-color: #2563eb; border-radius: 50%; flex-shrink: 0;"></span>
+                    }
+                  </div>
+                  <p class="ks-notification-message mb-2">@notification.Message</p>
+                  <small class="ks-notification-time text-secondary">
+                    @FormatTime(notification.CreatedAt)
+                  </small>
+                </div>
+
+                <div class="ks-notification-actions d-flex gap-2 flex-wrap">
+                  @if (!notification.IsRead)
+                  {
+                    <button class="btn btn-sm btn-link p-0" @onclick="@(() => MarkAsRead(notification.Id))">
+                      Mark as read
+                    </button>
+                  }
+                  @if (!string.IsNullOrEmpty(notification.ActionUrl))
+                  {
+                    <a href="@notification.ActionUrl" class="btn btn-sm btn-primary">View</a>
+                  }
+                  <button class="btn btn-sm btn-outline-danger" @onclick="@(() => DeleteNotification(notification.Id))">
+                    Delete
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
   </section>
 </ChildLayout>
+
+@code {
+    private List<NotificationDto> NotificationList;
+    private List<NotificationDto> FilteredNotifications;
+    private bool IsLoading = false;
+    private string FilterType = "all";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotifications();
+    }
+
+    private async Task LoadNotifications()
+    {
+        try
+        {
+            IsLoading = true;
+            var response = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications");
+            NotificationList = response ?? new();
+            UpdateFilteredList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading notifications: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void UpdateFilteredList()
+    {
+        FilteredNotifications = FilterType == "all" 
+            ? NotificationList?.OrderByDescending(n => n.CreatedAt).ToList() ?? new()
+            : NotificationList?.Where(n => n.Type == FilterType).OrderByDescending(n => n.CreatedAt).ToList() ?? new();
+    }
+
+    private async Task MarkAsRead(int id)
+    {
+        try
+        {
+            await Client.PutAsync($"api/notifications/{id}/mark-as-read", null);
+            await LoadNotifications();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking notification as read: {ex.Message}");
+        }
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        try
+        {
+            await Client.PutAsync("api/notifications/mark-all-as-read", null);
+            await LoadNotifications();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking all as read: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteNotification(int id)
+    {
+        try
+        {
+            await Client.DeleteAsync($"api/notifications/{id}");
+            await LoadNotifications();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting notification: {ex.Message}");
+        }
+    }
+
+    private async Task ClearAll()
+    {
+        if (NotificationList?.Count > 0)
+        {
+            try
+            {
+                foreach (var notification in NotificationList.ToList())
+                {
+                    await Client.DeleteAsync($"api/notifications/{notification.Id}");
+                }
+                await LoadNotifications();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error clearing notifications: {ex.Message}");
+            }
+        }
+    }
+
+    private string GetTypeColor(string type) => type switch
+    {
+        "Achievement" => "#f59e0b",
+        "Alert" => "#ef4444",
+        "Warning" => "#f97316",
+        _ => "#3b82f6"
+    };
+
+    private string GetTypeIcon(string type) => type switch
+    {
+        "Achievement" => "🏆",
+        "Alert" => "⚠️",
+        "Warning" => "⚡",
+        _ => "ℹ️"
+    };
+
+    private string GetFilterButtonStyle(string type)
+    {
+        bool isActive = (FilterType == type) || (FilterType == "all" && type == "all");
+        if (isActive)
+        {
+            return "background: linear-gradient(90deg, #3b82f6, #2563eb); color: white; border: none;";
+        }
+        return "background: transparent; color: #0f172a; border: 1px solid rgba(15, 23, 42, 0.1);";
+    }
+
+    private string FormatTime(DateTime createdAt)
+    {
+        var timeSpan = DateTime.UtcNow - createdAt;
+
+        if (timeSpan.TotalSeconds < 60)
+            return "just now";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes}m ago";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours}h ago";
+        if (timeSpan.TotalDays < 7)
+            return $"{(int)timeSpan.TotalDays}d ago";
+
+        return createdAt.ToString("MMM d, yyyy");
+    }
+}

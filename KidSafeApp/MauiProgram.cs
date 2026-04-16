@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using KidSafeApp.Services;
+using KidSafeApp.States;
+using System.Net.Http;
 
 namespace KidSafeApp
 {
@@ -17,8 +19,17 @@ namespace KidSafeApp
 
             builder.Services.AddMauiBlazorWebView();
 
+            builder.Services.AddScoped<RoleState>();
+            builder.Services.AddScoped<AccountManager>();
+            builder.Services.AddScoped<AdminSessionState>();
+
+            builder.Services.AddScoped(sp => new HttpClient
+            {
+                BaseAddress = new Uri("http://localhost:5065/")
+            });
+
             // Chat service for Messages.razor and dashboards
-            builder.Services.AddSingleton<ChatService>();
+            builder.Services.AddScoped<ChatService>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

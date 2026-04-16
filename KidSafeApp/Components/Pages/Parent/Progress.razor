@@ -1,0 +1,58 @@
+@namespace KidSafeApp.Components.Pages.Parent
+@page "/parent/progress"
+
+@inject KidSafeApp.States.RoleState RoleState
+@inject NavigationManager NavigationManager
+
+@if (!RoleState.IsRoleLoaded)
+{
+    <Components.Shared.RoleLoading />
+}
+else
+{
+<div class="container py-3 parent-module">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="h4 mb-1">Parent Progress</h1>
+            <div class="text-secondary">Track learning outcomes and weekly performance</div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
+            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <div class="card h-100"><div class="card-body"><div class="text-secondary">Completed Courses</div><div class="display-6 fw-bold">12</div></div></div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card h-100"><div class="card-body"><div class="text-secondary">Weekly Goal</div><div class="display-6 fw-bold">68%</div></div></div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="card h-100"><div class="card-body"><div class="text-secondary">Attendance</div><div class="display-6 fw-bold">95%</div></div></div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h2 class="h6">Recent Progress</h2>
+            <ul class="mb-0">
+                <li>Math Fundamentals - 100%</li>
+                <li>Online Safety - 80%</li>
+                <li>Reading Practice - 65%</li>
+            </ul>
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
+
+    private void HandleLogout()
+    {
+        RoleState.Reset();
+        NavigationManager.NavigateTo("/", replace: true);
+    }
+}
