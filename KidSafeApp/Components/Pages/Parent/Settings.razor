@@ -3,10 +3,11 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject HttpClient Client
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -25,16 +26,21 @@ else
     <div class="card mb-3">
         <div class="card-body">
             <h2 class="h6">Safety Controls</h2>
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="alert alert-danger">@_error</div>
+            }
+
             <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" checked />
+                <input class="form-check-input" type="checkbox" @bind="_settings.BlockAdultContent" />
                 <label class="form-check-label">Block mature content</label>
             </div>
             <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" checked />
+                <input class="form-check-input" type="checkbox" @bind="_settings.RequireParentApprovalForMessages" />
                 <label class="form-check-label">Require approval for new contacts</label>
             </div>
             <label class="form-label mt-2">Daily screen time limit (minutes)</label>
-            <input class="form-control" type="number" value="120" />
+            <input class="form-control" type="number" @bind="_settings.ScreenTimeLimit" />
         </div>
     </div>
 
@@ -42,20 +48,78 @@ else
         <div class="card-body">
             <h2 class="h6">Notifications</h2>
             <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" checked />
+                <input class="form-check-input" type="checkbox" @bind="_settings.EmailNotificationsEnabled" />
                 <label class="form-check-label">Email alerts</label>
             </div>
             <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" checked />
+                <input class="form-check-input" type="checkbox" @bind="_settings.PushNotificationsEnabled" />
                 <label class="form-check-label">Push alerts</label>
             </div>
-            <button class="btn btn-primary mt-3">Save Settings</button>
+            <button class="btn btn-primary mt-3" @onclick="SaveSettingsAsync" disabled="@_saving">@(_saving ? "Saving..." : "Save Settings")</button>
         </div>
     </div>
 </div>
 }
 
 @code {
+    private UserSettingsDto _settings = new()
+    {
+        ThemePreference = "light",
+        LanguagePreference = "en",
+        ParentEmail = string.Empty,
+        Bio = string.Empty,
+        AvatarUrl = string.Empty
+    };
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        _error = null;
+        try
+        {
+            _settings = await Client.GetFromJsonAsync<UserSettingsDto>("api/settings?role=Parent") ?? _settings;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        _error = null;
+        _saving = true;
+        try
+        {
+            var response = await Client.PutAsJsonAsync("api/settings?role=Parent", _settings);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<UserSettingsDto>();
+            if (updated is not null)
+            {
+                _settings = updated;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
     private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
 
     private void HandleLogout()

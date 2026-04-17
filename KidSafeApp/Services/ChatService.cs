@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using KidSafeApp.Models;
 using KidSafeApp.Helpers;
-using KidSafeApp.Shared.DTOs;
+using KidSafeApp.Shared.DTOs.Chat;
 using System.Net.Http.Json;
 
 namespace KidSafeApp.Services;

@@ -1,6 +1,6 @@
-using KidSafeApp.Backend;
 using KidSafeApp.Backend.Data;
 using KidSafeApp.Backend.Hubs;
+using KidSafeApp.Backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 

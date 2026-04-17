@@ -1,4 +1,4 @@
-@namespace KidSafeApp.Components.Chat
+@namespace KidSafeApp.Components.Pages.Child.Chat
 @using System.Net.Http.Headers;
 @inject HttpClient Client
 @inject IJSRuntime JsRuntime
@@ -14,9 +14,9 @@
 else
 {
     <div class="flex-grow-1 d-flex flex-column">
-        <div class="header d-flex justify-content-between bg-main">
-            <h4 class="text-white m-0 p-1">@SelectedUser.Name</h4>
-            <button class="btn btn-danger btn-sm" @onclick="HandleCancelClick">x</button>
+        <div class="header d-flex justify-content-between">
+            <div class="fw-semibold">@SelectedUser.Name</div>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="HandleCancelClick">Close</button>
         </div>
         
         <div class="messages-list">

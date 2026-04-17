@@ -4,7 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace KidSafeApp.Backend
+namespace KidSafeApp.Backend.Services
 {
     public class TokenService
     {

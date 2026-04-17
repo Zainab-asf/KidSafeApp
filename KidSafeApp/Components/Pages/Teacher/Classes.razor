@@ -3,10 +3,11 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject HttpClient Client
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -24,22 +25,72 @@ else
 
     <div class="card">
         <div class="card-body">
-            <h2 class="h6">Class List</h2>
-            <ul class="mb-3">
-                <li>Grade 5-A (24 students)</li>
-                <li>Grade 5-B (22 students)</li>
-                <li>Grade 6-A (26 students)</li>
-            </ul>
-            <div class="d-flex gap-2 flex-wrap">
-                <button class="btn btn-primary">Create Class</button>
-                <button class="btn btn-outline-primary">Manage Students</button>
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h2 class="h6 mb-0">Course Groups (Live)</h2>
+                <button class="btn btn-sm btn-outline-primary" @onclick="LoadAsync">Refresh</button>
             </div>
+
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="alert alert-danger">@_error</div>
+            }
+            else if (_loading)
+            {
+                <div class="text-secondary">Loading...</div>
+            }
+            else if (_courses.Count == 0)
+            {
+                <div class="alert alert-info">No courses available. Create one in Assignments.</div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var course in _courses)
+                    {
+                        <div class="col-12 col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="fw-bold">@course.Title</div>
+                                <div class="small text-secondary mb-2">@course.Subject • Difficulty @course.DifficultyLevel</div>
+                                <div class="small">Lessons: @course.Lessons.Count</div>
+                                <div class="small">Status: @(course.IsPublished ? "Published" : "Draft")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
         </div>
     </div>
 </div>
 }
 
 @code {
+    private List<CourseDto> _courses = new();
+    private bool _loading;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _courses = await Client.GetFromJsonAsync<List<CourseDto>>("api/teacher/courses") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
     private void HandleBack() => NavigationManager.NavigateTo("/teacher/dashboard");
 
     private void HandleLogout()

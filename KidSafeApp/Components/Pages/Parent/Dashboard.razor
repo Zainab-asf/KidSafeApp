@@ -3,10 +3,21 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject HttpClient Client
+@inject KidSafeApp.States.AuthenticationState AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <NavigateTo href="/login/parent" replace="true" />
+}
+else if (!string.Equals(AuthState.User?.Role, "Parent", StringComparison.OrdinalIgnoreCase))
+{
+    <NavigateTo href="/unauthorized" replace="true" />
+}
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -26,29 +37,45 @@ else
     <section class="portal-grid">
         <div class="portal-card">
             <div class="portal-card-title">Today’s Screen Time</div>
-            <div class="portal-stat">2h 15m</div>
-            <div class="portal-muted">+15m vs yesterday</div>
+            <div class="portal-stat">@_screenTimeToday</div>
+            <div class="portal-muted">Based on tracked learning activity</div>
         </div>
 
         <div class="portal-card">
             <div class="portal-card-title">Safety Alerts</div>
-            <div class="portal-stat">0</div>
-            <div class="portal-muted">No harmful content detected today</div>
+            <div class="portal-stat">@_safetyAlerts</div>
+            <div class="portal-muted">Derived from unread parent alerts</div>
         </div>
 
         <div class="portal-card">
             <div class="portal-card-title">Learning Progress</div>
-            <div class="portal-stat">68%</div>
-            <div class="portal-muted">Weekly goal on track</div>
+            <div class="portal-stat">@_avgProgress%</div>
+            <div class="portal-muted">Average across published courses</div>
         </div>
 
         <div class="portal-card">
             <div class="portal-card-title">Recent Activity</div>
-            <ul class="portal-list">
-                <li>Completed: Math Quiz</li>
-                <li>Chat: 12 messages</li>
-                <li>Game: Memory Match</li>
-            </ul>
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="small text-danger">@_error</div>
+            }
+            else if (_loading)
+            {
+                <div class="small text-secondary">Loading...</div>
+            }
+            else if (_courses.Count == 0)
+            {
+                <div class="small text-secondary">No activity yet.</div>
+            }
+            else
+            {
+                <ul class="portal-list">
+                    @foreach (var c in _courses.OrderByDescending(x => x.PercentageComplete).Take(3))
+                    {
+                        <li>@c.Title: @c.PercentageComplete% complete</li>
+                    }
+                </ul>
+            }
         </div>
     </section>
 
@@ -66,6 +93,51 @@ else
 }
 
 @code {
+    [Parameter] public int? ChildId { get; set; }
+
+    private bool _loading;
+    private string? _error;
+    private List<ChildCourseDto> _courses = new();
+    private List<NotificationDto> _notifications = new();
+    private int _avgProgress;
+    private int _safetyAlerts;
+    private string _screenTimeToday = "0m";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var courseUrl = ChildId.HasValue
+                ? $"api/child/learning/courses?childId={ChildId.Value}"
+                : "api/child/learning/courses";
+            _courses = await Client.GetFromJsonAsync<List<ChildCourseDto>>(courseUrl) ?? new();
+            _notifications = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications?unreadOnly=true&role=Parent") ?? new();
+
+            _avgProgress = _courses.Count == 0 ? 0 : (int)Math.Round(_courses.Average(c => c.PercentageComplete));
+            _safetyAlerts = _notifications.Count;
+
+            var estimatedMinutes = _courses.Sum(c => c.CompletedLessons * 10);
+            _screenTimeToday = estimatedMinutes >= 60
+                ? $"{estimatedMinutes / 60}h {estimatedMinutes % 60}m"
+                : $"{estimatedMinutes}m";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
     private void HandleBack()
     {
         RoleState.Reset();

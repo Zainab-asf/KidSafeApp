@@ -1,6 +1,10 @@
 @page "/admin-login"
+@using KidSafeApp.Helpers
 @inject NavigationManager Nav
+@inject HttpClient HttpClient
+@inject IJSRuntime JsRuntime
 @inject KidSafeApp.States.AdminSessionState AdminSession
+@inject KidSafeApp.States.RoleState RoleState
 
 <PageTitle>Admin Login</PageTitle>
 
@@ -32,27 +36,80 @@
     </div>
 
     <div class="text-muted small mt-3">
-        Temporary mode: hardcoded admin credentials.
+        Sign in with an Admin account created from the admin user list.
     </div>
 </div>
 
 @code {
+    [CascadingParameter(Name = "AuthenticationState")]
+    public AuthenticationState? AuthenticationState { get; set; }
+
     private string _username = string.Empty;
     private string _password = string.Empty;
     private string? _error;
+    private bool _isBusy;
 
-    private void SignIn()
+    private async Task SignIn()
     {
         _error = null;
-
-        if (_username == "admin" && _password == "admin")
+        _isBusy = true;
+        try
         {
-            AdminSession.SignInAdmin();
-            Nav.NavigateTo("/admin", replace: true);
-            return;
-        }
+            if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_password))
+            {
+                _error = "Username and password are required.";
+                return;
+            }
 
-        _error = "Invalid admin credentials";
+            var loginDto = new LoginDto
+            {
+                Username = _username,
+                Password = _password
+            };
+
+            var response = await HttpClient.PostAsJsonAsync("api/account/login", loginDto);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
+            if (authResult is null)
+            {
+                _error = "Unable to parse login response.";
+                return;
+            }
+
+            if (!string.Equals(authResult.User.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                _error = "This account is not an admin account.";
+                return;
+            }
+
+            if (AuthenticationState is null)
+            {
+                _error = "Authentication state is not available.";
+                return;
+            }
+
+            var serialized = JsonConverter.Serialize(authResult);
+            await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
+            AuthenticationState.LoadState(authResult);
+
+            AdminSession.SignInAdmin();
+            RoleState.Reset();
+            Nav.NavigateTo("/admin", replace: true);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
     }
 
     private void GoBack() => Nav.NavigateTo("/");

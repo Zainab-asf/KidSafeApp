@@ -1,6 +1,5 @@
 @namespace KidSafeApp.Components.Pages.Teacher
 @page "/teacher/assignments"
-@using KidSafeApp.Shared.DTOs
 @using Microsoft.AspNetCore.Components.Forms
 
 @inject KidSafeApp.States.RoleState RoleState
@@ -9,7 +8,7 @@
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -123,47 +122,26 @@ else
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => AddLessonAsync(course.Id)">Add Lesson</button>
                             </div>
                         </div>
+
+                        <hr />
+                        <div class="row g-2 align-items-end">
+                            <div class="col-12 col-md-8">
+                                <label class="form-label small">Assign to child</label>
+                                <select class="form-select form-select-sm" @bind="_selectedChildByCourse[course.Id]">
+                                    <option value="0">Select child</option>
+                                    @foreach (var child in _children)
+                                    {
+                                        <option value="@child.Id">@child.Name (@child.Username)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4 d-grid">
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => AssignCourseAsync(course.Id)">Assign Course</button>
+                            </div>
+                        </div>
                     </div>
                 }
             }
-
-    private async Task UploadLessonPdfAsync(int courseId, int courseLessonId, InputFileChangeEventArgs e)
-    {
-        _error = null;
-        try
-        {
-            var file = e.File;
-            if (file is null)
-            {
-                return;
-            }
-
-            if (!file.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                _error = "Only PDF files are allowed.";
-                return;
-            }
-
-            using var form = new MultipartFormDataContent();
-            await using var stream = file.OpenReadStream(25 * 1024 * 1024);
-            using var fileContent = new StreamContent(stream);
-            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
-            form.Add(fileContent, "file", file.Name);
-
-            var response = await Client.PostAsync($"api/teacher/courses/{courseId}/lessons/{courseLessonId}/content", form);
-            if (!response.IsSuccessStatusCode)
-            {
-                _error = await response.Content.ReadAsStringAsync();
-                return;
-            }
-
-            await LoadDataAsync();
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
         </div>
     </div>
 </div>
@@ -172,8 +150,10 @@ else
 @code {
     private List<CourseDto> _courses = new();
     private List<LessonCatalogItem> _lessonCatalog = new();
+    private List<AssignableChildDto> _children = new();
     private readonly Dictionary<int, int> _selectedLessonByCourse = new();
     private readonly Dictionary<int, int> _sortOrderByCourse = new();
+    private readonly Dictionary<int, int> _selectedChildByCourse = new();
     private bool _loading;
     private string? _error;
 
@@ -195,11 +175,13 @@ else
         {
             _courses = await Client.GetFromJsonAsync<List<CourseDto>>("api/teacher/courses") ?? new();
             _lessonCatalog = await Client.GetFromJsonAsync<List<LessonCatalogItem>>("api/teacher/courses/lessons/catalog") ?? new();
+            _children = await Client.GetFromJsonAsync<List<AssignableChildDto>>("api/teacher/courses/children") ?? new();
 
             foreach (var course in _courses)
             {
                 if (!_selectedLessonByCourse.ContainsKey(course.Id)) _selectedLessonByCourse[course.Id] = 0;
                 if (!_sortOrderByCourse.ContainsKey(course.Id)) _sortOrderByCourse[course.Id] = Math.Max(1, course.Lessons.Count + 1);
+                if (!_selectedChildByCourse.ContainsKey(course.Id)) _selectedChildByCourse[course.Id] = 0;
             }
         }
         catch (Exception ex)
@@ -209,6 +191,31 @@ else
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task AssignCourseAsync(int courseId)
+    {
+        _error = null;
+        try
+        {
+            var childId = _selectedChildByCourse.GetValueOrDefault(courseId, 0);
+            if (childId <= 0)
+            {
+                _error = "Please select a child to assign.";
+                return;
+            }
+
+            var response = await Client.PostAsJsonAsync($"api/teacher/courses/{courseId}/assign", new AssignCourseDto { ChildId = childId });
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
         }
     }
 

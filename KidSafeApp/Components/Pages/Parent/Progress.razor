@@ -3,10 +3,11 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject HttpClient Client
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -22,32 +23,82 @@ else
         </div>
     </div>
 
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
     <div class="row g-3">
         <div class="col-12 col-md-4">
-            <div class="card h-100"><div class="card-body"><div class="text-secondary">Completed Courses</div><div class="display-6 fw-bold">12</div></div></div>
+            <div class="card h-100"><div class="card-body"><div class="text-secondary">Completed Courses</div><div class="display-6 fw-bold">@_completedCourses</div></div></div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card h-100"><div class="card-body"><div class="text-secondary">Weekly Goal</div><div class="display-6 fw-bold">68%</div></div></div>
+            <div class="card h-100"><div class="card-body"><div class="text-secondary">Average Progress</div><div class="display-6 fw-bold">@_avgProgress%</div></div></div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card h-100"><div class="card-body"><div class="text-secondary">Attendance</div><div class="display-6 fw-bold">95%</div></div></div>
+            <div class="card h-100"><div class="card-body"><div class="text-secondary">Total Lessons</div><div class="display-6 fw-bold">@_totalLessons</div></div></div>
         </div>
     </div>
 
     <div class="card mt-3">
         <div class="card-body">
             <h2 class="h6">Recent Progress</h2>
-            <ul class="mb-0">
-                <li>Math Fundamentals - 100%</li>
-                <li>Online Safety - 80%</li>
-                <li>Reading Practice - 65%</li>
-            </ul>
+            @if (_loading)
+            {
+                <div class="text-secondary">Loading...</div>
+            }
+            else if (_courses.Count == 0)
+            {
+                <div class="text-secondary">No learning data available yet.</div>
+            }
+            else
+            {
+                <ul class="mb-0">
+                    @foreach (var c in _courses.OrderByDescending(c => c.PercentageComplete).Take(8))
+                    {
+                        <li>@c.Title - @c.PercentageComplete% (@c.CompletedLessons/@c.LessonCount lessons)</li>
+                    }
+                </ul>
+            }
         </div>
     </div>
 </div>
 }
 
 @code {
+    private bool _loading;
+    private string? _error;
+    private List<ChildCourseDto> _courses = new();
+    private int _completedCourses;
+    private int _avgProgress;
+    private int _totalLessons;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _courses = await Client.GetFromJsonAsync<List<ChildCourseDto>>("api/child/learning/courses") ?? new();
+            _completedCourses = _courses.Count(c => c.PercentageComplete >= 100);
+            _avgProgress = _courses.Count == 0 ? 0 : (int)Math.Round(_courses.Average(c => c.PercentageComplete));
+            _totalLessons = _courses.Sum(c => c.LessonCount);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
     private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
 
     private void HandleLogout()

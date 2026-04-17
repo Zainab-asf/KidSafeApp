@@ -1,4 +1,4 @@
-﻿using KidSafeApp.Shared;
+﻿using KidSafeApp.Shared.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 

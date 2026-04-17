@@ -3,10 +3,21 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject HttpClient Client
+@inject KidSafeApp.States.AuthenticationState AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+    <NavigateTo href="/login/teacher" replace="true" />
+}
+else if (!string.Equals(AuthState.User?.Role, "Teacher", StringComparison.OrdinalIgnoreCase))
+{
+    <NavigateTo href="/unauthorized" replace="true" />
+}
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -25,30 +36,46 @@ else
 
     <section class="portal-grid">
         <div class="portal-card">
-            <div class="portal-card-title">Active Class</div>
-            <div class="portal-stat">Grade 5-A</div>
-            <div class="portal-muted">24 students</div>
+            <div class="portal-card-title">Courses</div>
+            <div class="portal-stat">@_summary.TotalCourses</div>
+            <div class="portal-muted">@_summary.PublishedCourses published</div>
         </div>
 
         <div class="portal-card">
             <div class="portal-card-title">Pending Reviews</div>
-            <div class="portal-stat">5</div>
-            <div class="portal-muted">Quizzes & tasks to review</div>
+            <div class="portal-stat">@_summary.PendingLessonSubmissions</div>
+            <div class="portal-muted">Lesson submissions pending completion</div>
         </div>
 
         <div class="portal-card">
             <div class="portal-card-title">Assignments</div>
-            <div class="portal-stat">3</div>
-            <div class="portal-muted">Active this week</div>
+            <div class="portal-stat">@_summary.TotalLessons</div>
+            <div class="portal-muted">@_summary.PublishedLessons published lessons</div>
         </div>
 
         <div class="portal-card">
             <div class="portal-card-title">Student Activity</div>
-            <ul class="portal-list">
-                <li>Zainab finished: Reading Task</li>
-                <li>Ali started: Science Quiz</li>
-                <li>Sara earned: Badge</li>
-            </ul>
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="small text-danger">@_error</div>
+            }
+            else if (_loading)
+            {
+                <div class="small text-secondary">Loading...</div>
+            }
+            else if (_courses.Count == 0)
+            {
+                <div class="small text-secondary">No course activity yet.</div>
+            }
+            else
+            {
+                <ul class="portal-list">
+                    @foreach (var c in _courses.Take(3))
+                    {
+                        <li>@c.Title - @(c.IsPublished ? "Published" : "Draft")</li>
+                    }
+                </ul>
+            }
         </div>
     </section>
 
@@ -66,6 +93,35 @@ else
 }
 
 @code {
+    private TeacherSummaryDto _summary = new();
+    private List<CourseDto> _courses = new();
+    private bool _loading;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _summary = await Client.GetFromJsonAsync<TeacherSummaryDto>("api/teacher/courses/summary") ?? new();
+            _courses = await Client.GetFromJsonAsync<List<CourseDto>>("api/teacher/courses") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
     private void HandleBack() => NavigationManager.NavigateTo("/", replace: true);
 
     private void HandleLogout()

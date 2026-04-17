@@ -3,10 +3,20 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject KidSafeApp.States.AuthenticationState AuthState
+
+@if (!AuthState.IsAuthenticated)
+{
+  <NavigateTo href="/login/child" replace="true" />
+}
+else if (!string.Equals(AuthState.User?.Role, "Child", StringComparison.OrdinalIgnoreCase))
+{
+  <NavigateTo href="/unauthorized" replace="true" />
+}
 
 @if (!RoleState.IsRoleLoaded)
 {
-  <Components.Shared.RoleLoading />
+  <RoleLoading />
 }
 else
 {

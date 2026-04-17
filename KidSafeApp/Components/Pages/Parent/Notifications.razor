@@ -3,10 +3,11 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
+@inject HttpClient Client
 
 @if (!RoleState.IsRoleLoaded)
 {
-    <Components.Shared.RoleLoading />
+    <RoleLoading />
 }
 else
 {
@@ -22,14 +23,34 @@ else
         </div>
     </div>
 
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
     <div class="card mb-3">
         <div class="card-body">
             <h2 class="h6">Unread Alerts</h2>
-            <ul class="mb-0">
-                <li>Screen time limit exceeded (Today, 4:20 PM)</li>
-                <li>New message from teacher (Today, 2:10 PM)</li>
-                <li>Progress milestone reached (Yesterday)</li>
-            </ul>
+            @if (_loading)
+            {
+                <div class="text-secondary">Loading alerts...</div>
+            }
+            else if (_alerts.Count == 0)
+            {
+                <div class="text-secondary">No alerts right now.</div>
+            }
+            else
+            {
+                <ul class="mb-0">
+                    @foreach (var alert in _alerts)
+                    {
+                        <li>
+                            <strong>@alert.Title</strong>: @alert.Message
+                            <span class="small text-secondary">(@alert.CreatedAt.ToLocalTime().ToString("g"))</span>
+                        </li>
+                    }
+                </ul>
+            }
         </div>
     </div>
 
@@ -37,8 +58,8 @@ else
         <div class="card-body">
             <h2 class="h6">Actions</h2>
             <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-primary">Mark all as read</button>
-                <button class="btn btn-outline-primary">Notification preferences</button>
+                <button class="btn btn-primary" @onclick="MarkAllAsRead">Mark all as read</button>
+                <button class="btn btn-outline-primary" @onclick="HandleGoToSettings">Notification preferences</button>
             </div>
         </div>
     </div>
@@ -46,6 +67,80 @@ else
 }
 
 @code {
+    private bool _loading;
+    private string? _error;
+    private readonly List<NotificationDto> _alerts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _alerts.Clear();
+        try
+        {
+            var notifications = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications?unreadOnly=true&role=Parent") ?? new();
+
+            if (notifications.Count == 0)
+            {
+                await SeedNotificationsFromProgressAsync();
+                notifications = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications?unreadOnly=true&role=Parent") ?? new();
+            }
+
+            _alerts.AddRange(notifications);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        try
+        {
+            await Client.PutAsync("api/notifications/mark-all-as-read?role=Parent", null);
+            _alerts.Clear();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task SeedNotificationsFromProgressAsync()
+    {
+        var courses = await Client.GetFromJsonAsync<List<ChildCourseDto>>("api/child/learning/courses") ?? new();
+        foreach (var c in courses)
+        {
+            var message = c.PercentageComplete == 0
+                ? $"{c.Title} has not started yet."
+                : c.PercentageComplete < 100
+                    ? $"{c.Title} is in progress at {c.PercentageComplete}%."
+                    : $"{c.Title} has been completed successfully.";
+
+            var payload = new
+            {
+                Title = "Learning Update",
+                Message = message,
+                Type = c.PercentageComplete >= 100 ? "Achievement" : "Info",
+                ActionUrl = "/parent/progress"
+            };
+
+            await Client.PostAsJsonAsync("api/notifications/send?role=Parent", payload);
+        }
+    }
+
+    private void HandleGoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+
     private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
 
     private void HandleLogout()
