@@ -8,15 +8,9 @@ main {
     flex: 1;
 }
 
-.sidebar {
-    background: rgba(255, 255, 255, 0.92);
-    border-right: 1px solid rgba(15, 23, 42, 0.10);
-    backdrop-filter: blur(10px);
-}
-
 .top-row {
-    background: linear-gradient(90deg, #3b82f6, #2563eb);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    background: #C0E1D2;
+    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.22);
     justify-content: space-between;
     height: 3.5rem;
     display: flex;
@@ -28,15 +22,15 @@ main {
     display: flex;
     align-items: center;
     gap: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.25rem;
-    color: #ffffff;
+    color: var(--ks-text);
 }
 
 .hamburger-menu {
     background: none;
     border: none;
-    color: white;
+    color: var(--ks-text);
     cursor: pointer;
     padding: 0.5rem;
     display: flex;
@@ -53,32 +47,12 @@ main {
 .hamburger-menu span {
     width: 24px;
     height: 2.5px;
-    background: white;
+    background: var(--ks-text);
     border-radius: 2px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.navbar-menu {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        text-decoration: none;
-        color: rgba(255, 255, 255, 0.9);
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-        color: #ffffff;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
 
 @media (max-width: 767.98px) {
     .hamburger-menu {
@@ -101,18 +75,7 @@ main {
 
 @media (min-width: 768px) {
     .hamburger-menu {
-        display: none;
-    }
-
-    .page {
-        flex-direction: row;
-    }
-
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
+        display: flex;
     }
 
     .top-row {
@@ -132,15 +95,6 @@ main {
         padding-right: 1.5rem !important;
     }
 
-    .main-with-sidebar {
-        padding-left: 250px;
-    }
-
-    .main-with-sidebar .top-row,
-    .main-with-sidebar article {
-        margin-left: 0;
-        width: 100%;
-    }
 }
 
 article {

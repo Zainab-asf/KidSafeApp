@@ -22,6 +22,105 @@ namespace KidSafeApp.Backend.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoom", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(80)");
+
+                    b.Property<string>("Section")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<int?>("TeacherId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeacherId");
+
+                    b.ToTable("ClassRoom");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoomCourseAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ClassRoomId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("ClassRoomId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("ClassRoomCourseAssignment");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoomStudent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ClassRoomId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("ClassRoomId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("ClassRoomStudent");
+                });
+
             modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.Course", b =>
                 {
                     b.Property<int>("Id")
@@ -66,6 +165,36 @@ namespace KidSafeApp.Backend.Data.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("Course");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.CourseAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ChildId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildId");
+
+                    b.HasIndex("CourseId", "ChildId")
+                        .IsUnique();
+
+                    b.ToTable("CourseAssignment");
                 });
 
             modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.CourseLesson", b =>
@@ -480,6 +609,54 @@ namespace KidSafeApp.Backend.Data.Migrations
                     b.ToTable("UserSettings");
                 });
 
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoom", b =>
+                {
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.User", "Teacher")
+                        .WithMany()
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Teacher");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoomCourseAssignment", b =>
+                {
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.ClassRoom", "ClassRoom")
+                        .WithMany("CourseAssignments")
+                        .HasForeignKey("ClassRoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ClassRoom");
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoomStudent", b =>
+                {
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.ClassRoom", "ClassRoom")
+                        .WithMany("Students")
+                        .HasForeignKey("ClassRoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ClassRoom");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.Course", b =>
                 {
                     b.HasOne("KidSafeApp.Backend.Data.Entities.User", "Teacher")
@@ -489,6 +666,25 @@ namespace KidSafeApp.Backend.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Teacher");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.CourseAssignment", b =>
+                {
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.User", "Child")
+                        .WithMany()
+                        .HasForeignKey("ChildId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("KidSafeApp.Backend.Data.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Child");
+
+                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.CourseLesson", b =>
@@ -579,6 +775,13 @@ namespace KidSafeApp.Backend.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.ClassRoom", b =>
+                {
+                    b.Navigation("CourseAssignments");
+
+                    b.Navigation("Students");
                 });
 
             modelBuilder.Entity("KidSafeApp.Backend.Data.Entities.Course", b =>

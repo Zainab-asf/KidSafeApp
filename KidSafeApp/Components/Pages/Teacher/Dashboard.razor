@@ -24,8 +24,8 @@ else
 <div class="portal">
     <header class="portal-header">
         <div>
-            <h1 class="portal-title">Teacher Portal</h1>
-            <div class="portal-subtitle">Manage learning and track student activity.</div>
+            <h1 class="portal-title">Teacher Portal 👩‍🏫</h1>
+            <div class="portal-subtitle">Simple classroom overview for daily teaching.</div>
         </div>
 
         <div class="portal-actions">
@@ -36,25 +36,25 @@ else
 
     <section class="portal-grid">
         <div class="portal-card">
-            <div class="portal-card-title">Courses</div>
+            <div class="portal-card-title">Courses 📚</div>
             <div class="portal-stat">@_summary.TotalCourses</div>
             <div class="portal-muted">@_summary.PublishedCourses published</div>
         </div>
 
         <div class="portal-card">
-            <div class="portal-card-title">Pending Reviews</div>
+            <div class="portal-card-title">Pending Reviews ⏳</div>
             <div class="portal-stat">@_summary.PendingLessonSubmissions</div>
             <div class="portal-muted">Lesson submissions pending completion</div>
         </div>
 
         <div class="portal-card">
-            <div class="portal-card-title">Assignments</div>
+            <div class="portal-card-title">Assignments 📝</div>
             <div class="portal-stat">@_summary.TotalLessons</div>
             <div class="portal-muted">@_summary.PublishedLessons published lessons</div>
         </div>
 
         <div class="portal-card">
-            <div class="portal-card-title">Student Activity</div>
+            <div class="portal-card-title">Student Activity 📈</div>
             @if (!string.IsNullOrWhiteSpace(_error))
             {
                 <div class="small text-danger">@_error</div>
@@ -81,7 +81,7 @@ else
 
     <section class="portal-wide">
         <div class="portal-card portal-card-wide">
-            <div class="portal-card-title">Quick Actions</div>
+            <div class="portal-card-title">Quick Actions ⚡</div>
             <div class="portal-controls">
                 <button class="btn btn-primary" type="button" @onclick="GoToAssignments">Create Assignment</button>
                 <button class="btn btn-outline-primary" type="button" @onclick="GoToClasses">Open Gradebook</button>

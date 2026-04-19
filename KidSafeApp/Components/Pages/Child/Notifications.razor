@@ -61,7 +61,7 @@
         @if (IsLoading)
         {
           <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border" style="color: var(--ks-green);" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
@@ -87,7 +87,7 @@
                     <h3 class="ks-notification-title mb-0">@notification.Title</h3>
                     @if (!notification.IsRead)
                     {
-                      <span class="ks-unread-dot" style="width: 8px; height: 8px; background-color: #2563eb; border-radius: 50%; flex-shrink: 0;"></span>
+                      <span class="ks-unread-dot" style="width: 8px; height: 8px; background-color: #C0E1D2; border-radius: 50%; flex-shrink: 0;"></span>
                     }
                   </div>
                   <p class="ks-notification-message mb-2">@notification.Message</p>
@@ -217,10 +217,10 @@
 
     private string GetTypeColor(string type) => type switch
     {
-        "Achievement" => "#f59e0b",
-        "Alert" => "#ef4444",
-        "Warning" => "#f97316",
-        _ => "#3b82f6"
+        "Achievement" => "#DC9B9B",
+        "Alert" => "#DC9B9B",
+        "Warning" => "#DC9B9B",
+        _ => "#C0E1D2"
     };
 
     private string GetTypeIcon(string type) => type switch
@@ -236,9 +236,9 @@
         bool isActive = (FilterType == type) || (FilterType == "all" && type == "all");
         if (isActive)
         {
-            return "background: linear-gradient(90deg, #3b82f6, #2563eb); color: white; border: none;";
+            return "background: linear-gradient(90deg, #E5EEE4, #C0E1D2); color: #C0E1D2; border: none;";
         }
-        return "background: transparent; color: #0f172a; border: 1px solid rgba(15, 23, 42, 0.1);";
+        return "background: transparent; color: #DC9B9B; border: 1px solid rgba(15, 23, 42, 0.1);";
     }
 
     private string FormatTime(DateTime createdAt)

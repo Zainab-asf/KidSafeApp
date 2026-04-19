@@ -22,7 +22,7 @@
         <div class="row g-3 g-md-4 mb-4">
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #E5EEE4, #C0E1D2);">
                 <span>📚</span>
               </div>
               <div class="ks-stat-content">
@@ -35,7 +35,7 @@
 
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #16a34a, #15803d);">
+              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #C0E1D2, #C0E1D2);">
                 <span>✅</span>
               </div>
               <div class="ks-stat-content">
@@ -48,7 +48,7 @@
 
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #DC9B9B, #DC9B9B);">
                 <span>🔥</span>
               </div>
               <div class="ks-stat-content">
@@ -61,7 +61,7 @@
 
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #DC9B9B, #7c3aed);">
                 <span>⭐</span>
               </div>
               <div class="ks-stat-content">
@@ -83,7 +83,7 @@
         @if (IsLoading)
         {
           <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border" style="color: var(--ks-green);" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
@@ -118,7 +118,7 @@
                     <div class="progress ks-progress-bar" style="height: 8px;">
                       <div class="progress-bar ks-progress-fill"
                            role="progressbar"
-                           style="width: @progress.PercentageComplete%; background: linear-gradient(90deg, #3b82f6, #2563eb);"
+                           style="width: @progress.PercentageComplete%; background: linear-gradient(90deg, #E5EEE4, #C0E1D2);"
                            aria-valuenow="@progress.PercentageComplete"
                            aria-valuemin="0"
                            aria-valuemax="100">
@@ -221,9 +221,9 @@
 
     private string GetStatusColor(string status) => status switch
     {
-        "Completed" => "#16a34a",
-        "In Progress" => "#3b82f6",
-        _ => "#94a3b8"
+        "Completed" => "#C0E1D2",
+        "In Progress" => "#C0E1D2",
+        _ => "#DC9B9B"
     };
 
     public class ProgressSummaryDto

@@ -3,57 +3,59 @@
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
 @inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.States.AdminSessionState AdminSession
 
 <PageTitle>KidSafeApp</PageTitle>
 
-<div class="container">
-    <div class="row">
-        <div class="col-lg-4 col-md-3 col-sm-2"></div>
-        <div class="col-lg-4 col-md-6 col-sm-8">
-            <EditForm Model="LoginModel" OnValidSubmit="LoginAsync">
-                <div class="card br-0 mt-5">
-                    <div class="card-header bg-main br-0">
-                        <h2 class="text-white mb-0">KidSafeApp - Login</h2>
-                    </div>
-                    <div class="card-body">
-                        <DataAnnotationsValidator />
-                        @if (!string.IsNullOrWhiteSpace(errorMessage))
-                        {
-                            <p class="text-danger">@errorMessage</p>
-                        }
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <InputText @bind-Value="LoginModel.Username" DisplayName="Username" class="form-control" placeholder="Enter username" />
-                            <ValidationMessage For="() => LoginModel.Username" />
+<div class="ks-auth-shell auth-page-clean">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 col-md-3 col-sm-2"></div>
+            <div class="col-lg-4 col-md-6 col-sm-8">
+                <EditForm Model="LoginModel" OnValidSubmit="LoginAsync">
+                    <div class="card ks-auth-card br-0 mt-5">
+                        <div class="card-header bg-main br-0 ks-auth-header">
+                            <h2 class="mb-0">KidSafe Login 👋</h2>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <InputText type="password" @bind-Value="LoginModel.Password" DisplayName="Password" class="form-control" placeholder="Enter password" />
-                            <ValidationMessage For="() => LoginModel.Password" />
+                        <div class="card-body">
+                            <DataAnnotationsValidator />
+                            @if (!string.IsNullOrWhiteSpace(errorMessage))
+                            {
+                                <p class="text-danger">@errorMessage</p>
+                            }
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <InputText @bind-Value="LoginModel.Username" DisplayName="Username" class="form-control" placeholder="Enter username" />
+                                <ValidationMessage For="() => LoginModel.Username" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <InputText type="password" @bind-Value="LoginModel.Password" DisplayName="Password" class="form-control" placeholder="Enter password" />
+                                <ValidationMessage For="() => LoginModel.Password" />
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <NavLink href="/" class="btn btn-outline-primary float-start">Back</NavLink>
+
+                            @if (_isBusy)
+                            {
+                                <button class="btn btn-success float-end" type="button" disabled>
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Loading...
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-success float-end">Login ✅</button>
+                            }
+
+                            <div class="clearfix"></div>
                         </div>
                     </div>
-                    <div class="card-footer">
-                        <NavLink href="register" class="btn btn-outline-primary float-start">Register</NavLink>
-
-                        @if (_isBusy)
-                        {
-                            <button class="btn btn-success float-end" type="button" disabled>
-                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                Loading...
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="submit" class="btn btn-success float-end">Login</button>
-                        }
-
-
-                        <div class="clearfix"></div>
-                    </div>
-                </div>
-            </EditForm>
+                </EditForm>
+            </div>
+            <div class="col-lg-4 col-md-3 col-sm-2"></div>
         </div>
-        <div class="col-lg-4 col-md-3 col-sm-2"></div>
     </div>
 </div>
 
@@ -89,13 +91,37 @@
                 await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
 
                 AuthenticationState.LoadState(authResult);
-                var destination = RoleState.CurrentRole switch
+                var destination = authResult.User.Role switch
                 {
-                    KidSafeApp.States.AppRole.Child => "/child/dashboard",
-                    KidSafeApp.States.AppRole.Parent => "/parent/dashboard",
-                    KidSafeApp.States.AppRole.Teacher => "/teacher/dashboard",
-                    _ => "/auth"
+                    "Child" => "/child/dashboard",
+                    "Parent" => "/parent/dashboard",
+                    "Teacher" => "/teacher/dashboard",
+                    "Admin" => "/admin",
+                    _ => "/login"
                 };
+
+                var selectedRole = authResult.User.Role switch
+                {
+                    "Child" => KidSafeApp.States.AppRole.Child,
+                    "Parent" => KidSafeApp.States.AppRole.Parent,
+                    "Teacher" => KidSafeApp.States.AppRole.Teacher,
+                    _ => KidSafeApp.States.AppRole.None
+                };
+
+                if (string.Equals(authResult.User.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    AdminSession.SignInAdmin();
+                }
+                else
+                {
+                    AdminSession.SignOut();
+                }
+
+                if (selectedRole != KidSafeApp.States.AppRole.None)
+                {
+                    RoleState.SelectRole(selectedRole);
+                    await RoleState.InitializeAsync(selectedRole);
+                }
 
                 NavigationManager.NavigateTo(destination, replace: true);
             }

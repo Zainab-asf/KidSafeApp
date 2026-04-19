@@ -1,19 +1,19 @@
 .ks-dashboard{
   min-height: 100vh;
-  background: linear-gradient(135deg, #f6f7fb 0%, #e8f0fe 100%);
-  color:#0f172a;
+  background: var(--ks-bg);
+  color: var(--ks-text);
 }
 
 .ks-shell{
-  background: #ffffff;
-  border:1px solid rgba(15, 23, 42, 0.10);
-  border-radius:1.25rem;
-  padding:1rem;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 @media (min-width: 768px){
-  .ks-shell{ padding:1.5rem; }
+  .ks-shell{ padding:0; }
 }
 
 .ks-pill{
@@ -23,19 +23,19 @@
   border-radius:999px;
   font-weight:700;
   letter-spacing:.2px;
-  background:rgba(37, 99, 235, 0.10);
-  border:1px solid rgba(37, 99, 235, 0.28);
-  color: #0f172a;
+  background:rgba(34, 197, 94, 0.12);
+  border:1px solid rgba(34, 197, 94, 0.35);
+  color: var(--ks-text);
 }
 
 .ks-h1{
   font-weight:850;
   letter-spacing:-.5px;
-  color: #0f172a;
+  color: var(--ks-text);
 }
 
 .ks-accent{
-  background: linear-gradient(90deg, #2563eb, #1d4ed8);
+  background: #C0E1D2;
   -webkit-background-clip:text;
   background-clip:text;
   color: transparent;
@@ -45,22 +45,27 @@
 
 .ks-search{ width:min(340px, 100%); }
 .ks-search .form-control{
-  background: #f9fafb;
+  background: var(--ks-surface);
   border: 1px solid rgba(15, 23, 42, 0.12);
-  color:#0f172a;
+  color: var(--ks-text);
 }
 .ks-search .form-control::placeholder{ color: rgba(15, 23, 42, 0.55); }
 
 .ks-card{
   height:100%;
-  border-radius:1rem;
-  border:1px solid rgba(15, 23, 42, 0.10);
-  background: #ffffff;
-  padding:1rem;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  border-radius:1.1rem;
+  border:1px solid rgba(15, 23, 42, 0.06);
+  background: var(--ks-surface);
+  padding:1.15rem;
+  box-shadow: none;
 }
 
 .ks-card-lg{ padding:1.25rem; }
+
+.ks-card-primary {
+  background: var(--ks-yellow-soft);
+  border-color: rgba(132, 204, 22, 0.28);
+}
 
 .ks-card-top{
   display:flex;
@@ -74,20 +79,25 @@
   border-radius:12px;
   display:grid;
   place-items:center;
-  background:rgba(37, 99, 235, 0.10);
-  border:1px solid rgba(37, 99, 235, 0.20);
+  background:rgba(34, 197, 94, 0.12);
+  border:1px solid rgba(34, 197, 94, 0.24);
   font-size:18px;
-  color: #2563eb;
+  color: var(--ks-green-dark);
 }
 
-.ks-card-title{ font-weight:750; color: #0f172a; }
+.ks-card-title{ font-weight:750; color: var(--ks-text); }
 .ks-card-sub{ color: rgba(15, 23, 42, 0.70); font-size:.9rem; }
 
+.ks-card-title,
+.ks-course-header {
+  color: var(--ks-green-dark);
+}
+
 .ks-stat{
-  font-size:2rem;
+  font-size:1.85rem;
   font-weight:900;
   margin-top:.75rem;
-  color: #0f172a;
+  color: var(--ks-text);
 }
 
 .ks-trend{
@@ -107,14 +117,14 @@
   gap:.7rem;
   padding:.75rem .85rem;
   border-radius:.85rem;
-  border:1px solid rgba(15, 23, 42, 0.10);
-  background: #f9fafb;
+  border:1px solid rgba(15, 23, 42, 0.06);
+  background: var(--ks-surface);
 }
 
 .ks-dot{ width:10px; height:10px; border-radius:999px; display:inline-block; }
-.ks-dot-success{ background:#16a34a; }
-.ks-dot-info{ background:#3b82f6; }
-.ks-dot-warning{ background:#f59e0b; }
+.ks-dot-success{ background:#C0E1D2; }
+.ks-dot-info{ background:#C0E1D2; }
+.ks-dot-warning{ background:#DC9B9B; }
 
 .ks-profile{
   display:flex;
@@ -122,8 +132,8 @@
   gap:.9rem;
   padding:.85rem;
   border-radius:1rem;
-  border:1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.04);
+  border:1px solid rgba(15, 23, 42, 0.06);
+  background: var(--ks-surface);
 }
 
 .ks-avatar{
@@ -133,50 +143,50 @@
   display:grid;
   place-items:center;
   font-weight:900;
-  background: rgba(124,58,237,.22);
-  border: 1px solid rgba(124,58,237,.35);
+  background: rgba(132, 204, 22, 0.2);
+  border: 1px solid rgba(132, 204, 22, 0.35);
 }
 
 .ks-note{
   padding:.9rem;
   border-radius:1rem;
-  border:1px solid rgba(56,189,248,.30);
-  background: rgba(56,189,248,.08);
+  border:1px solid rgba(132, 204, 22, 0.24);
+  background: var(--ks-yellow-soft);
 }
 
 /* Buttons on dark surfaces */
 .btn-outline-light{
   border-color:rgba(255,255,255,.35);
-  color:#e8eefc;
+  color: var(--ks-surface);
 }
 .btn-outline-light:hover{
   background:rgba(255,255,255,.08);
   border-color:rgba(255,255,255,.5);
-  color:#e8eefc;
+  color: var(--ks-surface);
 }
 
 .btn-primary{
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background: var(--ks-green);
   border-color:transparent;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 4px 12px rgba(132, 204, 22, 0.25);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary:hover{ 
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 6px 16px rgba(132, 204, 22, 0.32);
   transform: translateY(-2px);
 }
 
 .btn-outline-primary{
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--ks-green);
+  color: var(--ks-green-dark);
 }
 
 .btn-outline-primary:hover{
-  background: rgba(37, 99, 235, 0.1);
-  border-color: #2563eb;
-  color: #2563eb;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: var(--ks-green);
+  color: var(--ks-green-dark);
 }
 
 /* COURSE GRID */
@@ -188,9 +198,9 @@
 }
 
 .ks-course-card {
-  border: 1px solid rgba(15, 23, 42, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 1rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  background: var(--ks-surface);
   padding: 1.25rem;
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -198,8 +208,8 @@
 }
 
 .ks-course-card:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
-  border-color: #2563eb;
+  box-shadow: 0 8px 24px rgba(132, 204, 22, 0.16);
+  border-color: var(--ks-green);
   transform: translateY(-4px);
 }
 
@@ -209,28 +219,28 @@
   border-radius: 999px;
   font-weight: 700;
   font-size: 0.75rem;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%);
-  color: #2563eb;
-  border: 1px solid rgba(37, 99, 235, 0.3);
+  background: var(--ks-yellow-soft);
+  color: var(--ks-green-dark);
+  border: 1px solid rgba(132, 204, 22, 0.34);
   margin-bottom: 0.75rem;
 }
 
 .ks-badge-warning {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-  color: #d97706;
+  color: var(--ks-peach);
   border-color: rgba(245, 158, 11, 0.3);
 }
 
 .ks-badge-secondary {
   background: linear-gradient(135deg, rgba(107, 114, 128, 0.15) 0%, rgba(107, 114, 128, 0.08) 100%);
-  color: #6b7280;
+  color: var(--ks-muted);
   border-color: rgba(107, 114, 128, 0.3);
 }
 
 .ks-course-header {
   font-weight: 700;
   font-size: 1.05rem;
-  color: #0f172a;
+  color: var(--ks-text);
   margin-bottom: 0.5rem;
 }
 
@@ -238,7 +248,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--ks-muted);
 }
 
 .ks-course-duration {
@@ -247,7 +257,7 @@
 
 .ks-course-progress {
   font-weight: 600;
-  color: #2563eb;
+  color: var(--ks-green-dark);
 }
 
 .ks-progress-bar {
@@ -259,7 +269,7 @@
 
 .ks-progress {
   height: 100%;
-  background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  background: var(--ks-green);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
@@ -276,16 +286,16 @@
   gap: 0.75rem;
   padding: 0.9rem;
   border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: #f9fafb;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: var(--ks-surface);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .ks-chat-item:hover {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.04) 100%);
-  border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  background: var(--ks-yellow-soft);
+  border-color: var(--ks-green);
+  box-shadow: 0 4px 12px rgba(132, 204, 22, 0.14);
 }
 
 .ks-chat-avatar {
@@ -295,9 +305,9 @@
   display: grid;
   place-items: center;
   font-weight: 700;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%);
-  border: 1px solid rgba(37, 99, 235, 0.25);
-  color: #2563eb;
+  background: var(--ks-yellow-soft);
+  border: 1px solid rgba(132, 204, 22, 0.3);
+  color: var(--ks-green-dark);
   flex-shrink: 0;
 }
 
@@ -308,7 +318,7 @@
   min-width: 24px;
   height: 24px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: var(--ks-peach);
   color: white;
   font-weight: 700;
   font-size: 0.75rem;
@@ -340,14 +350,14 @@
   gap: 0.9rem;
   padding: 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: var(--ks-surface);
   transition: all 0.2s ease;
 }
 
 .ks-tip-item:hover {
-  border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+  border-color: var(--ks-green);
+  box-shadow: 0 4px 12px rgba(132, 204, 22, 0.12);
 }
 
 .ks-tip-icon {
@@ -371,8 +381,8 @@
   gap: 0.6rem;
   padding: 1.25rem;
   border-radius: 1.25rem;
-  border: 2px solid rgba(15, 23, 42, 0.10);
-  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--ks-surface);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
 }
@@ -406,5 +416,5 @@
 .ks-badge-label {
   font-weight: 600;
   font-size: 0.85rem;
-  color: #0f172a;
+  color: var(--ks-text);
 }

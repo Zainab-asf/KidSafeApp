@@ -1,4 +1,13 @@
 @page "/admin"
+@page "/admin/dashboard"
+@page "/admin/users"
+@page "/admin/roles"
+@page "/admin/approvals"
+@page "/admin/classes"
+@page "/admin/students"
+@page "/admin/teachers"
+@page "/admin/courses"
+@page "/admin/activity-logs"
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JsRuntime
@@ -19,284 +28,588 @@
     return;
 }
 
-<div class="container-fluid py-3">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h1 class="h3 mb-0">Admin Dashboard</h1>
-            <div class="text-muted">Create users, manage classes, and control access.</div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" @onclick="Reload">Refresh</button>
-            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
-        </div>
-    </div>
+<div class="admin-shell">
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6 mb-3">1) Create User Account</h2>
-            <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-3">
-                    <label class="form-label">Name</label>
-                    <input class="form-control" @bind="_newUser.Name" />
-                </div>
-                <div class="col-12 col-md-2">
-                    <label class="form-label">Username</label>
-                    <input class="form-control" @bind="_newUser.Username" />
-                </div>
-                <div class="col-12 col-md-2">
-                    <label class="form-label">Password</label>
-                    <input class="form-control" @bind="_newUser.Password" />
-                </div>
-                <div class="col-12 col-md-2">
-                    <label class="form-label">Role</label>
-                    <select class="form-select" @bind="_newUser.Role">
-                        <option value="Child">Child</option>
-                        <option value="Parent">Parent</option>
-                        <option value="Teacher">Teacher</option>
-                        <option value="Admin">Admin</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-3 d-grid">
-                    <button class="btn btn-primary" @onclick="CreateUser">Create User</button>
-                </div>
+    <!-- Main Content -->
+    <div class="admin-main">
+        <!-- Top Bar -->
+        <div class="bg-white border-bottom px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 admin-topbar">
+            <div>
+                <h2 class="h5 mb-1">Welcome back, Admin! 👋</h2>
+                <small class="text-muted">Here's what's happening with KidSafeApp today.</small>
             </div>
-
-            <hr class="my-3" />
-
-            <h2 class="h6 mb-3">2) Review Existing Users</h2>
-
-            <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-5">
-                    <label class="form-label">Search</label>
-                    <input class="form-control" placeholder="Search by name or username"
-                           @bind="_search" @bind:event="oninput" />
+            <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+                <div class="input-group admin-search-group">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search users, reports, classes..." @bind="_searchQuery" @bind:event="oninput">
+                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
                 </div>
-                <div class="col-12 col-md-5">
-                    <label class="form-label">Filter</label>
-                    <select class="form-select" @bind="_filter">
-                        <option value="all">All users</option>
-                        <option value="pending">Pending approvals</option>
-                        <option value="approved">Approved</option>
-                        <option value="disabled">Disabled</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-2 d-grid">
-                    <button class="btn btn-outline-primary" @onclick="ClearFilters">Clear</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">3) Classrooms</h2>
-            <div class="small text-muted mb-2">Create classes, assign students, assign teachers, and assign published courses.</div>
-            <div class="row g-2 align-items-end mb-3">
-                <div class="col-12 col-md-4"><label class="form-label">Class Name</label><input class="form-control" @bind="_newClassRoom.Name" /></div>
-                <div class="col-12 col-md-3"><label class="form-label">Grade</label><input class="form-control" @bind="_newClassRoom.Grade" /></div>
-                <div class="col-12 col-md-3"><label class="form-label">Section</label><input class="form-control" @bind="_newClassRoom.Section" /></div>
-                <div class="col-12 col-md-2 d-grid"><button class="btn btn-outline-primary" @onclick="CreateClassRoom">Create Class</button></div>
-            </div>
-
-            @if (_classRoomDetails.Count == 0)
-            {
-                <div class="text-muted">No classrooms yet.</div>
-            }
-            else
-            {
-                <div class="row g-2">
-                    @foreach (var room in _classRoomDetails)
+                <button class="btn btn-link text-dark position-relative">
+                    <i class="bi bi-bell" style="font-size: 1.2rem;"></i>
+                    @if (PendingApprovalsCount > 0)
                     {
-                        <div class="col-12 col-lg-6">
-                            <div class="border rounded p-2">
-                                <div class="fw-semibold">@room.Name (@room.Grade-@room.Section)</div>
-                                <div class="small text-muted mb-2">Students: @room.Students.Count</div>
-                                <div class="small mb-2">Teacher: @(string.IsNullOrWhiteSpace(room.TeacherName) ? "Not assigned" : room.TeacherName)</div>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@PendingApprovalsCount</span>
+                    }
+                </button>
+                <button class="btn btn-link text-dark">
+                    <i class="bi bi-moon" style="font-size: 1.2rem;"></i>
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-link text-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin" class="rounded-circle" style="width: 32px; height: 32px;">
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">Profile</a></li>
+                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" @onclick="HandleLogout" style="cursor: pointer;">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
-                                @if (room.Students.Count > 0)
-                                {
-                                    <details class="mb-2">
-                                        <summary class="small">View students</summary>
-                                        <ul class="mb-2 mt-1">
-                                            @foreach (var student in room.Students)
-                                            {
-                                                <li class="d-flex justify-content-between align-items-center gap-2">
-                                                    <span>@student.Name (@student.Username)</span>
-                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveStudent(room.Id, student.Id)">Remove</button>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </details>
-                                }
-                                <div class="d-flex gap-2">
-                                    <select class="form-select form-select-sm" @bind="_selectedStudentByClass[room.Id]">
-                                        <option value="0">Select student</option>
-                                        @foreach (var s in _users.Where(u => u.Role == "Child"))
-                                        {
-                                            <option value="@s.Id">@s.Name (@s.Username)</option>
-                                        }
-                                    </select>
-                                    <button class="btn btn-sm btn-outline-success" @onclick="() => AssignStudent(room.Id)">Assign</button>
+        <!-- Main Dashboard Content -->
+        <div class="p-4 admin-content" style="background-color: #F6F4E8;">
+            <!-- Dashboard Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm admin-metric-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted">Total Users</small>
+                                    <h4 class="mb-0 mt-2 admin-metric-value">@_users.Count</h4>
+                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 12.5% from last month</small>
                                 </div>
-
-                                <div class="d-flex gap-2 mt-2">
-                                    <select class="form-select form-select-sm" @bind="_selectedTeacherByClass[room.Id]">
-                                        <option value="0">Select teacher</option>
-                                        @foreach (var t in _teachers)
-                                        {
-                                            <option value="@t.Id">@t.Name (@t.Username)</option>
-                                        }
-                                    </select>
-                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => AssignTeacher(room.Id)">Assign Teacher</button>
+                                <div class="admin-metric-icon admin-metric-icon-a" style="font-size: 2.5rem;">
+                                    <i class="bi bi-people"></i>
                                 </div>
-
-                                <div class="d-flex gap-2 mt-2">
-                                    <select class="form-select form-select-sm" @bind="_selectedCourseByClass[room.Id]">
-                                        <option value="0">Select published course</option>
-                                        @foreach (var c in _courses.Where(c => c.IsPublished))
-                                        {
-                                            <option value="@c.Id">@c.Title</option>
-                                        }
-                                    </select>
-                                    <button class="btn btn-sm btn-outline-warning" @onclick="() => AssignCourseToClass(room.Id)">Assign Course</button>
-                                </div>
-
-                                @if (room.Courses.Count > 0)
-                                {
-                                    <div class="small text-muted mt-2">Class courses:</div>
-                                    <ul class="mb-0 small">
-                                        @foreach (var course in room.Courses)
-                                        {
-                                            <li>@course.Title</li>
-                                        }
-                                    </ul>
-                                }
                             </div>
                         </div>
-
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">4) Students Overview</h2>
-            <div class="small text-muted mb-2">All registered students and the classes they are currently assigned to.</div>
-
-            @if (_students.Count == 0)
-            {
-                <div class="text-muted">No students found.</div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                        <thead>
-                            <tr>
-                                <th>Student</th>
-                                <th>Username</th>
-                                <th>Assigned Classes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var student in _students)
-                            {
-                                <tr>
-                                    <td>@student.Name</td>
-                                    <td>@student.Username</td>
-                                    <td>
-                                        @if (student.ClassRooms.Count == 0)
-                                        {
-                                            <span class="text-muted">Not assigned</span>
-                                        }
-                                        else
-                                        {
-                                            @string.Join(", ", student.ClassRooms)
-                                        }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                    </div>
                 </div>
-            }
-        </div>
-    </div>
-                    }
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm admin-metric-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted">Pending Approvals</small>
+                                    <h4 class="mb-0 mt-2 admin-metric-value">@PendingApprovalsCount</h4>
+                                    <small class="text-danger"><i class="bi bi-arrow-down"></i> 8.3% from last month</small>
+                                </div>
+                                <div class="admin-metric-icon admin-metric-icon-b" style="font-size: 2.5rem;">
+                                    <i class="bi bi-inbox"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            }
-        </div>
-    </div>
-
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <div class="alert alert-danger">@_error</div>
-    }
-    @if (!string.IsNullOrWhiteSpace(_success))
-    {
-        <div class="alert alert-success">@_success</div>
-    }
-
-    @if (_loading)
-    {
-        <div class="text-muted">Loading...</div>
-    }
-    else
-    {
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>Id</th>
-                                <th>Name</th>
-                                <th>Username</th>
-                                <th>Role</th>
-                                <th>Approved</th>
-                                <th>Active</th>
-                                <th>Added</th>
-                                <th style="width: 160px;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var u in FilteredUsers)
-                            {
-                                <tr>
-                                    <td>@u.Id</td>
-                                    <td>@u.Name</td>
-                                    <td>@u.Username</td>
-                                    <td>
-                                        <select class="form-select form-select-sm" style="min-width:140px"
-                                                @onchange="(e) => SetRole(u, e.Value?.ToString())">
-                                            <option value="Child" selected="@(u.Role == "Child")">Child</option>
-                                            <option value="Parent" selected="@(u.Role == "Parent")">Parent</option>
-                                            <option value="Teacher" selected="@(u.Role == "Teacher")">Teacher</option>
-                                            <option value="Admin" selected="@(u.Role == "Admin")">Admin</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="checkbox" class="form-check-input" checked="@u.IsApproved"
-                                               @onchange="(e) => SetApproved(u, (bool)(e.Value ?? false))" />
-                                    </td>
-                                    <td>
-                                        <input type="checkbox" class="form-check-input" checked="@u.IsActive"
-                                               @onchange="(e) => SetActive(u, (bool)(e.Value ?? false))" />
-                                    </td>
-                                    <td class="text-muted">@u.AddedOn.ToString("yyyy-MM-dd")</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-primary" @onclick="() => Save(u)">Save</button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm admin-metric-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted">Total Classes</small>
+                                    <h4 class="mb-0 mt-2 admin-metric-value">@_classRoomDetails.Count</h4>
+                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 5.6% from last month</small>
+                                </div>
+                                <div class="admin-metric-icon admin-metric-icon-c" style="font-size: 2.5rem;">
+                                    <i class="bi bi-book"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm admin-metric-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted">Active Students</small>
+                                    <h4 class="mb-0 mt-2 admin-metric-value">@_students.Count</h4>
+                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 10.2% from last month</small>
+                                </div>
+                                <div class="admin-metric-icon admin-metric-icon-d" style="font-size: 2.5rem;">
+                                    <i class="bi bi-mortarboard"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Tabs for Management -->
+            <ul class="nav nav-tabs mb-4 admin-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(_activeTab == "users" ? "active" : string.Empty)" id="users-tab" type="button" role="tab" @onclick='() => SetActiveTab("users")'>
+                        <i class="bi bi-people me-2"></i>User Management
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(_activeTab == "classes" ? "active" : string.Empty)" id="classes-tab" type="button" role="tab" @onclick='() => SetActiveTab("classes")'>
+                        <i class="bi bi-book me-2"></i>Classes
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(_activeTab == "approvals" ? "active" : string.Empty)" id="approvals-tab" type="button" role="tab" @onclick='() => SetActiveTab("approvals")'>
+                        <i class="bi bi-check-circle me-2"></i>Approvals
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- User Management Tab -->
+                <div class="tab-pane fade @(_activeTab == "users" ? "show active" : string.Empty)" id="users-content" role="tabpanel">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label">Search Users</label>
+                                    <input class="form-control" placeholder="Search by name or username" @bind="_search" @bind:event="oninput" />
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label">Filter</label>
+                                    <select class="form-select" @bind="_filter">
+                                        <option value="all">All users</option>
+                                        <option value="pending">Pending approvals</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="disabled">Disabled</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <button class="btn btn-outline-success w-100" @onclick="ClearFilters">Clear</button>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <button class="btn btn-success w-100" @onclick="@(() => _showCreateUserForm = !_showCreateUserForm)">
+                                        <i class="bi bi-plus-circle me-2"></i>New User
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (_showCreateUserForm)
+                            {
+                                <hr class="my-3" />
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-md-3">
+                                        <label class="form-label">Name</label>
+                                        <input class="form-control" @bind="_newUser.Name" placeholder="Full name" />
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label">Username</label>
+                                        <input class="form-control" @bind="_newUser.Username" placeholder="Username" />
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label">Password</label>
+                                        <input class="form-control" type="password" @bind="_newUser.Password" placeholder="Password" />
+                                    </div>
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label">Role</label>
+                                        <select class="form-select" @bind="_newUser.Role">
+                                            <option value="Child">Child</option>
+                                            <option value="Parent">Parent</option>
+                                            <option value="Teacher">Teacher</option>
+                                            <option value="Admin">Admin</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-3 d-grid">
+                                        <button class="btn btn-success" @onclick="CreateUser">Create User</button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-body admin-table-wrap" style="max-height: 600px; overflow-y: auto;">
+                            @if (_loading)
+                            {
+                                <div class="text-center py-5">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    <span class="text-muted">Loading users...</span>
+                                </div>
+                            }
+                            else if (FilteredUsers.Count() == 0)
+                            {
+                                <div class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">No users to display</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0 admin-data-table">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Name</th>
+                                                <th>Username</th>
+                                                <th>Role</th>
+                                                <th>Approved</th>
+                                                <th>Active</th>
+                                                <th>Added</th>
+                                                <th style="width: 220px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var u in FilteredUsers)
+                                            {
+                                                <tr>
+                                                    <td>@u.Id</td>
+                                                    <td>@u.Name</td>
+                                                    <td>@u.Username</td>
+                                                    <td>
+                                                        <select class="form-select form-select-sm" style="min-width:140px" @onchange="@((ChangeEventArgs e) => SetRole(u, e.Value?.ToString()))">
+                                                            <option value="Child" selected="@(u.Role == "Child")">Child</option>
+                                                            <option value="Parent" selected="@(u.Role == "Parent")">Parent</option>
+                                                            <option value="Teacher" selected="@(u.Role == "Teacher")">Teacher</option>
+                                                            <option value="Admin" selected="@(u.Role == "Admin")">Admin</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input type="checkbox" class="form-check-input" checked="@u.IsApproved" @onchange="@((ChangeEventArgs e) => SetApproved(u, (bool)(e.Value ?? false)))" />
+                                                    </td>
+                                                    <td>
+                                                        <input type="checkbox" class="form-check-input" checked="@u.IsActive" @onchange="@((ChangeEventArgs e) => SetActive(u, (bool)(e.Value ?? false)))" />
+                                                    </td>
+                                                    <td class="text-muted small">@u.AddedOn.ToString("yyyy-MM-dd")</td>
+                                                    <td>
+                                                        <div class="d-flex gap-2">
+                                                            <button class="btn btn-sm btn-success admin-btn-compact" @onclick="@(() => Save(u))">Save</button>
+                                                            <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => DeleteUser(u))">Delete</button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Classes Tab -->
+                <div class="tab-pane fade @(_activeTab == "classes" ? "show active" : string.Empty)" id="classes-content" role="tabpanel">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label">Class Name</label>
+                                    <input class="form-control" @bind="_newClassRoom.Name" placeholder="e.g., Grade 5A" />
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <label class="form-label">Grade</label>
+                                    <input class="form-control" @bind="_newClassRoom.Grade" placeholder="e.g., 5" />
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <label class="form-label">Section</label>
+                                    <input class="form-control" @bind="_newClassRoom.Section" placeholder="e.g., A" />
+                                </div>
+                                <div class="col-12 col-md-4 d-grid">
+                                    <button class="btn btn-success" @onclick="CreateClassRoom">
+                                        <i class="bi bi-plus-circle me-2"></i>Create Class
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (_classRoomDetails.Count == 0)
+                            {
+                                <div class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">No classrooms created yet</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="row g-3">
+                                    @foreach (var room in _classRoomDetails)
+                                    {
+                                        <div class="col-md-6">
+                                            <div class="card h-100">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0">@room.Name <span class="badge bg-secondary">@room.Grade-@room.Section</span></h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="mb-2"><small class="text-muted">Students: <strong>@room.Students.Count</strong></small></p>
+                                                    <p class="mb-2"><small class="text-muted">Teacher: <strong>@(string.IsNullOrWhiteSpace(room.TeacherName) ? "Not assigned" : room.TeacherName)</strong></small></p>
+
+                                                    @if (room.Students.Count > 0)
+                                                    {
+                                                        <details class="mb-3">
+                                                            <summary class="small fw-bold">View students (@room.Students.Count)</summary>
+                                                            <ul class="mt-2 mb-0">
+                                                                @foreach (var student in room.Students)
+                                                                {
+                                                                    <li class="d-flex justify-content-between align-items-center py-1">
+                                                                        <span>@student.Name</span>
+                                                                        <button class="btn btn-xs btn-outline-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @onclick="@(() => RemoveStudent(room.Id, student.Id))">Remove</button>
+                                                                    </li>
+                                                                }
+                                                            </ul>
+                                                        </details>
+                                                    }
+
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Assign Student</small>
+                                                        <div class="d-flex gap-2">
+                                                            <select class="form-select form-select-sm" @bind="_selectedStudentByClass[room.Id]">
+                                                                <option value="0">Select student</option>
+                                                                @foreach (var s in _users.Where(u => u.Role == "Child"))
+                                                                {
+                                                                    <option value="@s.Id">@s.Name</option>
+                                                                }
+                                                            </select>
+                                                            <button class="btn btn-sm btn-outline-success" @onclick="@(() => AssignStudent(room.Id))">Assign</button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Assign Teacher</small>
+                                                        <div class="d-flex gap-2">
+                                                            <select class="form-select form-select-sm" @bind="_selectedTeacherByClass[room.Id]">
+                                                                <option value="0">Select teacher</option>
+                                                                @foreach (var t in _teachers)
+                                                                {
+                                                                    <option value="@t.Id">@t.Name</option>
+                                                                }
+                                                            </select>
+                                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => AssignTeacher(room.Id))">Assign</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approvals Tab -->
+                <div class="tab-pane fade @(_activeTab == "approvals" ? "show active" : string.Empty)" id="approvals-content" role="tabpanel">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            @if (PendingApprovalsCount == 0)
+                            {
+                                <div class="text-center py-5 text-muted">
+                                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">All pending requests approved!</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle admin-data-table">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Name</th>
+                                                <th>Username</th>
+                                                <th>Role</th>
+                                                <th>Requested On</th>
+                                                <th style="width: 120px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var u in FilteredUsers.Where(u => !u.IsApproved && u.IsActive))
+                                            {
+                                                <tr>
+                                                    <td>#@u.Id</td>
+                                                    <td>@u.Name</td>
+                                                    <td>@u.Username</td>
+                                                    <td>
+                                                        <span class="badge" style="background-color: @GetRoleColor(u.Role)">@u.Role</span>
+                                                    </td>
+                                                    <td>@u.AddedOn.ToString("MMM dd, yyyy")</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-success me-1 admin-btn-icon" @onclick="@(async () => { await ApproveUser(u); })">✓</button>
+                                                        <button class="btn btn-sm btn-danger admin-btn-icon" @onclick="@(async () => { await DenyUser(u); })">✕</button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                    <strong>Error:</strong> @_error
+                    <button type="button" class="btn-close" @onclick="@(() => _error = null)"></button>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_success))
+            {
+                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                    @_success
+                    <button type="button" class="btn-close" @onclick="@(() => _success = null)"></button>
+                </div>
+            }
         </div>
-    }
+    </div>
 </div>
+
+<style>
+    .admin-shell {
+        min-height: 100vh;
+        background-color: var(--ks-bg);
+    }
+
+    .admin-content {
+        padding: 1.25rem !important;
+    }
+
+    .admin-topbar h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+
+    .admin-metric-card .card-body {
+        padding: 1rem 1rem 0.9rem;
+    }
+
+    .admin-metric-icon {
+        opacity: 0.95;
+    }
+
+    .admin-metric-icon-a {
+        color: #C0E1D2;
+    }
+
+    .admin-metric-icon-b {
+        color: #C0E1D2;
+    }
+
+    .admin-metric-icon-c {
+        color: #C0E1D2;
+    }
+
+    .admin-metric-icon-d {
+        color: #C0E1D2;
+    }
+
+    .admin-metric-value {
+        font-size: 2rem;
+        line-height: 1.05;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+
+    .admin-main {
+        overflow-y: auto;
+        min-width: 0;
+    }
+
+    .admin-search-group {
+        width: 320px;
+        max-width: 100%;
+    }
+
+    .admin-tabs .nav-link {
+        color: var(--ks-text) !important;
+        background: transparent;
+        border: 1px solid transparent;
+    }
+
+    .admin-tabs .nav-link.active {
+        color: var(--ks-green-dark) !important;
+        background: var(--ks-surface);
+        border-color: rgba(192, 225, 210, 0.65) rgba(192, 225, 210, 0.65) var(--ks-surface);
+    }
+
+    .admin-table-wrap {
+        padding-top: 0.75rem;
+    }
+
+    .admin-data-table {
+        font-size: 0.95rem;
+    }
+
+    .admin-data-table > :not(caption) > * > * {
+        padding-top: 0.55rem;
+        padding-bottom: 0.55rem;
+        vertical-align: middle;
+    }
+
+    .admin-data-table thead th {
+        font-size: 0.84rem;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: var(--ks-text);
+        white-space: nowrap;
+    }
+
+    .admin-btn-compact {
+        min-width: 3.6rem;
+        padding: 0.3rem 0.55rem;
+        font-weight: 600;
+    }
+
+    .admin-btn-icon {
+        min-width: 2.2rem;
+        padding: 0.2rem 0.45rem;
+        font-weight: 700;
+    }
+
+    .card {
+        transition: box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+    }
+
+    .btn-link {
+        border: none;
+        padding: 0;
+    }
+
+    @@media (max-width: 991.98px) {
+        .admin-shell {
+            flex-direction: column;
+        }
+
+        .admin-main {
+            width: 100%;
+        }
+
+        .admin-search-group {
+            width: 100%;
+        }
+
+        .admin-content {
+            padding: 1rem !important;
+        }
+
+        .admin-topbar h2 {
+            font-size: 1.3rem;
+        }
+
+        .admin-metric-value {
+            font-size: 1.55rem;
+        }
+
+    }
+
+</style>
 
 @code {
     private bool _loading = true;
     private string? _error;
     private string? _success;
+    private string _activeTab = "users";
+    private string _activeSidebarItem = "dashboard";
+    private bool _showCreateUserForm = false;
+    private string _searchQuery = string.Empty;
     private List<AdminUserDto> _users = new();
     private List<AdminStudentOverviewDto> _students = new();
     private List<AdminClassRoomDetailDto> _classRoomDetails = new();
@@ -310,7 +623,9 @@
     private AdminCreateUserDto _newUser = new() { Role = "Child", IsApproved = true, IsActive = true };
     private AdminCreateClassRoomDto _newClassRoom = new();
     private string _search = string.Empty;
-    private string _filter = "pending";
+    private string _filter = "all";
+
+    private int PendingApprovalsCount => _users.Count(u => !u.IsApproved && u.IsActive);
 
     private IEnumerable<AdminUserDto> FilteredUsers
     {
@@ -338,15 +653,76 @@
         }
     }
 
+    private string GetRoleColor(string role) => role switch
+    {
+        "Child" => "#C0E1D2",
+        "Parent" => "#E5EEE4",
+        "Teacher" => "#C0E1D2",
+        "Admin" => "#C0E1D2",
+        _ => "#DC9B9B"
+    };
+
     protected override async Task OnInitializedAsync()
     {
+        InitializeActiveSectionFromRoute();
         await Reload();
+    }
+
+    protected override void OnParametersSet()
+    {
+        InitializeActiveSectionFromRoute();
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        var route = tab switch
+        {
+            "users" => "/admin/users",
+            "classes" => "/admin/classes",
+            "approvals" => "/admin/approvals",
+            _ => "/admin/dashboard"
+        };
+
+        Nav.NavigateTo(route);
+    }
+
+    private void InitializeActiveSectionFromRoute()
+    {
+        var relativePath = Nav.ToBaseRelativePath(Nav.Uri).Trim('/').ToLowerInvariant();
+        var segment = relativePath.StartsWith("admin/")
+            ? relativePath["admin/".Length..]
+            : relativePath == "admin" ? "dashboard" : relativePath;
+
+        if (string.IsNullOrWhiteSpace(segment))
+        {
+            segment = "dashboard";
+        }
+
+        _activeSidebarItem = segment switch
+        {
+            "activity-logs" => "activity",
+            _ => segment
+        };
+
+        _activeTab = _activeSidebarItem switch
+        {
+            "classes" or "students" or "teachers" or "courses" => "classes",
+            "approvals" or "activity" => "approvals",
+            _ => "users"
+        };
+    }
+
+    private string GetSidebarItemClass(string item)
+    {
+        return string.Equals(_activeSidebarItem, item, StringComparison.OrdinalIgnoreCase)
+            ? "sidebar-item-active"
+            : string.Empty;
     }
 
     private void ClearFilters()
     {
         _search = string.Empty;
-        _filter = "pending";
+        _filter = "all";
     }
 
     private void GoToAdminLogin() => Nav.NavigateTo("/admin-login");
@@ -421,6 +797,26 @@
         }
     }
 
+    private async Task ApproveUser(AdminUserDto user)
+    {
+        var idx = _users.FindIndex(x => x.Id == user.Id);
+        if (idx >= 0)
+        {
+            _users[idx] = user with { IsApproved = true };
+            await Save(_users[idx]);
+        }
+    }
+
+    private async Task DenyUser(AdminUserDto user)
+    {
+        var idx = _users.FindIndex(x => x.Id == user.Id);
+        if (idx >= 0)
+        {
+            _users[idx] = user with { IsActive = false };
+            await Save(_users[idx]);
+        }
+    }
+
     private async Task Save(AdminUserDto user)
     {
         _error = null;
@@ -449,6 +845,28 @@
         }
     }
 
+    private async Task DeleteUser(AdminUserDto user)
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            var resp = await Http.DeleteAsync($"api/admin/users/{user.Id}");
+            if (!resp.IsSuccessStatusCode)
+            {
+                _error = await ExtractErrorMessageAsync(resp);
+                return;
+            }
+
+            await Reload();
+            _success = $"User '{user.Username}' deleted successfully.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
     private async Task CreateUser()
     {
         _error = null;
@@ -469,6 +887,7 @@
             }
 
             _newUser = new AdminCreateUserDto { Role = "Child", IsApproved = true, IsActive = true };
+            _showCreateUserForm = false;
             await Reload();
             _success = "User created successfully.";
         }
@@ -603,19 +1022,6 @@
 
             await Reload();
             _success = "Course assigned to class.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task LoadStudentProfile(int studentId)
-    {
-        _error = null;
-        try
-        {
-            _selectedStudentProfile = await Http.GetFromJsonAsync<AdminStudentProfileDto>($"api/admin/students/{studentId}");
         }
         catch (Exception ex)
         {

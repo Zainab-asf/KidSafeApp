@@ -1,9 +1,11 @@
 @namespace KidSafeApp.Components.Pages.Shared
 
+@inject KidSafeApp.States.AuthenticationState AuthState
+
 <header class="ks-header">
   <div>
-    <div class="ks-greeting-label">Good Morning,</div>
-    <div class="ks-greeting-name">Zainab</div>
+    <div class="ks-greeting-label">Hello,</div>
+    <div class="ks-greeting-name">@DisplayName</div>
   </div>
 
   <div class="ks-header-actions">
@@ -16,17 +18,11 @@
     <button class="ks-icon-button ks-menu-button" type="button" title="Menu" @onclick="OnToggleMenu">
       ☰
     </button>
-    <input class="ks-search" placeholder="Search..." />
-
-    <button class="ks-icon-button" title="Notifications">
-      <span class="ks-icon-dot"></span>
-    </button>
-
     <div class="ks-profile">
-      <div class="ks-avatar">Z</div>
+      <div class="ks-avatar">@AvatarLetter</div>
       <div class="ks-profile-text">
-        <div class="ks-profile-name">Zainab</div>
-        <div class="ks-profile-email">zainab@kidsafeapp.com</div>
+        <div class="ks-profile-name">@DisplayName</div>
+        <div class="ks-profile-email">@RoleLabel</div>
       </div>
     </div>
   </div>
@@ -38,4 +34,8 @@
   [Parameter] public EventCallback OnBack { get; set; }
 
   [Parameter] public EventCallback OnLogout { get; set; }
+
+  private string DisplayName => AuthState?.User?.Name ?? "User";
+  private string AvatarLetter => string.IsNullOrWhiteSpace(DisplayName) ? "U" : DisplayName.Trim()[0].ToString().ToUpperInvariant();
+  private string RoleLabel => AuthState?.User?.Role ?? string.Empty;
 }

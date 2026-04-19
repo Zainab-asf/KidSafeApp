@@ -37,7 +37,7 @@
 
 .ks-stat-label {
   font-size: 0.875rem;
-  color: #64748b;
+  color: #DC9B9B;
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
@@ -45,14 +45,14 @@
 .ks-stat-number {
   font-size: 2rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #DC9B9B;
   line-height: 1;
   margin-bottom: 0.5rem;
 }
 
 .ks-stat-subtext {
   font-size: 0.813rem;
-  color: #94a3b8;
+  color: #DC9B9B;
 }
 
 .ks-progress-card {
@@ -81,7 +81,7 @@
 .ks-progress-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #0f172a;
+  color: #DC9B9B;
   margin: 0;
 }
 
@@ -107,7 +107,7 @@
 
 .ks-progress-lessons {
   font-size: 0.875rem;
-  color: #64748b;
+  color: #DC9B9B;
   font-weight: 500;
 }
 
@@ -140,7 +140,7 @@
 .ks-progress-stats .stat .label {
   display: block;
   font-size: 0.75rem;
-  color: #64748b;
+  color: #DC9B9B;
   font-weight: 500;
   margin-bottom: 0.25rem;
   text-transform: uppercase;
@@ -151,7 +151,7 @@
   display: block;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2563eb;
+  color: #C0E1D2;
 }
 
 .ks-progress-dates {

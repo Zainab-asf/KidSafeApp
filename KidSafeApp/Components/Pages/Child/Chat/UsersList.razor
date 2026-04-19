@@ -3,31 +3,37 @@
 @inject HttpClient Client
 
 <div class="d-flex align-items-center justify-content-between">
-    <h3 class="mb-2">Users</h3>
+    <h3 class="mb-2">Connected Classmates</h3>
+    @if (!Loading && Users.Count > 0)
+    {
+        <small class="text-muted badge bg-light text-dark">@Users.Count</small>
+    }
 </div>
 
-<input class="form-control form-control-sm mb-2" placeholder="Search users..." @bind="_query" @bind:event="oninput" />
+<input class="form-control form-control-sm mb-2" placeholder="Search classmates..." @bind="_query" @bind:event="oninput" />
 <ul class="list-group list-group-flush">
     @if (Loading)
     {
         <li class="list-group-item">
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            Loading...
+            Loading classmates...
         </li>
     }
     else
     {
         if (!FilteredUsers.Any())
         {
-            <li class="list-group-item text-muted">No users found.</li>
+            <li class="list-group-item text-muted text-center py-3">
+                <small>No classmates found in your class</small>
+            </li>
         }
         else
         {
             foreach (var user in FilteredUsers)
             {
-                <li class="list-group-item" @onclick="() => HandleUserClick(user)">
-                    @user.Name
-                    <span class="badge rounded-pill bg-@(user.IsOnline ? "success" : "danger")">.</span>
+                <li class="list-group-item d-flex align-items-center justify-content-between" @onclick="() => HandleUserClick(user)" style="cursor: pointer;">
+                    <span>@user.Name</span>
+                    <span class="badge rounded-pill bg-success">Online</span>
                 </li>
             }
         }

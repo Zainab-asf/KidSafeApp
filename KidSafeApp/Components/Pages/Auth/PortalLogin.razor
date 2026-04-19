@@ -1,0 +1,157 @@
+@page "/login/{PortalRole}"
+@using KidSafeApp.Helpers
+@inject HttpClient HttpClient
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.States.AdminSessionState AdminSession
+
+<PageTitle>Portal Login</PageTitle>
+
+<div class="ks-auth-shell">
+    <div class="container py-5" style="max-width: 520px;">
+        <div class="card shadow-sm ks-auth-card">
+            <div class="card-header bg-main ks-auth-header">
+                <h2 class="h5 mb-0">@PortalTitle Login 👋</h2>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <div class="alert alert-danger">@_errorMessage</div>
+                }
+
+                <EditForm Model="_loginModel" OnValidSubmit="LoginAsync">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <InputText @bind-Value="_loginModel.Username" class="form-control" />
+                        <ValidationMessage For="() => _loginModel.Username" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <InputText type="password" @bind-Value="_loginModel.Password" class="form-control" />
+                        <ValidationMessage For="() => _loginModel.Password" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary" disabled="@_isBusy">Sign In</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="GoHome">Back</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+
+        <div class="small text-muted mt-3">
+            Only admin-registered @PortalTitle accounts can sign in here.
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string PortalRole { get; set; } = string.Empty;
+
+    [CascadingParameter(Name = "AuthenticationState")]
+    public AuthenticationState? AuthenticationState { get; set; }
+
+    private readonly LoginDto _loginModel = new();
+    private bool _isBusy;
+    private string? _errorMessage;
+
+    private string NormalizedPortalRole => (PortalRole ?? string.Empty).Trim().ToLowerInvariant();
+
+    private string PortalTitle => NormalizedPortalRole switch
+    {
+        "child" => "Child Portal",
+        "parent" => "Parent Portal",
+        "teacher" => "Teacher Portal",
+        _ => "Portal"
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (NormalizedPortalRole is not ("child" or "parent" or "teacher"))
+        {
+            NavigationManager.NavigateTo("/unauthorized", replace: true);
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+
+        try
+        {
+            var response = await HttpClient.PostAsJsonAsync("api/account/login", _loginModel);
+            if (!response.IsSuccessStatusCode)
+            {
+                _errorMessage = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
+            if (authResult is null)
+            {
+                _errorMessage = "Unable to parse login response.";
+                return;
+            }
+
+            if (!string.Equals(authResult.User.Role, NormalizedPortalRole, StringComparison.OrdinalIgnoreCase))
+            {
+                _errorMessage = $"This account belongs to the {authResult.User.Role} portal. Please use the correct login page.";
+                return;
+            }
+
+            if (AuthenticationState is null)
+            {
+                _errorMessage = "Authentication state is not available.";
+                return;
+            }
+
+            var serialized = JsonConverter.Serialize(authResult);
+            await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
+            AuthenticationState.LoadState(authResult);
+            AdminSession.SignOut();
+
+            var appRole = authResult.User.Role switch
+            {
+                "Child" => KidSafeApp.States.AppRole.Child,
+                "Parent" => KidSafeApp.States.AppRole.Parent,
+                "Teacher" => KidSafeApp.States.AppRole.Teacher,
+                _ => KidSafeApp.States.AppRole.None
+            };
+
+            if (appRole == KidSafeApp.States.AppRole.None)
+            {
+                _errorMessage = "Unsupported role.";
+                return;
+            }
+
+            RoleState.SelectRole(appRole);
+            await RoleState.InitializeAsync(appRole);
+
+            var destination = authResult.User.Role switch
+            {
+                "Child" => "/child/dashboard",
+                "Parent" => "/parent/dashboard",
+                "Teacher" => "/teacher/dashboard",
+                _ => "/unauthorized"
+            };
+
+            NavigationManager.NavigateTo(destination, replace: true);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void GoHome() => NavigationManager.NavigateTo("/", replace: true);
+}

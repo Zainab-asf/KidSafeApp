@@ -17,7 +17,7 @@
       @if (IsLoading)
       {
         <div class="text-center py-5">
-          <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border" style="color: var(--ks-green);" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -74,7 +74,7 @@
               {
                 <div class="col-12">
                   <div class="ks-avatar-preview">
-                    <img src="@UserSettings.AvatarUrl" alt="Avatar" style="max-width: 100px; border-radius: 50%; border: 2px solid #2563eb;" />
+                    <img src="@UserSettings.AvatarUrl" alt="Avatar" style="max-width: 100px; border-radius: 50%; border: 2px solid #C0E1D2;" />
                   </div>
                 </div>
               }
@@ -387,8 +387,8 @@
     {
         if (ActiveTab == tab)
         {
-            return "color: #2563eb; border-bottom: 3px solid #2563eb; text-decoration: none;";
+            return "color: #C0E1D2; border-bottom: 3px solid #C0E1D2; text-decoration: none;";
         }
-        return "color: #0f172a; border-bottom: 3px solid transparent; text-decoration: none;";
+        return "color: #DC9B9B; border-bottom: 3px solid transparent; text-decoration: none;";
     }
 }

@@ -1,18 +1,18 @@
 :root {
-    --ks-bg1: #f6f7fb;
-    --ks-bg2: #e8f0fe;
-    --ks-surface: #ffffff;
-    --ks-surface2: #f9fafb;
+    --ks-bg1: #F6F4E8;
+    --ks-bg2: #F6F4E8;
+    --ks-surface: #F6F4E8;
+    --ks-surface2: #E5EEE4;
     --ks-border: rgba(15, 23, 42, 0.10);
-    --ks-text: #0f172a;
+    --ks-text: #DC9B9B;
     --ks-muted: rgba(15, 23, 42, 0.72);
-    --ks-primary: #2563eb;
-    --ks-primary2: #16a34a;
+    --ks-primary: #C0E1D2;
+    --ks-primary2: #C0E1D2;
 }
 
 .header {
     border-bottom: 1px solid var(--ks-border);
-    background: linear-gradient(135deg, var(--ks-surface) 0%, rgba(255, 255, 255, 0.98) 100%);
+    background: var(--ks-surface);
     padding: 16px;
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
@@ -21,7 +21,7 @@
     flex: 1;
     overflow: auto;
     padding: 16px;
-    background: linear-gradient(180deg, rgba(246, 247, 251, 0.5) 0%, rgba(232, 240, 254, 0.3) 100%);
+    background: #F6F4E8;
 }
 
 /* Custom scrollbar */
@@ -34,12 +34,12 @@
 }
 
 .messages-list::-webkit-scrollbar-thumb {
-    background: rgba(37, 99, 235, 0.3);
+    background: rgba(132, 204, 22, 0.35);
     border-radius: 4px;
 }
 
 .messages-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(37, 99, 235, 0.5);
+    background: rgba(132, 204, 22, 0.55);
 }
 
 .message-item {
@@ -83,14 +83,14 @@
 }
 
 .message-item.sent .message-content {
-    background: linear-gradient(135deg, var(--ks-primary) 0%, #1e40af 100%);
-    border: 1px solid rgba(37, 99, 235, 0.3);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    background: linear-gradient(135deg, #E5EEE4 0%, var(--ks-primary) 100%);
+    border: 1px solid rgba(132, 204, 22, 0.3);
+    color: #F6F4E8;
+    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.22);
 }
 
 .message-item.sent .message-content:hover {
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 6px 16px rgba(132, 204, 22, 0.32);
 }
 
 .message-text {
@@ -114,7 +114,7 @@
     gap: 10px;
     padding: 14px 16px;
     border-top: 1px solid var(--ks-border);
-    background: linear-gradient(135deg, var(--ks-surface) 0%, rgba(255, 255, 255, 0.98) 100%);
+    background: var(--ks-surface);
 }
 
 .message-input .form-control {
@@ -130,7 +130,7 @@
 .message-input .form-control:focus {
     background: var(--ks-surface);
     border-color: var(--ks-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.14);
     outline: none;
 }
 
@@ -139,17 +139,17 @@
 }
 
 :deep(.btn-primary) {
-    background: linear-gradient(135deg, var(--ks-primary) 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #E5EEE4 0%, var(--ks-primary) 100%);
     border: none;
     font-weight: 600;
     padding: 10px 20px;
     border-radius: 10px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.24);
 }
 
 :deep(.btn-primary:hover) {
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 6px 16px rgba(132, 204, 22, 0.3);
     transform: translateY(-2px);
 }
 

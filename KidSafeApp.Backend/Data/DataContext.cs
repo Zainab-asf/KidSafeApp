@@ -18,6 +18,10 @@ namespace KidSafeApp.Backend.Data
             public DbSet<Course> Courses { get; set; }
             public DbSet<CourseLesson> CourseLessons { get; set; }
             public DbSet<LessonProgress> LessonProgresses { get; set; }
+            public DbSet<CourseAssignment> CourseAssignments { get; set; }
+            public DbSet<ClassRoom> ClassRooms { get; set; }
+            public DbSet<ClassRoomStudent> ClassRoomStudents { get; set; }
+            public DbSet<ClassRoomCourseAssignment> ClassRoomCourseAssignments { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +69,59 @@ namespace KidSafeApp.Backend.Data
                  .OnDelete(DeleteBehavior.NoAction);
 
                 e.HasIndex(lp => new { lp.CourseLessonId, lp.ChildId }).IsUnique();
+            });
+
+            modelBuilder.Entity<CourseAssignment>(e =>
+            {
+                e.HasOne(a => a.Course)
+                 .WithMany()
+                 .HasForeignKey(a => a.CourseId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(a => a.Child)
+                 .WithMany()
+                 .HasForeignKey(a => a.ChildId)
+                 .OnDelete(DeleteBehavior.NoAction);
+
+                e.HasIndex(a => new { a.CourseId, a.ChildId }).IsUnique();
+            });
+
+            modelBuilder.Entity<ClassRoomStudent>(e =>
+            {
+                e.HasOne(cs => cs.ClassRoom)
+                 .WithMany(c => c.Students)
+                 .HasForeignKey(cs => cs.ClassRoomId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(cs => cs.Student)
+                 .WithMany()
+                 .HasForeignKey(cs => cs.StudentId)
+                 .OnDelete(DeleteBehavior.NoAction);
+
+                e.HasIndex(cs => new { cs.ClassRoomId, cs.StudentId }).IsUnique();
+            });
+
+            modelBuilder.Entity<ClassRoom>(e =>
+            {
+                e.HasOne(c => c.Teacher)
+                 .WithMany()
+                 .HasForeignKey(c => c.TeacherId)
+                 .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            modelBuilder.Entity<ClassRoomCourseAssignment>(e =>
+            {
+                e.HasOne(a => a.ClassRoom)
+                 .WithMany(c => c.CourseAssignments)
+                 .HasForeignKey(a => a.ClassRoomId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(a => a.Course)
+                 .WithMany()
+                 .HasForeignKey(a => a.CourseId)
+                 .OnDelete(DeleteBehavior.NoAction);
+
+                e.HasIndex(a => new { a.ClassRoomId, a.CourseId }).IsUnique();
             });
 
             modelBuilder.Entity<Lesson>().HasData(Lesson.GetSeedData());

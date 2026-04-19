@@ -3,68 +3,69 @@
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
 
-<PageTitle>Register - KidSafeApp</PageTitle>
+<PageTitle>Access Request - KidSafeApp</PageTitle>
 
 
-<div class="container">
-    <div class="row">
-        <div class="col-lg-4 col-md-3 col-sm-2"></div>
-        <div class="col-lg-4 col-md-6 col-sm-8">
-                        <EditForm Model="RegisterModel" OnValidSubmit="RegisterAsync">
-                <div class="card  br-0 mt-5">
-                    <div class="card-header bg-main br-0">
-                        <h2 class="text-white mb-0">KidSafeApp - Register</h2>
-                    </div>
-                    <div class="card-body">
-                <DataAnnotationsValidator />
-                @if (!string.IsNullOrWhiteSpace(errorMessage))
-                {
-                    <p class="text-danger">@errorMessage</p>
-                }
-                <div class="mb-3">
-                    <label class="form-label">Name</label>
-                    <InputText @bind-Value="RegisterModel.Name" DisplayName="Name" class="form-control" placeholder="Enter name" />
-                    <ValidationMessage For="() => RegisterModel.Name" />
-                </div>
+<div class="ks-auth-shell auth-page-clean">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 col-md-3 col-sm-2"></div>
+            <div class="col-lg-4 col-md-6 col-sm-8">
+                <EditForm Model="RegisterModel" OnValidSubmit="RegisterAsync">
+                    <div class="card ks-auth-card br-0 mt-5">
+                        <div class="card-header bg-main br-0 ks-auth-header">
+                            <h2 class="mb-0">Access Request 📝</h2>
+                        </div>
+                        <div class="card-body">
+                            <DataAnnotationsValidator />
+                            @if (!string.IsNullOrWhiteSpace(errorMessage))
+                            {
+                                <p class="text-danger">@errorMessage</p>
+                            }
+                            <div class="alert alert-info">
+                                Self registration is disabled. Please contact your school admin to create your account.
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <InputText @bind-Value="RegisterModel.Name" DisplayName="Name" class="form-control" placeholder="Enter name" />
+                                <ValidationMessage For="() => RegisterModel.Name" />
+                            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <InputText @bind-Value="RegisterModel.Username" DisplayName="Username" class="form-control" placeholder="Enter username" />
-                    <ValidationMessage For="() => RegisterModel.Username" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Password</label>
-                    <InputText type="password" @bind-Value="RegisterModel.Password" DisplayName="Password" class="form-control" placeholder="Enter password" />
-                    <ValidationMessage For="() => RegisterModel.Password" />
-                </div>
-                
-                    </div>
-                    <div class="card-footer">
-
-                        <NavLink href="/login" Match="NavLinkMatch.All" class="btn btn-outline-primary float-start">Login</NavLink>
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <InputText @bind-Value="RegisterModel.Username" DisplayName="Username" class="form-control" placeholder="Enter username" />
+                                <ValidationMessage For="() => RegisterModel.Username" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <InputText type="password" @bind-Value="RegisterModel.Password" DisplayName="Password" class="form-control" placeholder="Enter password" />
+                                <ValidationMessage For="() => RegisterModel.Password" />
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <NavLink href="/login" Match="NavLinkMatch.All" class="btn btn-outline-primary float-start">Login</NavLink>
 
                             @if (_isBusy)
                             {
-                            <button class="btn btn-success float-end" type="button" disabled>
+                                <button class="btn btn-success float-end" type="button" disabled>
                                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                     Loading...
                                 </button>
                             }
                             else
                             {
-                                <button type="submit" class="btn btn-success float-end">Register</button>
+                                <button type="submit" class="btn btn-success float-end">Request Access ✅</button>
                             }
 
                             <div class="clearfix"></div>
                         </div>
-                </div>
-            </EditForm>
+                    </div>
+                </EditForm>
+            </div>
+            <div class="col-lg-4 col-md-3 col-sm-2"></div>
         </div>
-        <div class="col-lg-4 col-md-3 col-sm-2"></div>
     </div>
 </div>
-
-
 
 @code {
     [CascadingParameter(Name = "AuthenticationState")]
@@ -82,13 +83,7 @@
             var response = await HttpClient.PostAsJsonAsync<RegisterDto>("api/account/register", RegisterModel);
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
-
-                var serialized = JsonConverter.Serialize(authResult);
-                await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
-                //NavigationManager.NavigateTo("/chat");
-                AuthenticationState.LoadState(authResult);
+                errorMessage = "Request submitted.";
             }
             else
             {

@@ -22,10 +22,18 @@ namespace KidSafeApp
             builder.Services.AddScoped<RoleState>();
             builder.Services.AddScoped<AccountManager>();
             builder.Services.AddScoped<AdminSessionState>();
+            builder.Services.AddScoped<AuthenticationState>();
 
-            builder.Services.AddScoped(sp => new HttpClient
+            builder.Services.AddScoped(sp =>
             {
-                BaseAddress = new Uri("http://localhost:5065/")
+                var baseAddress = DeviceInfo.Platform == DevicePlatform.Android
+                    ? "http://10.0.2.2:5065/"
+                    : "http://localhost:5065/";
+
+                return new HttpClient
+                {
+                    BaseAddress = new Uri(baseAddress)
+                };
             });
 
             // Chat service for Messages.razor and dashboards

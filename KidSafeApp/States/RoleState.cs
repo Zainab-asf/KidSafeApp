@@ -44,11 +44,8 @@ public sealed class RoleState : INotifyPropertyChanged
         CurrentRole = role;
         IsRoleLoaded = false;
 
-        // Placeholder for role-based initialization (API calls, permissions, module preloading).
-        // Keep minimal for now to avoid breaking existing flows.
-        await Task.Delay(150, cancellationToken);
-
         IsRoleLoaded = true;
+        await Task.CompletedTask;
     }
 
     public void SelectRole(AppRole role)

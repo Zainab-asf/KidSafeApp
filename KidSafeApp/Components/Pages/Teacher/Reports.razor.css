@@ -1,6 +1,6 @@
 .teacher-module {
-    --portal-primary: #2563eb;
-    --portal-primary-dark: #1e40af;
+    --portal-primary: #C0E1D2;
+    --portal-primary-dark: #C0E1D2;
 }
 
 .teacher-module {
@@ -8,9 +8,9 @@
 }
 
 .teacher-module .card {
-    border: 1px solid rgba(37, 99, 235, 0.16);
+    border: 1px solid rgba(132, 204, 22, 0.22);
     border-radius: 1rem;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    background: linear-gradient(180deg, #F6F4E8 0%, #F6F4E8 100%);
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 

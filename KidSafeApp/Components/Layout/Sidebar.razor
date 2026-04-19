@@ -2,6 +2,9 @@
 @implements IAsyncDisposable
 @inject NavigationManager NavigationManager
 @inject RoleState RoleState
+@inject IJSRuntime JsRuntime
+@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.States.AdminSessionState AdminSession
 
 <div class="sidebar-wrapper @(isOpen ? "open" : "")">
     <div class="sidebar-header">
@@ -79,10 +82,6 @@
 
             <div class="nav-section">
                 <h3 class="nav-section-title">Account</h3>
-                <NavLink class="nav-link" href="/" @onclick="HandleNavClick">
-                    <span class="nav-icon">🏠</span>
-                    <span class="nav-text">Landing</span>
-                </NavLink>
                 <button class="nav-link logout-btn" @onclick="HandleLogout">
                     <span class="nav-icon">🚪</span>
                     <span class="nav-text">Logout</span>
@@ -113,9 +112,63 @@
 
             <div class="nav-section">
                 <h3 class="nav-section-title">Account</h3>
-                <NavLink class="nav-link" href="/" @onclick="HandleNavClick">
+                <button class="nav-link logout-btn" @onclick="HandleLogout">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Logout</span>
+                </button>
+            </div>
+        }
+        else if (AdminSession.IsAdmin && string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="nav-section">
+                <h3 class="nav-section-title">Admin</h3>
+                <NavLink class="nav-link" href="/admin/dashboard" @onclick="HandleNavClick">
                     <span class="nav-icon">🏠</span>
-                    <span class="nav-text">Landing</span>
+                    <span class="nav-text">Dashboard</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">User Management</h3>
+                <NavLink class="nav-link" href="/admin/users" @onclick="HandleNavClick">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Users</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/roles" @onclick="HandleNavClick">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-text">Roles & Permissions</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/approvals" @onclick="HandleNavClick">
+                    <span class="nav-icon">✅</span>
+                    <span class="nav-text">Approvals</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">Academic</h3>
+                <NavLink class="nav-link" href="/admin/classes" @onclick="HandleNavClick">
+                    <span class="nav-icon">📚</span>
+                    <span class="nav-text">Classes</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/students" @onclick="HandleNavClick">
+                    <span class="nav-icon">🎓</span>
+                    <span class="nav-text">Students</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/teachers" @onclick="HandleNavClick">
+                    <span class="nav-icon">👩‍🏫</span>
+                    <span class="nav-text">Teachers</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/courses" @onclick="HandleNavClick">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">Courses</span>
+                </NavLink>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="nav-section-title">System</h3>
+                <NavLink class="nav-link" href="/admin/activity-logs" @onclick="HandleNavClick">
+                    <span class="nav-icon">🕘</span>
+                    <span class="nav-text">Activity Logs</span>
                 </NavLink>
                 <button class="nav-link logout-btn" @onclick="HandleLogout">
                     <span class="nav-icon">🚪</span>
@@ -136,6 +189,7 @@
         try
         {
             isOpen = !isOpen;
+            _ = InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
         {
@@ -148,6 +202,7 @@
         try
         {
             isOpen = false;
+            _ = InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
         {
@@ -171,6 +226,9 @@
     {
         try
         {
+            AdminSession.SignOut();
+            AuthState.UnLoadState();
+            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.States.AuthenticationState.AuthStoreKey);
             RoleState.Reset();
             CloseSidebar();
             NavigationManager.NavigateTo("/", forceLoad: true);

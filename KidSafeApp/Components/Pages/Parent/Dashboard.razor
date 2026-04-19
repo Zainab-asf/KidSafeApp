@@ -24,8 +24,8 @@ else
 <div class="portal">
     <header class="portal-header">
         <div>
-            <h1 class="portal-title">Parent Portal</h1>
-            <div class="portal-subtitle">Monitor & support your child with clarity.</div>
+            <h1 class="portal-title">Parent Portal 👨‍👩‍👧</h1>
+            <div class="portal-subtitle">Simple updates to support your child every day.</div>
         </div>
 
         <div class="portal-actions">
@@ -36,25 +36,25 @@ else
 
     <section class="portal-grid">
         <div class="portal-card">
-            <div class="portal-card-title">Today’s Screen Time</div>
+            <div class="portal-card-title">Today’s Screen Time ⏱️</div>
             <div class="portal-stat">@_screenTimeToday</div>
             <div class="portal-muted">Based on tracked learning activity</div>
         </div>
 
         <div class="portal-card">
-            <div class="portal-card-title">Safety Alerts</div>
+            <div class="portal-card-title">Safety Alerts 🚨</div>
             <div class="portal-stat">@_safetyAlerts</div>
             <div class="portal-muted">Derived from unread parent alerts</div>
         </div>
 
         <div class="portal-card">
-            <div class="portal-card-title">Learning Progress</div>
+            <div class="portal-card-title">Learning Progress 📘</div>
             <div class="portal-stat">@_avgProgress%</div>
             <div class="portal-muted">Average across published courses</div>
         </div>
 
         <div class="portal-card">
-            <div class="portal-card-title">Recent Activity</div>
+            <div class="portal-card-title">Recent Activity 📌</div>
             @if (!string.IsNullOrWhiteSpace(_error))
             {
                 <div class="small text-danger">@_error</div>
@@ -81,7 +81,7 @@ else
 
     <section class="portal-wide">
         <div class="portal-card portal-card-wide">
-            <div class="portal-card-title">Quick Controls</div>
+            <div class="portal-card-title">Quick Controls ⚙️</div>
             <div class="portal-controls">
                 <button class="btn btn-primary" type="button" @onclick="GoToSettings">Set Screen Time Limit</button>
                 <button class="btn btn-outline-primary" type="button" @onclick="GoToProgress">View Progress</button>

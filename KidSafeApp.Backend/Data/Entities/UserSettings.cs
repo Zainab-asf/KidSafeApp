@@ -14,7 +14,7 @@ namespace KidSafeApp.Backend.Data.Entities
         public int UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = default!;
 
         // Privacy Settings
         public bool IsProfilePublic { get; set; } = false;
@@ -48,7 +48,7 @@ namespace KidSafeApp.Backend.Data.Entities
 
         // Parental Controls (if user is a child)
         [Unicode(false), MaxLength(100)]
-        public string ParentEmail { get; set; }
+        public string ParentEmail { get; set; } = string.Empty;
 
         public bool RequireParentApprovalForMessages { get; set; } = false;
 
@@ -56,10 +56,10 @@ namespace KidSafeApp.Backend.Data.Entities
 
         // Profile
         [Unicode(false), MaxLength(500)]
-        public string Bio { get; set; }
+        public string Bio { get; set; } = string.Empty;
 
         [Unicode(false), MaxLength(100)]
-        public string AvatarUrl { get; set; }
+        public string AvatarUrl { get; set; } = string.Empty;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
