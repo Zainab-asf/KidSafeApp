@@ -28,49 +28,31 @@
     return;
 }
 
+    private async Task ReloadAndNotify()
+    {
+        await Reload();
+        if (string.IsNullOrWhiteSpace(_error))
+        {
+            _success = "Data refreshed.";
+        }
+    }
+
 <div class="admin-shell">
 
     <!-- Main Content -->
     <div class="admin-main">
-        <!-- Top Bar -->
-        <div class="bg-white border-bottom px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2 admin-topbar">
-            <div>
-                <h2 class="h5 mb-1">Welcome back, Admin! 👋</h2>
-                <small class="text-muted">Here's what's happening with KidSafeApp today.</small>
-            </div>
-            <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
-                <div class="input-group admin-search-group">
-                    <input type="text" class="form-control form-control-sm" placeholder="Search users, reports, classes..." @bind="_search" @bind:event="oninput">
-                    <button class="btn btn-outline-secondary btn-sm" type="button">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
-                <button class="btn btn-link text-dark position-relative">
-                    <i class="bi bi-bell" style="font-size: 1.2rem;"></i>
-                    @if (PendingApprovalsCount > 0)
-                    {
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@PendingApprovalsCount</span>
-                    }
-                </button>
-                <button class="btn btn-link text-dark">
-                    <i class="bi bi-moon" style="font-size: 1.2rem;"></i>
-                </button>
-                <div class="dropdown">
-                    <button class="btn btn-link text-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" alt="Admin" class="rounded-circle" style="width: 32px; height: 32px;">
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">Profile</a></li>
-                        <li><a class="dropdown-item" href="#">Settings</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" @onclick="HandleLogout" style="cursor: pointer;">Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
         <!-- Main Dashboard Content -->
         <div class="p-4 admin-content" style="background-color: #F6F4E8;">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-4">
+                <div>
+                    <h2 class="h4 mb-1">Admin Dashboard</h2>
+                    <small class="text-muted">Manage users, classes and approvals.</small>
+                </div>
+                <button class="btn btn-outline-primary" @onclick="ReloadAndNotify">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                </button>
+            </div>
+
             <!-- Dashboard Cards -->
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
@@ -164,24 +146,46 @@
                 <div class="tab-pane fade @(_activeTab == "users" ? "show active" : string.Empty)" id="users-content" role="tabpanel">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white border-bottom">
-                            <div class="row g-2 align-items-end">
+                            <div class="row g-3 align-items-end">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label">Search Users</label>
                                     <input class="form-control" placeholder="Search by name or username" @bind="_search" @bind:event="oninput" />
                                 </div>
-                                <div class="col-12 col-md-3">
-                                    <label class="form-label">Filter</label>
+                                <div class="col-12 col-md-2">
+                                    <label class="form-label">Status</label>
                                     <select class="form-select" @bind="_filter">
-                                        <option value="all">All users</option>
+                                        <option value="all">Active users</option>
                                         <option value="pending">Pending approvals</option>
                                         <option value="approved">Approved</option>
                                         <option value="disabled">Disabled</option>
                                     </select>
                                 </div>
                                 <div class="col-12 col-md-2">
+                                    <label class="form-label">Role</label>
+                                    <select class="form-select" @bind="_roleFilter">
+                                        <option value="all">All roles</option>
+                                        <option value="Child">Children</option>
+                                        <option value="Parent">Parents</option>
+                                        <option value="Teacher">Teachers</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <label class="form-label">Class</label>
+                                    <select class="form-select" @bind="_selectedClassFilterId">
+                                        <option value="0">All classes</option>
+                                        @foreach (var c in _classRoomDetails.OrderBy(x => x.Name))
+                                        {
+                                            <option value="@c.Id">@c.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-1 d-grid">
                                     <button class="btn btn-outline-success w-100" @onclick="ClearFilters">Clear</button>
                                 </div>
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-md-1 d-grid">
+                                    <button class="btn btn-outline-primary w-100" @onclick="ReloadAndNotify">↻</button>
+                                </div>
+                                <div class="col-12 col-md-12 col-lg-2">
                                     <button class="btn btn-success w-100" @onclick="@(() => _showCreateUserForm = !_showCreateUserForm)">
                                         <i class="bi bi-plus-circle me-2"></i>New User
                                     </button>
@@ -210,7 +214,6 @@
                                             <option value="Child">Child</option>
                                             <option value="Parent">Parent</option>
                                             <option value="Teacher">Teacher</option>
-                                            <option value="Admin">Admin</option>
                                         </select>
                                     </div>
                                     <div class="col-12 col-md-12 col-lg-3 d-grid">
@@ -258,11 +261,14 @@
                                                     <td>@u.Name</td>
                                                     <td>@u.Username</td>
                                                     <td>
-                                                        <select class="form-select form-select-sm" style="min-width:140px" @onchange="@((ChangeEventArgs e) => SetRole(u, e.Value?.ToString()))">
+                                                        <select class="form-select form-select-sm" style="min-width:140px" disabled="@(string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))" @onchange="@((ChangeEventArgs e) => SetRole(u, e.Value?.ToString()))">
+                                                            @if (string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                                                            {
+                                                                <option value="Admin" selected>Admin</option>
+                                                            }
                                                             <option value="Child" selected="@(u.Role == "Child")">Child</option>
                                                             <option value="Parent" selected="@(u.Role == "Parent")">Parent</option>
                                                             <option value="Teacher" selected="@(u.Role == "Teacher")">Teacher</option>
-                                                            <option value="Admin" selected="@(u.Role == "Admin")">Admin</option>
                                                         </select>
                                                     </td>
                                                     <td>
@@ -275,7 +281,10 @@
                                                     <td>
                                                         <div class="d-flex gap-2">
                                                             <button class="btn btn-sm btn-success admin-btn-compact" @onclick="@(() => Save(u))">Save</button>
-                                                            <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => ConfirmDeleteUser(u))">Delete</button>
+                                                            @if (!string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                                                            {
+                                                                <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => ConfirmDeleteUser(u))">Delete</button>
+                                                            }
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -677,6 +686,8 @@
     private AdminCreateClassRoomDto _newClassRoom = new();
     private string _search = string.Empty;
     private string _filter = "all";
+    private string _roleFilter = "all";
+    private int _selectedClassFilterId = 0;
 
     private int PendingApprovalsCount => _users.Count(u => !u.IsApproved && u.IsActive);
 
@@ -691,8 +702,23 @@
                 "pending" => query.Where(u => !u.IsApproved && u.IsActive),
                 "approved" => query.Where(u => u.IsApproved && u.IsActive),
                 "disabled" => query.Where(u => !u.IsActive),
-                _ => query
+                _ => query.Where(u => u.IsActive)
             };
+
+            if (!string.Equals(_roleFilter, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(u => string.Equals(u.Role, _roleFilter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (_selectedClassFilterId > 0)
+            {
+                var selectedClass = _classRoomDetails.FirstOrDefault(c => c.Id == _selectedClassFilterId);
+                var selectedStudentIds = selectedClass?.Students.Select(s => s.Id).ToHashSet() ?? new HashSet<int>();
+
+                query = query.Where(u =>
+                    !string.Equals(u.Role, "Child", StringComparison.OrdinalIgnoreCase)
+                    || selectedStudentIds.Contains(u.Id));
+            }
 
             if (!string.IsNullOrWhiteSpace(_search))
             {
@@ -781,6 +807,8 @@
     {
         _search = string.Empty;
         _filter = "all";
+        _roleFilter = "all";
+        _selectedClassFilterId = 0;
     }
 
     private void GoToAdminLogin() => Nav.NavigateTo("/admin-login");
@@ -822,6 +850,15 @@
         }
     }
 
+    private async Task ReloadAndNotify()
+    {
+        await Reload();
+        if (string.IsNullOrWhiteSpace(_error))
+        {
+            _success = "Data refreshed.";
+        }
+    }
+
     private async Task ConfirmDeleteClassRoom(int classRoomId)
     {
         var room = _classRoomDetails.FirstOrDefault(x => x.Id == classRoomId);
@@ -838,6 +875,7 @@
     private void SetRole(AdminUserDto user, string? role)
     {
         if (string.IsNullOrWhiteSpace(role)) return;
+        if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase)) return;
         var idx = _users.FindIndex(x => x.Id == user.Id);
         if (idx >= 0)
         {
@@ -917,6 +955,12 @@
         _success = null;
         try
         {
+            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                _error = "Admin user cannot be deleted from this list.";
+                return;
+            }
+
             var resp = await Http.DeleteAsync($"api/admin/users/{user.Id}");
             if (!resp.IsSuccessStatusCode)
             {
