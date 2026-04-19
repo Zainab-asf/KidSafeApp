@@ -40,7 +40,7 @@
             </div>
             <div class="d-flex align-items-center gap-3 flex-wrap justify-content-end">
                 <div class="input-group admin-search-group">
-                    <input type="text" class="form-control form-control-sm" placeholder="Search users, reports, classes..." @bind="_searchQuery" @bind:event="oninput">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search users, reports, classes..." @bind="_search" @bind:event="oninput">
                     <button class="btn btn-outline-secondary btn-sm" type="button">
                         <i class="bi bi-search"></i>
                     </button>
@@ -191,20 +191,20 @@
                             @if (_showCreateUserForm)
                             {
                                 <hr class="my-3" />
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-12 col-md-3">
+                                <div class="row g-3 align-items-end admin-create-user-row">
+                                    <div class="col-12 col-md-4 col-lg-3">
                                         <label class="form-label">Name</label>
                                         <input class="form-control" @bind="_newUser.Name" placeholder="Full name" />
                                     </div>
-                                    <div class="col-12 col-md-2">
+                                    <div class="col-12 col-md-3 col-lg-2">
                                         <label class="form-label">Username</label>
                                         <input class="form-control" @bind="_newUser.Username" placeholder="Username" />
                                     </div>
-                                    <div class="col-12 col-md-2">
+                                    <div class="col-12 col-md-3 col-lg-2">
                                         <label class="form-label">Password</label>
                                         <input class="form-control" type="password" @bind="_newUser.Password" placeholder="Password" />
                                     </div>
-                                    <div class="col-12 col-md-2">
+                                    <div class="col-12 col-md-2 col-lg-2">
                                         <label class="form-label">Role</label>
                                         <select class="form-select" @bind="_newUser.Role">
                                             <option value="Child">Child</option>
@@ -213,7 +213,7 @@
                                             <option value="Admin">Admin</option>
                                         </select>
                                     </div>
-                                    <div class="col-12 col-md-3 d-grid">
+                                    <div class="col-12 col-md-12 col-lg-3 d-grid">
                                         <button class="btn btn-success" @onclick="CreateUser">Create User</button>
                                     </div>
                                 </div>
@@ -275,7 +275,7 @@
                                                     <td>
                                                         <div class="d-flex gap-2">
                                                             <button class="btn btn-sm btn-success admin-btn-compact" @onclick="@(() => Save(u))">Save</button>
-                                                            <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => DeleteUser(u))">Delete</button>
+                                                            <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => ConfirmDeleteUser(u))">Delete</button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -377,6 +377,12 @@
                                                             <button class="btn btn-sm btn-outline-primary" @onclick="@(() => AssignTeacher(room.Id))">Assign</button>
                                                         </div>
                                                     </div>
+
+                                                    <div class="mt-3 d-grid">
+                                                        <button class="btn btn-sm btn-outline-danger" @onclick="@(() => ConfirmDeleteClassRoom(room.Id))">
+                                                            <i class="bi bi-trash me-1"></i>Delete Class
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -438,21 +444,26 @@
                 </div>
             </div>
 
-            <!-- Messages -->
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-                    <strong>Error:</strong> @_error
-                    <button type="button" class="btn-close" @onclick="@(() => _error = null)"></button>
-                </div>
-            }
-            @if (!string.IsNullOrWhiteSpace(_success))
-            {
-                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-                    @_success
-                    <button type="button" class="btn-close" @onclick="@(() => _success = null)"></button>
-                </div>
-            }
+            <!-- Toast Messages -->
+            <div class="admin-toast-stack" aria-live="polite" aria-atomic="true">
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <div class="admin-toast admin-toast-error" role="alert">
+                        <div class="admin-toast-body">
+                            <strong>Error:</strong> @_error
+                        </div>
+                        <button type="button" class="btn-close" @onclick="@(() => _error = null)"></button>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_success))
+                {
+                    <div class="admin-toast admin-toast-success" role="status">
+                        <div class="admin-toast-body">@_success</div>
+                        <button type="button" class="btn-close" @onclick="@(() => _success = null)"></button>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -464,7 +475,17 @@
     }
 
     .admin-content {
-        padding: 1.25rem !important;
+        padding: 1.6rem !important;
+    }
+
+    .admin-create-user-row .form-label {
+        margin-bottom: .45rem;
+        font-weight: 600;
+    }
+
+    .admin-create-user-row .form-control,
+    .admin-create-user-row .form-select {
+        min-height: 44px;
     }
 
     .admin-topbar h2 {
@@ -527,6 +548,44 @@
 
     .admin-table-wrap {
         padding-top: 0.75rem;
+    }
+
+    .admin-toast-stack {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 1200;
+        display: grid;
+        gap: .6rem;
+        width: min(420px, calc(100vw - 2rem));
+    }
+
+    .admin-toast {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: .75rem;
+        border-radius: .75rem;
+        padding: .85rem 1rem;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+        background: var(--ks-surface);
+    }
+
+    .admin-toast-success {
+        border-color: rgba(192, 225, 210, 0.9);
+        background: #eef9f3;
+    }
+
+    .admin-toast-error {
+        border-color: rgba(220, 155, 155, 0.9);
+        background: #fff3f3;
+    }
+
+    .admin-toast-body {
+        font-size: .95rem;
+        color: var(--ks-text);
+        line-height: 1.35;
     }
 
     .admin-data-table {
@@ -607,19 +666,13 @@
     private string? _error;
     private string? _success;
     private string _activeTab = "users";
-    private string _activeSidebarItem = "dashboard";
     private bool _showCreateUserForm = false;
-    private string _searchQuery = string.Empty;
     private List<AdminUserDto> _users = new();
     private List<AdminStudentOverviewDto> _students = new();
     private List<AdminClassRoomDetailDto> _classRoomDetails = new();
     private List<AdminUserDto> _teachers = new();
-    private List<AdminCourseLiteDto> _courses = new();
-    private int _studentFilterClassId;
-    private AdminStudentProfileDto? _selectedStudentProfile;
     private readonly Dictionary<int, int> _selectedStudentByClass = new();
     private readonly Dictionary<int, int> _selectedTeacherByClass = new();
-    private readonly Dictionary<int, int> _selectedCourseByClass = new();
     private AdminCreateUserDto _newUser = new() { Role = "Child", IsApproved = true, IsActive = true };
     private AdminCreateClassRoomDto _newClassRoom = new();
     private string _search = string.Empty;
@@ -653,6 +706,17 @@
         }
     }
 
+    private async Task ConfirmDeleteUser(AdminUserDto user)
+    {
+        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete user '{user.Username}'? This cannot be undone.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await DeleteUser(user);
+    }
+
     private string GetRoleColor(string role) => role switch
     {
         "Child" => "#C0E1D2",
@@ -665,7 +729,14 @@
     protected override async Task OnInitializedAsync()
     {
         InitializeActiveSectionFromRoute();
+        Nav.LocationChanged += OnLocationChanged;
         await Reload();
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InitializeActiveSectionFromRoute();
+        await InvokeAsync(StateHasChanged);
     }
 
     protected override void OnParametersSet()
@@ -698,25 +769,12 @@
             segment = "dashboard";
         }
 
-        _activeSidebarItem = segment switch
-        {
-            "activity-logs" => "activity",
-            _ => segment
-        };
-
-        _activeTab = _activeSidebarItem switch
+        _activeTab = segment switch
         {
             "classes" or "students" or "teachers" or "courses" => "classes",
-            "approvals" or "activity" => "approvals",
+            "approvals" or "activity" or "activity-logs" => "approvals",
             _ => "users"
         };
-    }
-
-    private string GetSidebarItemClass(string item)
-    {
-        return string.Equals(_activeSidebarItem, item, StringComparison.OrdinalIgnoreCase)
-            ? "sidebar-item-active"
-            : string.Empty;
     }
 
     private void ClearFilters()
@@ -744,19 +802,14 @@
         {
             var users = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/users");
             _users = users ?? new();
-            var studentsUrl = _studentFilterClassId > 0
-                ? $"api/admin/students?classRoomId={_studentFilterClassId}"
-                : "api/admin/students";
-            _students = await Http.GetFromJsonAsync<List<AdminStudentOverviewDto>>(studentsUrl) ?? new();
+            _students = await Http.GetFromJsonAsync<List<AdminStudentOverviewDto>>("api/admin/students") ?? new();
             _classRoomDetails = await Http.GetFromJsonAsync<List<AdminClassRoomDetailDto>>("api/admin/classrooms/details") ?? new();
             _teachers = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/teachers") ?? new();
-            _courses = await Http.GetFromJsonAsync<List<AdminCourseLiteDto>>("api/admin/courses") ?? new();
 
             foreach (var room in _classRoomDetails)
             {
                 if (!_selectedStudentByClass.ContainsKey(room.Id)) _selectedStudentByClass[room.Id] = 0;
                 if (!_selectedTeacherByClass.ContainsKey(room.Id)) _selectedTeacherByClass[room.Id] = 0;
-                if (!_selectedCourseByClass.ContainsKey(room.Id)) _selectedCourseByClass[room.Id] = 0;
             }
         }
         catch (Exception ex)
@@ -767,6 +820,19 @@
         {
             _loading = false;
         }
+    }
+
+    private async Task ConfirmDeleteClassRoom(int classRoomId)
+    {
+        var room = _classRoomDetails.FirstOrDefault(x => x.Id == classRoomId);
+        var roomName = room?.Name ?? $"ID {classRoomId}";
+        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete class '{roomName}'? This cannot be undone.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await DeleteClassRoom(classRoomId);
     }
 
     private void SetRole(AdminUserDto user, string? role)
@@ -920,6 +986,28 @@
         }
     }
 
+    private async Task DeleteClassRoom(int classRoomId)
+    {
+        _error = null;
+        _success = null;
+        try
+        {
+            var resp = await Http.DeleteAsync($"api/admin/classrooms/{classRoomId}");
+            if (!resp.IsSuccessStatusCode)
+            {
+                _error = await ExtractErrorMessageAsync(resp);
+                return;
+            }
+
+            await Reload();
+            _success = "Class deleted successfully.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
     private async Task AssignStudent(int classRoomId)
     {
         _error = null;
@@ -1000,35 +1088,6 @@
         }
     }
 
-    private async Task AssignCourseToClass(int classRoomId)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var courseId = _selectedCourseByClass.GetValueOrDefault(classRoomId, 0);
-            if (courseId <= 0)
-            {
-                _error = "Please select a published course.";
-                return;
-            }
-
-            var resp = await Http.PostAsJsonAsync($"api/admin/classrooms/{classRoomId}/courses", new AdminAssignCourseToClassDto { CourseId = courseId });
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = "Course assigned to class.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
     private static async Task<string> ExtractErrorMessageAsync(HttpResponseMessage response)
     {
         var raw = await response.Content.ReadAsStringAsync();
@@ -1080,5 +1139,10 @@
         }
 
         return raw;
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
     }
 }

@@ -399,6 +399,22 @@ public sealed class AdminController : ControllerBase
         });
     }
 
+    [HttpDelete("classrooms/{classRoomId:int}")]
+    public async Task<IActionResult> DeleteClassRoom(int classRoomId, CancellationToken cancellationToken)
+    {
+        var room = await _dataContext.ClassRooms
+            .FirstOrDefaultAsync(c => c.Id == classRoomId, cancellationToken);
+
+        if (room is null)
+        {
+            return NotFound("Classroom not found.");
+        }
+
+        _dataContext.ClassRooms.Remove(room);
+        await _dataContext.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("classrooms/{classRoomId:int}/students")]
     public async Task<IActionResult> AssignStudentToClassRoom(int classRoomId, [FromBody] AdminAssignStudentDto dto, CancellationToken cancellationToken)
     {
