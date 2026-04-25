@@ -11,9 +11,7 @@
 }
 else
 {
-<div class="parent-shell">
-    <div class="parent-content">
-        <h1 class="parent-page-title">Progress Reports</h1>
+<ParentPageShell Title="Progress Reports">
 
         @if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -72,8 +70,7 @@ else
             <button class="quick-card" @onclick="GoToNotifications"><div class="quick-title">View Alerts</div><small>@_unreadAlerts unread alerts</small></button>
             <button class="quick-card" @onclick="GoToSettings"><div class="quick-title">Manage Filters</div><small>Custom keywords</small></button>
         </section>
-    </div>
-</div>
+</ParentPageShell>
 }
 
 @code {

@@ -11,9 +11,7 @@
 }
 else
 {
-<div class="parent-shell">
-    <div class="parent-content">
-        <h1 class="parent-page-title">Filters & Settings</h1>
+<ParentPageShell Title="Filters & Settings">
 
         @if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -115,8 +113,7 @@ else
                 </div>
             </button>
         </div>
-    </div>
-</div>
+</ParentPageShell>
 }
 
 @code {

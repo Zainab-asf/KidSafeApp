@@ -19,51 +19,21 @@ namespace KidSafeApp.Backend.Controllers.Chat
         }
 
         [HttpGet]
-        public async Task<IEnumerable<UserDto>> GetUsers()
+        public async Task<IEnumerable<UserDto>> GetUsers(CancellationToken cancellationToken)
         {
-            if (User.IsInRole("Child"))
-            {
-                var classIds = await _dataContext.ClassRoomStudents
-                    .AsNoTracking()
-                    .Where(cs => cs.StudentId == UserId)
-                    .Select(cs => cs.ClassRoomId)
-                    .Distinct()
-                    .ToListAsync();
-
-                if (classIds.Count == 0)
-                {
-                    return Enumerable.Empty<UserDto>();
-                }
-
-                var classmateIds = await _dataContext.ClassRoomStudents
-                    .AsNoTracking()
-                    .Where(cs => classIds.Contains(cs.ClassRoomId) && cs.StudentId != UserId)
-                    .Select(cs => cs.StudentId)
-                    .Distinct()
-                    .ToListAsync();
-
-                if (classmateIds.Count == 0)
-                {
-                    return Enumerable.Empty<UserDto>();
-                }
-
-                return await _dataContext.Users
-                    .AsNoTracking()
-                    .Where(u => classmateIds.Contains(u.Id) && u.IsActive && u.IsApproved)
-                    .Select(u => new UserDto(u.Id, u.Name, false, u.Role))
-                    .ToListAsync();
-            }
-
+            var role = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
+            var allowedUserIds = await GetAllowedChatPartnerIdsAsync(UserId, role, cancellationToken);
             return await _dataContext.Users
                 .AsNoTracking()
-                .Where(u => u.Id != UserId && u.IsActive && u.IsApproved)
+                .Where(u => allowedUserIds.Contains(u.Id) && u.IsActive && u.IsApproved)
                 .Select(u => new UserDto(u.Id, u.Name, false, u.Role))
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
 
         [HttpGet("chats")]
         public async Task<IEnumerable<UserDto>> GetUserChats(CancellationToken cancellationToken)
         {
+            var role = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? string.Empty;
             IEnumerable<UserDto> chatUsers = new List<UserDto>();
             var uniqueUsers = await _dataContext.Messages
                        .AsNoTracking()
@@ -82,24 +52,8 @@ namespace KidSafeApp.Backend.Controllers.Chat
             });
             if (uniqueUserIds.Count > 0)
             {
-                if (User.IsInRole("Child"))
-                {
-                    var classIds = await _dataContext.ClassRoomStudents
-                        .AsNoTracking()
-                        .Where(cs => cs.StudentId == UserId)
-                        .Select(cs => cs.ClassRoomId)
-                        .Distinct()
-                        .ToListAsync(cancellationToken);
-
-                    var classmateIds = await _dataContext.ClassRoomStudents
-                        .AsNoTracking()
-                        .Where(cs => classIds.Contains(cs.ClassRoomId) && cs.StudentId != UserId)
-                        .Select(cs => cs.StudentId)
-                        .Distinct()
-                        .ToListAsync(cancellationToken);
-
-                    uniqueUserIds.IntersectWith(classmateIds);
-                }
+                var allowedUserIds = await GetAllowedChatPartnerIdsAsync(UserId, role, cancellationToken);
+                uniqueUserIds.IntersectWith(allowedUserIds);
 
                 chatUsers = await _dataContext.Users
                                     .AsNoTracking()
@@ -108,6 +62,71 @@ namespace KidSafeApp.Backend.Controllers.Chat
                                     .ToListAsync(cancellationToken);
             }
             return chatUsers;
+        }
+
+        private async Task<HashSet<int>> GetAllowedChatPartnerIdsAsync(int userId, string userRole, CancellationToken cancellationToken)
+        {
+            var role = userRole ?? string.Empty;
+
+            if (string.Equals(role, "Child", StringComparison.OrdinalIgnoreCase))
+            {
+                var classIds = await _dataContext.ClassRoomStudents
+                    .AsNoTracking()
+                    .Where(cs => cs.StudentId == userId)
+                    .Select(cs => cs.ClassRoomId)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                if (classIds.Count == 0)
+                {
+                    return new HashSet<int>();
+                }
+
+                var classmateIds = await _dataContext.ClassRoomStudents
+                    .AsNoTracking()
+                    .Where(cs => classIds.Contains(cs.ClassRoomId) && cs.StudentId != userId)
+                    .Select(cs => cs.StudentId)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                var teacherIds = await _dataContext.ClassRooms
+                    .AsNoTracking()
+                    .Where(c => classIds.Contains(c.Id) && c.TeacherId.HasValue)
+                    .Select(c => c.TeacherId!.Value)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                return classmateIds.Concat(teacherIds).ToHashSet();
+            }
+
+            if (string.Equals(role, "Teacher", StringComparison.OrdinalIgnoreCase))
+            {
+                var classIds = await _dataContext.ClassRooms
+                    .AsNoTracking()
+                    .Where(c => c.TeacherId == userId)
+                    .Select(c => c.Id)
+                    .ToListAsync(cancellationToken);
+
+                if (classIds.Count == 0)
+                {
+                    return new HashSet<int>();
+                }
+
+                var studentIds = await _dataContext.ClassRoomStudents
+                    .AsNoTracking()
+                    .Where(cs => classIds.Contains(cs.ClassRoomId))
+                    .Select(cs => cs.StudentId)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                return studentIds.ToHashSet();
+            }
+
+            return await _dataContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id != userId && u.IsActive && u.IsApproved)
+                .Select(u => u.Id)
+                .ToHashSetAsync(cancellationToken);
         }
 
     }

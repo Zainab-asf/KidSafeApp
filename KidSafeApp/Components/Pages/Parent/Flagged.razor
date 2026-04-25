@@ -11,9 +11,7 @@
 }
 else
 {
-<div class="parent-shell">
-    <div class="parent-content">
-        <h1 class="parent-page-title">Flagged Messages</h1>
+<ParentPageShell Title="Flagged Messages">
 
         <div class="filters-row">
             <button class='filter-pill @(_activeFilter == FlaggedFilter.All ? "active" : string.Empty)' @onclick='() => SetFilter(FlaggedFilter.All)'>All (@_items.Count)</button>
@@ -66,8 +64,7 @@ else
                 <small>Adjust keyword sensitivity</small>
             </button>
         </div>
-    </div>
-</div>
+</ParentPageShell>
 }
 
 @code {

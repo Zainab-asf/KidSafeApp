@@ -9,4 +9,5 @@ public interface IChatHubClient
 	Task OnlineUsersList(IEnumerable<UserDto> users);
 	Task UserIsOnline(int userId);
 	Task MessageRecieved(MessageDto message);
+    Task RosterUpdated(int classRoomId);
 }

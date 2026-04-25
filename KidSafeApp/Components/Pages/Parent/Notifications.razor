@@ -11,9 +11,7 @@
 }
 else
 {
-<div class="parent-shell">
-    <div class="parent-content">
-        <h1 class="parent-page-title">Notifications</h1>
+<ParentPageShell Title="Notifications">
 
         <div class="filters-row">
             <button class='filter-pill @(string.Equals(_activeFilter, "all", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => SetFilter("all")'>All (@_alerts.Count)</button>
@@ -51,8 +49,7 @@ else
                 }
             }
         </div>
-    </div>
-</div>
+</ParentPageShell>
 }
 
 @code {

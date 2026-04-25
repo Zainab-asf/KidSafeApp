@@ -21,7 +21,7 @@ else if (!string.Equals(AuthState.User?.Role, "Parent", StringComparison.Ordinal
 }
 else
 {
-<div class="parent-shell">
+<ParentPageShell>
     @if (!string.IsNullOrWhiteSpace(_error))
     {
         <div class="alert alert-danger mt-3">@_error</div>
@@ -131,7 +131,7 @@ else
             </div>
         </button>
     </section>
-</div>
+</ParentPageShell>
 }
 
 @code {
