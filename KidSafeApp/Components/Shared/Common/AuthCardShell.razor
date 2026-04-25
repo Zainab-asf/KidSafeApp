@@ -1,0 +1,28 @@
+@namespace KidSafeApp.Components.Shared.Common
+
+<div class="ks-auth-shell">
+    <div class="container py-5" style="max-width: 520px;">
+        <div class="card shadow-sm ks-auth-card">
+            <div class="card-header ks-auth-header @HeaderCssClass">
+                @HeaderContent
+            </div>
+            <div class="card-body">
+                @BodyContent
+            </div>
+        </div>
+
+        @if (FooterContent is not null)
+        {
+            <div class="text-muted small mt-3">
+                @FooterContent
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment HeaderContent { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment BodyContent { get; set; } = default!;
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    [Parameter] public string HeaderCssClass { get; set; } = string.Empty;
+}

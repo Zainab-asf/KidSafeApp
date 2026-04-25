@@ -20,6 +20,7 @@
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
         <EnableDefaultContentItems>false</EnableDefaultContentItems>
         <Nullable>enable</Nullable>
+        <NoWarn>$(NoWarn);NETSDK1233</NoWarn>
 
         <!-- Enable XAML source generation for faster build times and improved performance.
              This generates C# code from XAML at compile time instead of runtime inflation.
@@ -84,8 +85,7 @@
     </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Components\**\*.razor" />
-    <Content Include="_Imports.razor" />
+    <RazorComponent Include="**\*.razor" Exclude="obj\**\*;bin\**\*" />
   </ItemGroup>
 
     <ItemGroup>

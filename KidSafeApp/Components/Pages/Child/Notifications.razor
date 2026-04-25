@@ -3,8 +3,7 @@
 @inject HttpClient Client
 @inject NavigationManager NavigationManager
 
-<ChildLayout>
-  <section class="ks-content">
+<ChildPageShell>
     <div class="ks-notifications-container">
       <!-- HEADER -->
       <div class="ks-card mb-4">
@@ -117,12 +116,11 @@
         }
       </div>
     </div>
-  </section>
-</ChildLayout>
+</ChildPageShell>
 
 @code {
-    private List<NotificationDto> NotificationList;
-    private List<NotificationDto> FilteredNotifications;
+    private List<NotificationDto> NotificationList = new();
+    private List<NotificationDto> FilteredNotifications = new();
     private bool IsLoading = false;
     private string FilterType = "all";
 
@@ -136,7 +134,7 @@
         try
         {
             IsLoading = true;
-            var response = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications");
+            var response = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications?role=Child");
             NotificationList = response ?? new();
             UpdateFilteredList();
         }
@@ -161,7 +159,7 @@
     {
         try
         {
-            await Client.PutAsync($"api/notifications/{id}/mark-as-read", null);
+            await Client.PutAsync($"api/notifications/{id}/mark-as-read?role=Child", null);
             await LoadNotifications();
         }
         catch (Exception ex)
@@ -174,7 +172,7 @@
     {
         try
         {
-            await Client.PutAsync("api/notifications/mark-all-as-read", null);
+            await Client.PutAsync("api/notifications/mark-all-as-read?role=Child", null);
             await LoadNotifications();
         }
         catch (Exception ex)
@@ -187,7 +185,7 @@
     {
         try
         {
-            await Client.DeleteAsync($"api/notifications/{id}");
+            await Client.DeleteAsync($"api/notifications/{id}?role=Child");
             await LoadNotifications();
         }
         catch (Exception ex)
@@ -204,7 +202,7 @@
             {
                 foreach (var notification in NotificationList.ToList())
                 {
-                    await Client.DeleteAsync($"api/notifications/{notification.Id}");
+                    await Client.DeleteAsync($"api/notifications/{notification.Id}?role=Child");
                 }
                 await LoadNotifications();
             }

@@ -12,17 +12,10 @@
 }
 else
 {
-<div class="container py-3 teacher-module">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h1 class="h4 mb-1">Teacher Assignments</h1>
-            <div class="text-secondary">Create and track assignments</div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
-            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
-        </div>
-    </div>
+<TeacherPageShell Title="Teacher Assignments"
+                  Subtitle="Create and track assignments"
+                  OnBack="HandleBack"
+                  OnLogout="HandleLogout">
 
     @if (!string.IsNullOrWhiteSpace(_error))
     {
@@ -144,7 +137,7 @@ else
             }
         </div>
     </div>
-</div>
+</TeacherPageShell>
 }
 
 @code {

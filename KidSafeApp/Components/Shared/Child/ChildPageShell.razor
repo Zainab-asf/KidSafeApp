@@ -1,0 +1,11 @@
+@namespace KidSafeApp.Components.Shared.Child
+
+<ChildLayout>
+  <section class="ks-content">
+    @ChildContent
+  </section>
+</ChildLayout>
+
+@code {
+  [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+}

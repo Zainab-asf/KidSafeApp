@@ -10,7 +10,7 @@ namespace KidSafeApp.States
         public event PropertyChangedEventHandler? PropertyChanged;
         //public int Id { get; set; }
         //public string? Name { get; set; }
-        public UserDto User { get; set; } = default;
+        public UserDto User { get; set; } = new(0, string.Empty, false, string.Empty);
         public string? Token { get; set; }
 
         private bool _isAuthenticated;
@@ -31,7 +31,7 @@ namespace KidSafeApp.States
         {
             //Id = authResponseDto.User.Id;
             //Name = authResponseDto.User.Name;
-            User= authResponseDto.User;
+            User = authResponseDto.User;
             Token = authResponseDto.Token;
             IsAuthenticated = true;
         }
@@ -39,7 +39,7 @@ namespace KidSafeApp.States
         {
             //Id = 0;
             //Name = null;
-            User = default;
+            User = new(0, string.Empty, false, string.Empty);
             Token = null;
             IsAuthenticated = false;
         }

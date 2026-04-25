@@ -17,8 +17,8 @@
 
 .top-row {
     min-height: 3.5rem;
-    background: rgba(15, 23, 42, .55);
-    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(90deg, var(--ks-green), var(--ks-green-dark));
+    border-bottom: 1px solid rgba(255,255,255,.12);
 }
 
 .navbar-brand {
@@ -62,7 +62,7 @@
     }
 
     .nav-item ::deep .nav-link {
-        color: rgba(232,238,252,.80);
+        color: rgba(255,255,255,.82);
         background: none;
         border: none;
         border-radius: 10px;
@@ -76,14 +76,14 @@
     }
 
 .nav-item ::deep a.active {
-    background: linear-gradient(90deg, rgba(124,58,237,.28), rgba(79,70,229,.18));
-    border: 1px solid rgba(124,58,237,.35);
-    color: rgba(232,238,252,.98);
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    color: rgba(255,255,255,.98);
 }
 
 .nav-item ::deep .nav-link:hover {
-    background-color: rgba(255,255,255,0.06);
-    color: rgba(232,238,252,.98);
+    background-color: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,.98);
 }
 
 .nav-scrollable {

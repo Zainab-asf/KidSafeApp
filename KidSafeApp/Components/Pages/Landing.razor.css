@@ -17,7 +17,7 @@
 
 .ks-hero {
   min-height: 100vh;
-  background: var(--ks-yellow-soft);
+  background: linear-gradient(180deg, var(--ks-bg), #fff 100%);
   padding: 2rem 1rem;
   display: flex;
   align-items: center;
@@ -26,7 +26,7 @@
 
 .ks-surface {
   background: var(--ks-surface);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(83, 125, 150, 0.10);
   border-radius: 1.5rem;
   padding: 2rem;
   max-width: 1160px;
@@ -67,7 +67,7 @@
 
 .ks-tile {
   border-radius: 1rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(83, 125, 150, 0.10);
   padding: 1.1rem;
   min-height: 320px;
   width: 100%;
@@ -89,7 +89,7 @@
 }
 
 .ks-tile-green {
-  background: var(--ks-green);
+  background: rgba(68, 161, 148, 0.20);
 }
 
 .ks-tile-head {
@@ -131,13 +131,13 @@
 .ks-tile-btn-outline {
   background: var(--ks-surface);
   color: var(--ks-green-dark);
-  border: 1px solid var(--ks-green);
+  border: 1px solid rgba(83, 125, 150, 0.35);
 }
 
 .ks-tile-btn-light {
   background: var(--ks-surface);
   color: var(--ks-green-dark);
-  border: 1px solid rgba(126, 167, 151, 0.35);
+  border: 1px solid rgba(83, 125, 150, 0.22);
 }
 
 @media (max-width: 1200px) {

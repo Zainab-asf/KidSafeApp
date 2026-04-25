@@ -9,8 +9,8 @@ main {
 }
 
 .top-row {
-    background: #C0E1D2;
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.22);
+    background: linear-gradient(90deg, var(--ks-green), var(--ks-green-dark));
+    box-shadow: 0 8px 22px rgba(83, 125, 150, 0.22);
     justify-content: space-between;
     height: 3.5rem;
     display: flex;
@@ -24,13 +24,13 @@ main {
     gap: 1rem;
     font-weight: 700;
     font-size: 1.25rem;
-    color: var(--ks-text);
+    color: #fff;
 }
 
 .hamburger-menu {
     background: none;
     border: none;
-    color: var(--ks-text);
+    color: #fff;
     cursor: pointer;
     padding: 0.5rem;
     display: flex;
@@ -47,7 +47,7 @@ main {
 .hamburger-menu span {
     width: 24px;
     height: 2.5px;
-    background: var(--ks-text);
+    background: #fff;
     border-radius: 2px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -69,7 +69,7 @@ main {
     }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
-        display: none;
+        color: rgba(255, 255, 255, 0.92);
     }
 }
 
@@ -89,15 +89,9 @@ main {
         text-align: right;
         width: 0;
     }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
-    }
-
 }
 
 article {
     background: transparent;
-    padding-top: 1rem;
+    padding: 0;
 }

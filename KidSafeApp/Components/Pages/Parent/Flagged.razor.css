@@ -1,14 +1,14 @@
     .parent-shell {
     min-height: 100vh;
-    background: #dff3df;
+    background: var(--ks-parent-bg);
     width: 100%;
-    padding: 12px;
+    padding: var(--ks-page-gutter);
     box-sizing: border-box;
 }
 
 .parent-content {
     width: 100%;
-    max-width: 1200px;
+    max-width: var(--ks-page-width);
     margin: 0 auto;
 }
 

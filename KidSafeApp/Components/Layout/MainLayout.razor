@@ -7,10 +7,12 @@
 @inject KidSafeApp.States.AccountManager AccountManager
 @inject KidSafeApp.States.AuthenticationState AuthState
 @inject KidSafeApp.States.AdminSessionState AdminSession
+@inject KidSafeApp.Services.ErrorService ErrorSvc
 
 <CascadingValue Name="AuthenticationState" Value="AuthState">
 
     <div class="page">
+        <ErrorAlert />
         <main>
             @if (!IsLandingPage() && !IsAuthRoute())
             {
@@ -44,11 +46,33 @@
 
 @code {
     private Sidebar? sidebarRef;
+    private bool _isInitialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Safe initialization of AccountManager
+            if (AccountManager != null)
+            {
+                await AccountManager.InitializeAsync();
+            }
+            _isInitialized = true;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"MainLayout initialization error: {ex.Message}");
+            ErrorSvc?.ShowError("Application initialization failed. Please refresh the page.", "Startup Error");
+        }
+    }
 
     private bool IsLandingPage()
     {
         try
         {
+            if (!_isInitialized || NavigationManager is null)
+                return true;
+                
             return NavigationManager.Uri.EndsWith("/") || NavigationManager.Uri.Contains("/index");
         }
         catch
@@ -59,15 +83,28 @@
 
     private bool ShouldShowDrawer()
     {
-        var isRoleDrawer = RoleState.CurrentRole != KidSafeApp.States.AppRole.None;
-        var isAdminDrawer = AdminSession.IsAdmin && string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase);
-        return isRoleDrawer || isAdminDrawer;
+        try
+        {
+            if (RoleState is null || AuthState is null || AdminSession is null)
+                return false;
+
+            var isRoleDrawer = RoleState.CurrentRole != KidSafeApp.States.AppRole.None;
+            var isAdminDrawer = AdminSession.IsAdmin && string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+            return isRoleDrawer || isAdminDrawer;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private bool IsAdminRoute()
     {
         try
         {
+            if (!_isInitialized || NavigationManager is null)
+                return false;
+
             var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
             return relativePath.StartsWith("admin", StringComparison.OrdinalIgnoreCase);
         }
@@ -81,6 +118,9 @@
     {
         try
         {
+            if (!_isInitialized || NavigationManager is null)
+                return false;
+
             var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri).Trim('/');
             return relativePath.Equals("login", StringComparison.OrdinalIgnoreCase)
                 || relativePath.StartsWith("login/", StringComparison.OrdinalIgnoreCase)
@@ -95,23 +135,13 @@
         }
     }
 
-
     private void ToggleSidebarMenu()
     {
-        try
-        {
-            if (sidebarRef != null)
-            {
-                sidebarRef.ToggleSidebar();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error toggling sidebar: {ex.Message}");
-        }
+        sidebarRef?.ToggleSidebar();
     }
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
+        // Cleanup if needed
     }
 }

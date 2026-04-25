@@ -25,7 +25,7 @@ namespace KidSafeApp.Backend.Services
                 IssuerSigningKey = GetSecurityKey(configuration)
             };
 
-        public string GenerateJWT(IEnumerable<Claim> additionalClaims = null)
+        public string GenerateJWT(IEnumerable<Claim>? additionalClaims = null)
         {
             var securityKey = GetSecurityKey(_configuration);
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -60,8 +60,16 @@ namespace KidSafeApp.Backend.Services
             return GenerateJWT(claims);
         }
 
-        private static SymmetricSecurityKey GetSecurityKey(IConfiguration _configuration) =>
-            new(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        private static SymmetricSecurityKey GetSecurityKey(IConfiguration configuration)
+        {
+            var key = configuration["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new InvalidOperationException("JWT signing key is missing in configuration (Jwt:Key).");
+            }
+
+            return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        }
 
     }
 }

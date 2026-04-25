@@ -1,0 +1,23 @@
+@namespace KidSafeApp.Components.Shared.Parent
+
+<div class="parent-shell">
+    <div class="parent-content">
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <h1 class="parent-page-title">@Title</h1>
+        }
+
+        @if (HeaderContent is not null)
+        {
+            @HeaderContent
+        }
+
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+}

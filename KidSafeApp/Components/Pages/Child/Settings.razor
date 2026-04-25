@@ -3,8 +3,7 @@
 @inject HttpClient Client
 @inject NavigationManager NavigationManager
 
-<ChildLayout>
-  <section class="ks-content">
+<ChildPageShell>
     <div class="ks-settings-container">
       <!-- HEADER -->
       <div class="ks-card mb-4">
@@ -282,11 +281,10 @@
         }
       }
     </div>
-  </section>
-</ChildLayout>
+</ChildPageShell>
 
 @code {
-    private UserSettingsDto UserSettings;
+    private UserSettingsDto UserSettings = new();
     private bool IsLoading = false;
     private string ActiveTab = "profile";
 

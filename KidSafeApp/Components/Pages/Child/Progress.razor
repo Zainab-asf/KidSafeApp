@@ -3,8 +3,7 @@
 @inject HttpClient Client
 @inject NavigationManager NavigationManager
 
-<ChildLayout>
-  <section class="ks-content">
+<ChildPageShell>
     <div class="ks-progress-container">
       <!-- HEADER -->
       <div class="ks-card mb-4">
@@ -161,8 +160,7 @@
         }
       </div>
     </div>
-  </section>
-</ChildLayout>
+</ChildPageShell>
 
 @code {
     private List<UserProgressDto> ProgressList = new();

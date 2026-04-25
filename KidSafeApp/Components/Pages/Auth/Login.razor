@@ -79,6 +79,12 @@
             {
                 var content = await response.Content.ReadAsStringAsync();
                 var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
+                if (authResult is null)
+                {
+                    _isBusy = false;
+                    errorMessage = "Invalid login response.";
+                    return;
+                }
 
                 if (AuthenticationState is null)
                 {

@@ -1,14 +1,9 @@
 .ks-learn-container {
-    --ks-primary: #C0E1D2;
-    --ks-primary-dark: #C0E1D2;
-    --ks-text: #DC9B9B;
-    --ks-muted: #DC9B9B;
-}
-
-.ks-learn-container {
-    padding: 2rem 1rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    --ks-primary: var(--ks-green);
+    --ks-primary-dark: var(--ks-green-dark);
+    width: 100%;
+    margin: 0;
+    padding: 0 1rem;
 }
 
 /* HEADER */
@@ -24,13 +19,13 @@
 .ks-learn-title {
     font-size: 2.5rem;
     font-weight: 900;
-    color: #DC9B9B;
+    color: var(--ks-green-dark);
     margin: 0;
     letter-spacing: -0.5px;
 }
 
 .ks-learn-subtitle {
-    color: #DC9B9B;
+    color: var(--ks-muted);
     font-size: 1.05rem;
     margin: 0.5rem 0 0 0;
     max-width: 50ch;
@@ -61,7 +56,7 @@
 
 .ks-stat-label {
     font-size: 0.85rem;
-    color: #DC9B9B;
+    color: var(--ks-muted);
     margin-top: 0.25rem;
 }
 
@@ -79,7 +74,7 @@
     border-radius: 10px;
     border: 1.5px solid rgba(15, 23, 42, 0.15);
     background: white;
-    color: #DC9B9B;
+    color: var(--ks-green-dark);
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -188,10 +183,10 @@
 
 .ks-learn-card {
     background: white;
-    border: 1px solid rgba(15, 23, 42, 0.10);
+    border: 1px solid rgba(83, 125, 150, 0.12);
     border-radius: 1.25rem;
     overflow: hidden;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 8px 20px rgba(83, 125, 150, 0.08);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     display: flex;
@@ -209,7 +204,7 @@
     padding: 0.4rem 0.8rem;
     border-radius: 0.75rem;
     background: linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(132, 204, 22, 0.12) 100%);
-    color: var(--ks-primary);
+    color: var(--ks-green-dark);
     font-weight: 700;
     font-size: 0.75rem;
     margin: 1rem;
@@ -218,12 +213,12 @@
 
 .ks-flag-warning {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-    color: #DC9B9B;
+    color: var(--ks-green-dark);
 }
 
 .ks-flag-advanced {
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%);
-    color: #DC9B9B;
+    color: var(--ks-green-dark);
 }
 
 .ks-card-content {
@@ -242,13 +237,13 @@
     margin: 0 0 0.5rem 0;
     font-size: 1.1rem;
     font-weight: 700;
-    color: #DC9B9B;
+    color: var(--ks-green-dark);
     line-height: 1.4;
 }
 
 .ks-learn-card p {
     margin: 0 0 1rem 0;
-    color: #DC9B9B;
+    color: var(--ks-muted);
     font-size: 0.95rem;
     line-height: 1.5;
 }
@@ -258,7 +253,7 @@
     gap: 1rem;
     margin-bottom: 1rem;
     font-size: 0.85rem;
-    color: #DC9B9B;
+    color: var(--ks-muted);
     font-weight: 500;
 }
 
@@ -287,7 +282,7 @@
 
 .ks-progress-text {
     font-size: 0.75rem;
-    color: #DC9B9B;
+    color: var(--ks-muted);
     font-weight: 600;
 }
 
@@ -301,7 +296,7 @@
 }
 
 .btn-outline-primary:hover {
-    background: rgba(132, 204, 22, 0.12);
+    background: rgba(68, 161, 148, 0.12);
     border-color: var(--ks-primary);
 }
 
@@ -315,7 +310,7 @@
 }
 
 .btn-primary:hover {
-    box-shadow: 0 6px 16px rgba(132, 204, 22, 0.3);
+    box-shadow: 0 6px 16px rgba(68, 161, 148, 0.3);
     transform: translateY(-2px);
 }
 
@@ -338,6 +333,9 @@
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
+    .ks-learn-container {
+        padding: 0;
+    }
     .ks-learn-header {
         flex-direction: column;
         align-items: stretch;

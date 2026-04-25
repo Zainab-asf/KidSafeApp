@@ -1,6 +1,8 @@
 /* Progress Page Styles */
 .ks-progress-container {
-  padding: 1rem 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .ks-stat-card {
@@ -37,7 +39,7 @@
 
 .ks-stat-label {
   font-size: 0.875rem;
-  color: #DC9B9B;
+  color: var(--ks-muted);
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
@@ -45,26 +47,26 @@
 .ks-stat-number {
   font-size: 2rem;
   font-weight: 700;
-  color: #DC9B9B;
+  color: var(--ks-green-dark);
   line-height: 1;
   margin-bottom: 0.5rem;
 }
 
 .ks-stat-subtext {
   font-size: 0.813rem;
-  color: #DC9B9B;
+  color: var(--ks-muted);
 }
 
 .ks-progress-card {
   background: white;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(83, 125, 150, 0.12);
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ks-progress-card:hover {
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 12px 32px rgba(83, 125, 150, 0.1);
   transform: translateY(-2px);
 }
 
@@ -81,7 +83,7 @@
 .ks-progress-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #DC9B9B;
+  color: var(--ks-green-dark);
   margin: 0;
 }
 
@@ -107,12 +109,12 @@
 
 .ks-progress-lessons {
   font-size: 0.875rem;
-  color: #DC9B9B;
+  color: var(--ks-muted);
   font-weight: 500;
 }
 
 .ks-progress-bar {
-  background-color: rgba(15, 23, 42, 0.08);
+  background-color: rgba(83, 125, 150, 0.12);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 1rem;
@@ -140,7 +142,7 @@
 .ks-progress-stats .stat .label {
   display: block;
   font-size: 0.75rem;
-  color: #DC9B9B;
+  color: var(--ks-muted);
   font-weight: 500;
   margin-bottom: 0.25rem;
   text-transform: uppercase;
@@ -151,7 +153,7 @@
   display: block;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #C0E1D2;
+  color: var(--ks-green);
 }
 
 .ks-progress-dates {

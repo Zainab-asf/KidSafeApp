@@ -1,6 +1,8 @@
 /* Notifications Page Styles */
 .ks-notifications-container {
-  padding: 1rem 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .ks-notifications-list {
@@ -14,7 +16,7 @@
   gap: 1rem;
   padding: 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(83, 125, 150, 0.12);
   background-color: white;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
@@ -26,8 +28,8 @@
 }
 
 .ks-notification-item.ks-unread {
-  background-color: rgba(250, 204, 21, 0.08);
-  border-color: rgba(132, 204, 22, 0.22);
+  background-color: rgba(68, 161, 148, 0.08);
+  border-color: rgba(68, 161, 148, 0.22);
 }
 
 .ks-notification-icon {
@@ -58,7 +60,7 @@
 .ks-notification-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #DC9B9B;
+  color: var(--ks-green-dark);
   margin: 0;
   word-break: break-word;
 }
@@ -66,14 +68,14 @@
 .ks-unread-dot {
   width: 8px;
   height: 8px;
-  background-color: #C0E1D2;
+  background-color: var(--ks-green);
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .ks-notification-message {
   font-size: 0.875rem;
-  color: #DC9B9B;
+  color: var(--ks-muted);
   margin: 0.375rem 0;
   word-break: break-word;
   line-height: 1.4;
@@ -81,7 +83,7 @@
 
 .ks-notification-time {
   font-size: 0.75rem;
-  color: #DC9B9B;
+  color: var(--ks-muted);
 }
 
 .ks-notification-actions {
@@ -105,12 +107,12 @@
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(83, 125, 150, 0.12);
 }
 
 .ks-notification-filter-btn.active {
-  background: linear-gradient(90deg, #E5EEE4, #C0E1D2);
-  color: #C0E1D2;
+  background: linear-gradient(90deg, var(--ks-green), var(--ks-green-dark));
+  color: #fff;
   border-color: transparent;
 }
 

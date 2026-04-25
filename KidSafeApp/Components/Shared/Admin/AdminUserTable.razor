@@ -1,0 +1,38 @@
+@using KidSafeApp.Shared.DTOs.Admin
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Approved</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Users.Count == 0)
+            {
+                <tr><td colspan="5" class="text-muted">No users found.</td></tr>
+            }
+            else
+            {
+                @foreach (var user in Users)
+                {
+                    <tr>
+                        <td>@user.Name</td>
+                        <td>@user.Username</td>
+                        <td>@user.Role</td>
+                        <td>@(user.IsActive ? "Active" : "Inactive")</td>
+                        <td>@(user.IsApproved ? "Yes" : "No")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AdminUserDto> Users { get; set; } = Array.Empty<AdminUserDto>();
+}

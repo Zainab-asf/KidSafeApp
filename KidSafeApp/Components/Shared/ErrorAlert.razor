@@ -1,0 +1,115 @@
+@namespace KidSafeApp.Components.Shared
+@using KidSafeApp.Services
+@using KidSafeApp.Models
+@implements IAsyncDisposable
+@inject ErrorService ErrorService
+
+<div class="error-notification-container">
+    @foreach (var notification in ErrorService.Notifications)
+    {
+        <div class="error-notification alert alert-@GetAlertClass(notification.Type) alert-dismissible fade show" role="alert">
+            <div class="notification-content">
+                @if (!string.IsNullOrWhiteSpace(notification.Title))
+                {
+                    <strong>@notification.Title</strong>
+                }
+                <span>@notification.Message</span>
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" @onclick="() => DismissNotification(notification.Id)"></button>
+        </div>
+    }
+</div>
+
+@code {
+    private Dictionary<Guid, Task> _autoCloseTimers = new();
+
+    protected override void OnInitialized()
+    {
+        ErrorService.OnNotificationChanged += OnNotificationChanged;
+    }
+
+    private void OnNotificationChanged()
+    {
+        // Cancel existing timers
+        foreach (var timer in _autoCloseTimers.Values)
+        {
+            if (!timer.IsCompleted)
+            {
+                // Timers already started
+            }
+        }
+
+        // Schedule auto-close for new notifications
+        foreach (var notification in ErrorService.Notifications)
+        {
+            if (!_autoCloseTimers.ContainsKey(notification.Id))
+            {
+                _autoCloseTimers[notification.Id] = Task.Delay(notification.DurationMs)
+                    .ContinueWith(_ =>
+                    {
+                        if (ErrorService.Notifications.FirstOrDefault(n => n.Id == notification.Id) != null)
+                        {
+                            ErrorService.RemoveNotification(notification.Id);
+                        }
+                    });
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private void DismissNotification(Guid notificationId)
+    {
+        ErrorService.RemoveNotification(notificationId);
+        if (_autoCloseTimers.ContainsKey(notificationId))
+        {
+            _autoCloseTimers.Remove(notificationId);
+        }
+    }
+
+    private string GetAlertClass(NotificationType type) => type switch
+    {
+        NotificationType.Error => "danger",
+        NotificationType.Success => "success",
+        NotificationType.Warning => "warning",
+        NotificationType.Info => "info",
+        _ => "secondary"
+    };
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        ErrorService.OnNotificationChanged -= OnNotificationChanged;
+        await Task.CompletedTask;
+    }
+}
+
+<style>
+.error-notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.error-notification {
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+.notification-content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.notification-content strong {
+    font-weight: 600;
+}
+</style>

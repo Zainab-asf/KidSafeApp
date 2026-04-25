@@ -14,10 +14,10 @@ namespace KidSafeApp.Backend.Data.Entities
         public int UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
         [Required, Unicode(false), MaxLength(100)]
-        public string CourseTitle { get; set; }
+        public string CourseTitle { get; set; } = string.Empty;
 
         public int LessonsCompleted { get; set; }
 

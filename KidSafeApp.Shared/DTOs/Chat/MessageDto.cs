@@ -1,4 +1,4 @@
 ﻿namespace KidSafeApp.Shared.DTOs.Chat
 {
-    public record MessageDto(int ToUserId, int FromUserId, string Message, DateTime SentOn);
+    public record MessageDto(int Id, int FromUserId, int ToUserId, string Message, DateTime SentAt);
 }

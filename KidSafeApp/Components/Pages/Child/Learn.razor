@@ -3,8 +3,7 @@
 @inject HttpClient Client
 @inject NavigationManager NavigationManager
 
-<ChildLayout>
-  <section class="ks-content">
+<ChildPageShell>
     <div class="ks-learn-container">
       <div class="ks-learn-header">
         <div>
@@ -97,8 +96,7 @@
         }
       </div>
     </div>
-  </section>
-</ChildLayout>
+</ChildPageShell>
 
 @code {
   private bool _loading = true;

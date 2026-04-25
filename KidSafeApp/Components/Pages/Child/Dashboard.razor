@@ -20,11 +20,9 @@ else if (!string.Equals(AuthState.User?.Role, "Child", StringComparison.OrdinalI
 }
 else
 {
-  <ChildLayout>
-    <section class="ks-content">
-      <DashboardView />
-    </section>
-  </ChildLayout>
+  <ChildPageShell>
+    <DashboardView />
+  </ChildPageShell>
 }
 
 @code {

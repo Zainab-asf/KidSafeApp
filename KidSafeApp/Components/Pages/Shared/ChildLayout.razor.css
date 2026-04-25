@@ -3,14 +3,15 @@
 }
 
 .ks-main {
-    width: 100%;
+    width: min(100%, var(--ks-page-width));
     min-width: 0;
-    padding: 1rem;
+    margin: 0 auto;
+    padding: var(--ks-page-gutter);
     display: block;
 }
 
 @media (max-width: 900px) {
     .ks-main {
-        padding: 0.75rem;
+        padding: var(--ks-page-gutter);
     }
 }

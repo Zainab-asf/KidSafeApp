@@ -1,22 +1,28 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background: var(--ks-yellow-soft);
+    background: var(--ks-bg);
     color: var(--ks-text);
 }
 
 :root {
-    --ks-yellow: #E5EEE4;
-    --ks-yellow-soft: #F6F4E8;
-    --ks-green: #C0E1D2;
-    --ks-green-dark: #7ea797;
-    --ks-peach: #DC9B9B;
+    --ks-page-width: 1200px;
+    --ks-page-gutter: clamp(0.85rem, 1.6vw, 1.5rem);
+    --ks-card-radius: 16px;
+    --ks-control-radius: 12px;
+    --ks-parent-bg: #dff3df;
+    --ks-bg: #F4F0E4;
+    --ks-surface-2: #FBF8F1;
+    --ks-yellow: #F4F0E4;
+    --ks-yellow-soft: #FBF8F1;
+    --ks-green: #44A194;
+    --ks-green-dark: #537D96;
+    --ks-peach: #EC8F8D;
     --ks-accent: var(--ks-green);
     --ks-accent-2: var(--ks-yellow);
     --ks-accent-green: var(--ks-green);
     --ks-surface: #ffffff;
-    --ks-border: rgba(15, 23, 42, 0.08);
-    --ks-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
-    --ks-bg: var(--ks-yellow-soft);
+    --ks-border: rgba(83, 125, 150, 0.14);
+    --ks-shadow: 0 10px 26px rgba(83, 125, 150, 0.12);
     --ks-text: #1f2937;
     --ks-muted: #6b7280;
     --ks-radius: 14px;
@@ -24,7 +30,7 @@ html, body {
 
 .ks-auth-shell {
     min-height: 100vh;
-    background: var(--ks-yellow-soft);
+    background: linear-gradient(180deg, var(--ks-bg) 0%, #fff 100%);
     padding: 1rem 0;
 }
 
@@ -35,8 +41,8 @@ html, body {
 }
 
 .ks-auth-header {
-    background: var(--ks-yellow) !important;
-    color: var(--ks-green-dark) !important;
+    background: var(--ks-green) !important;
+    color: #fff !important;
 }
 
 .auth-page-clean .container {
@@ -44,7 +50,7 @@ html, body {
 }
 
 .auth-page-clean .card-footer {
-    background: #F6F4E8;
+    background: var(--ks-surface-2);
 }
 
 a, .btn-link {
@@ -56,7 +62,7 @@ a:hover, .btn-link:hover {
 }
 
 .btn-primary {
-    color: #1f2937;
+    color: #fff;
     background: var(--ks-green);
     border-color: var(--ks-green);
     font-weight: 600;
@@ -68,25 +74,25 @@ a:hover, .btn-link:hover {
 .btn-primary:active,
 .btn-primary.active,
 .show > .btn-primary.dropdown-toggle {
-    color: #1f2937;
-    background: var(--ks-green);
-    border-color: var(--ks-green);
-    box-shadow: 0 0 0 0.2rem rgba(192, 225, 210, 0.55);
+    color: #fff;
+    background: #3e8f83;
+    border-color: #3e8f83;
+    box-shadow: 0 0 0 0.2rem rgba(68, 161, 148, 0.28);
 }
 
 .btn-outline-primary {
     color: var(--ks-accent);
-    border-color: rgba(101, 163, 13, 0.55);
+    border-color: rgba(68, 161, 148, 0.55);
 }
 
 .btn-outline-primary:hover {
-    color: #1f2937;
+    color: #fff;
     background-color: var(--ks-accent);
     border-color: var(--ks-accent);
 }
 
 .btn-success {
-    color: #1f2937;
+    color: #fff;
     background: var(--ks-green);
     border-color: var(--ks-green);
     font-weight: 600;
@@ -98,10 +104,10 @@ a:hover, .btn-link:hover {
 .btn-success:active,
 .btn-success.active,
 .show > .btn-success.dropdown-toggle {
-    color: #1f2937;
-    background: var(--ks-green);
-    border-color: var(--ks-green);
-    box-shadow: 0 0 0 0.2rem rgba(192, 225, 210, 0.55);
+    color: #fff;
+    background: #3e8f83;
+    border-color: #3e8f83;
+    box-shadow: 0 0 0 0.2rem rgba(68, 161, 148, 0.28);
 }
 
 .btn-outline-secondary,
@@ -110,19 +116,19 @@ a:hover, .btn-link:hover {
 .btn-outline-secondary:focus-visible,
 .btn-outline-secondary:active {
     color: var(--ks-text);
-    border-color: rgba(31, 41, 55, 0.25);
-    box-shadow: 0 0 0 0.2rem rgba(192, 225, 210, 0.45);
+    border-color: rgba(83, 125, 150, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(83, 125, 150, 0.16);
 }
 
 .card {
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--ks-border);
     box-shadow: var(--ks-shadow);
-    border-radius: 16px;
+    border-radius: var(--ks-card-radius);
     background: var(--ks-surface);
 }
 
 .form-control {
-    border-radius: 12px;
+    border-radius: var(--ks-control-radius);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
@@ -130,7 +136,7 @@ a:hover, .btn-link:hover {
 }
 
 .content {
-    padding-top: 1.1rem;
+    padding-top: 0;
 }
 
 h1:focus {
@@ -138,7 +144,7 @@ h1:focus {
 }
 
 .valid.modified:not([type=checkbox]) {
-    outline: 1px solid #C0E1D2;
+    outline: 1px solid var(--ks-green);
 }
 
 .invalid {

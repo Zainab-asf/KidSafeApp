@@ -16,6 +16,13 @@ public sealed class AdminCreateUserDto
     [Required]
     public string Role { get; set; } = "Child";
 
+    [MaxLength(50)]
+    public string? RegistrationNo { get; set; }
+
+    public int? ClassRoomId { get; set; }
+
+    public int? CourseId { get; set; }
+
     public bool IsApproved { get; set; } = true;
 
     public bool IsActive { get; set; } = true;
