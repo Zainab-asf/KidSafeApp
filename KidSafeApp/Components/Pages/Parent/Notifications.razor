@@ -3,7 +3,7 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
-@inject HttpClient Client
+@inject ParentDashboardApiClient ParentApiClient
 
 @if (!RoleState.IsRoleLoaded)
 {
@@ -11,56 +11,45 @@
 }
 else
 {
-<div class="container py-3 parent-module">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h1 class="h4 mb-1">Parent Notifications</h1>
-            <div class="text-secondary">Recent alerts and system updates</div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
-            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
-        </div>
-    </div>
+<div class="parent-shell">
+    <div class="parent-content">
+        <h1 class="parent-page-title">Notifications</h1>
 
-    @if (!string.IsNullOrWhiteSpace(_error))
-    {
-        <div class="alert alert-danger">@_error</div>
-    }
+        <div class="filters-row">
+            <button class='filter-pill @(string.Equals(_activeFilter, "all", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => SetFilter("all")'>All (@_alerts.Count)</button>
+            <button class='filter-pill @(string.Equals(_activeFilter, "unread", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => SetFilter("unread")'>Unread (@_alerts.Count(a => !a.IsRead))</button>
+            <button class="mark-read-link" @onclick="MarkAllAsRead">Mark all read</button>
+        </div>
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Unread Alerts</h2>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <div class="notification-list">
             @if (_loading)
             {
-                <div class="text-secondary">Loading alerts...</div>
+                <div class="panel-card">Loading alerts...</div>
             }
-            else if (_alerts.Count == 0)
+            else if (!FilteredAlerts.Any())
             {
-                <div class="text-secondary">No alerts right now.</div>
+                <div class="panel-card">No alerts right now.</div>
             }
             else
             {
-                <ul class="mb-0">
-                    @foreach (var alert in _alerts)
-                    {
-                        <li>
-                            <strong>@alert.Title</strong>: @alert.Message
-                            <span class="small text-secondary">(@alert.CreatedAt.ToLocalTime().ToString("g"))</span>
-                        </li>
-                    }
-                </ul>
+                @foreach (var alert in FilteredAlerts)
+                {
+                    <div class="notif-card @GetNotifClass(alert)" @onclick="() => MarkAsRead(alert)">
+                        <div class="notif-icon">@GetNotifIcon(alert)</div>
+                        <div class="notif-copy">
+                            <div class="notif-title">@alert.Title</div>
+                            <div class="notif-message">@alert.Message</div>
+                            <div class="notif-meta">@alert.CreatedAt.ToLocalTime().ToString("g")</div>
+                        </div>
+                        <div class="notif-dot @(alert.IsRead ? "read" : "")"></div>
+                    </div>
+                }
             }
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-body">
-            <h2 class="h6">Actions</h2>
-            <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-primary" @onclick="MarkAllAsRead">Mark all as read</button>
-                <button class="btn btn-outline-primary" @onclick="HandleGoToSettings">Notification preferences</button>
-            </div>
         </div>
     </div>
 </div>
@@ -70,6 +59,13 @@ else
     private bool _loading;
     private string? _error;
     private readonly List<NotificationDto> _alerts = new();
+    private string _activeFilter = "unread";
+
+    private IEnumerable<NotificationDto> FilteredAlerts => _activeFilter switch
+    {
+        "all" => _alerts,
+        _ => _alerts.Where(a => !a.IsRead)
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,15 +79,8 @@ else
         _alerts.Clear();
         try
         {
-            var notifications = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications?unreadOnly=true&role=Parent") ?? new();
-
-            if (notifications.Count == 0)
-            {
-                await SeedNotificationsFromProgressAsync();
-                notifications = await Client.GetFromJsonAsync<List<NotificationDto>>("api/notifications?unreadOnly=true&role=Parent") ?? new();
-            }
-
-            _alerts.AddRange(notifications);
+            var notifications = await ParentApiClient.GetNotificationsAsync();
+            _alerts.AddRange(notifications.OrderByDescending(x => x.CreatedAt));
         }
         catch (Exception ex)
         {
@@ -103,12 +92,20 @@ else
         }
     }
 
+    private void SetFilter(string filter)
+    {
+        _activeFilter = filter;
+    }
+
     private async Task MarkAllAsRead()
     {
         try
         {
-            await Client.PutAsync("api/notifications/mark-all-as-read?role=Parent", null);
-            _alerts.Clear();
+            await ParentApiClient.MarkAllNotificationsAsReadAsync();
+            foreach (var alert in _alerts)
+            {
+                alert.IsRead = true;
+            }
         }
         catch (Exception ex)
         {
@@ -116,33 +113,44 @@ else
         }
     }
 
-    private async Task SeedNotificationsFromProgressAsync()
+    private async Task MarkAsRead(NotificationDto alert)
     {
-        var courses = await Client.GetFromJsonAsync<List<ChildCourseDto>>("api/child/learning/courses") ?? new();
-        foreach (var c in courses)
+        if (alert.IsRead)
         {
-            var message = c.PercentageComplete == 0
-                ? $"{c.Title} has not started yet."
-                : c.PercentageComplete < 100
-                    ? $"{c.Title} is in progress at {c.PercentageComplete}%."
-                    : $"{c.Title} has been completed successfully.";
+            return;
+        }
 
-            var payload = new
-            {
-                Title = "Learning Update",
-                Message = message,
-                Type = c.PercentageComplete >= 100 ? "Achievement" : "Info",
-                ActionUrl = "/parent/progress"
-            };
-
-            await Client.PostAsJsonAsync("api/notifications/send?role=Parent", payload);
+        try
+        {
+            await ParentApiClient.MarkNotificationAsReadAsync(alert.Id);
+            alert.IsRead = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
         }
     }
 
+    private string GetNotifClass(NotificationDto alert)
+    {
+        var title = alert.Title ?? string.Empty;
+        if (title.Contains("Block", StringComparison.OrdinalIgnoreCase)) return "blocked";
+        if (title.Contains("Flag", StringComparison.OrdinalIgnoreCase)) return "flagged";
+        if (title.Contains("Badge", StringComparison.OrdinalIgnoreCase)) return "badge";
+        return string.Empty;
+    }
+
+    private string GetNotifIcon(NotificationDto alert)
+    {
+        var title = alert.Title ?? string.Empty;
+        if (title.Contains("Block", StringComparison.OrdinalIgnoreCase)) return "⛔";
+        if (title.Contains("Flag", StringComparison.OrdinalIgnoreCase)) return "🚩";
+        if (title.Contains("Badge", StringComparison.OrdinalIgnoreCase)) return "🏅";
+        return "🔔";
+    }
+
     private void HandleGoToSettings() => NavigationManager.NavigateTo("/parent/settings");
-
     private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
-
     private void HandleLogout()
     {
         RoleState.Reset();

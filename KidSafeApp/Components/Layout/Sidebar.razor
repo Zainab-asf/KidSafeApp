@@ -70,6 +70,10 @@
                     <span class="nav-icon">🔔</span>
                     <span class="nav-text">Notifications</span>
                 </NavLink>
+                <NavLink class="nav-link" href="/parent/flagged" @onclick="HandleNavClick">
+                    <span class="nav-icon">🚩</span>
+                    <span class="nav-text">Flagged</span>
+                </NavLink>
                 <NavLink class="nav-link" href="/parent/progress" @onclick="HandleNavClick">
                     <span class="nav-icon">📈</span>
                     <span class="nav-text">Progress</span>
@@ -126,50 +130,37 @@
                     <span class="nav-icon">🏠</span>
                     <span class="nav-text">Dashboard</span>
                 </NavLink>
-            </div>
-
-            <div class="nav-section">
-                <h3 class="nav-section-title">User Management</h3>
-                <NavLink class="nav-link" href="/admin/users" @onclick="HandleNavClick">
-                    <span class="nav-icon">👥</span>
-                    <span class="nav-text">Users</span>
+                <NavLink class="nav-link" href="/admin/child-chat" @onclick="HandleNavClick">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-text">Child Chat</span>
                 </NavLink>
-                <NavLink class="nav-link" href="/admin/roles" @onclick="HandleNavClick">
-                    <span class="nav-icon">🛡️</span>
-                    <span class="nav-text">Roles & Permissions</span>
+                <NavLink class="nav-link" href="/admin/parent-portal" @onclick="HandleNavClick">
+                    <span class="nav-icon">👨‍👩‍👧</span>
+                    <span class="nav-text">Parent Portal</span>
                 </NavLink>
-                <NavLink class="nav-link" href="/admin/approvals" @onclick="HandleNavClick">
-                    <span class="nav-icon">✅</span>
-                    <span class="nav-text">Approvals</span>
-                </NavLink>
-            </div>
-
-            <div class="nav-section">
-                <h3 class="nav-section-title">Academic</h3>
-                <NavLink class="nav-link" href="/admin/classes" @onclick="HandleNavClick">
-                    <span class="nav-icon">📚</span>
-                    <span class="nav-text">Classes</span>
-                </NavLink>
-                <NavLink class="nav-link" href="/admin/students" @onclick="HandleNavClick">
-                    <span class="nav-icon">🎓</span>
-                    <span class="nav-text">Students</span>
-                </NavLink>
-                <NavLink class="nav-link" href="/admin/teachers" @onclick="HandleNavClick">
+                <NavLink class="nav-link" href="/admin/teacher-module" @onclick="HandleNavClick">
                     <span class="nav-icon">👩‍🏫</span>
-                    <span class="nav-text">Teachers</span>
+                    <span class="nav-text">Teacher Module</span>
                 </NavLink>
-                <NavLink class="nav-link" href="/admin/courses" @onclick="HandleNavClick">
-                    <span class="nav-icon">📝</span>
-                    <span class="nav-text">Courses</span>
+                <NavLink class="nav-link" href="/admin/add-user" @onclick="HandleNavClick">
+                    <span class="nav-icon">➕</span>
+                    <span class="nav-text">Add User</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/notifications" @onclick="HandleNavClick">
+                    <span class="nav-icon">🔔</span>
+                    <span class="nav-text">Notifications</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/settings" @onclick="HandleNavClick">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Settings</span>
+                </NavLink>
+                <NavLink class="nav-link" href="/admin/help" @onclick="HandleNavClick">
+                    <span class="nav-icon">❓</span>
+                    <span class="nav-text">Help & Support</span>
                 </NavLink>
             </div>
 
             <div class="nav-section">
-                <h3 class="nav-section-title">System</h3>
-                <NavLink class="nav-link" href="/admin/activity-logs" @onclick="HandleNavClick">
-                    <span class="nav-icon">🕘</span>
-                    <span class="nav-text">Activity Logs</span>
-                </NavLink>
                 <button class="nav-link logout-btn" @onclick="HandleLogout">
                     <span class="nav-icon">🚪</span>
                     <span class="nav-text">Logout</span>

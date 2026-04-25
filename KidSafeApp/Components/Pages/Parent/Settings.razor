@@ -3,7 +3,7 @@
 
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
-@inject HttpClient Client
+@inject ParentDashboardApiClient ParentApiClient
 
 @if (!RoleState.IsRoleLoaded)
 {
@@ -11,51 +11,109 @@
 }
 else
 {
-<div class="container py-3 parent-module">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h1 class="h4 mb-1">Parent Settings</h1>
-            <div class="text-secondary">Configure controls and notifications</div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
-            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
-        </div>
-    </div>
+<div class="parent-shell">
+    <div class="parent-content">
+        <h1 class="parent-page-title">Filters & Settings</h1>
 
-    <div class="card mb-3">
-        <div class="card-body">
-            <h2 class="h6">Safety Controls</h2>
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <div class="alert alert-danger">@_error</div>
-            }
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger mt-3">@_error</div>
+        }
 
-            <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" @bind="_settings.BlockAdultContent" />
-                <label class="form-check-label">Block mature content</label>
-            </div>
-            <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" @bind="_settings.RequireParentApprovalForMessages" />
-                <label class="form-check-label">Require approval for new contacts</label>
-            </div>
-            <label class="form-label mt-2">Daily screen time limit (minutes)</label>
-            <input class="form-control" type="number" @bind="_settings.ScreenTimeLimit" />
-        </div>
-    </div>
+        <section class="panel-card mt-3">
+            <h3>Notification Preferences</h3>
+            <div class="setting-list">
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Email Alerts</div>
+                        <small>Receive alerts via email</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.EmailNotificationsEnabled" />
+                </div>
 
-    <div class="card">
-        <div class="card-body">
-            <h2 class="h6">Notifications</h2>
-            <div class="form-check form-switch mb-2">
-                <input class="form-check-input" type="checkbox" @bind="_settings.EmailNotificationsEnabled" />
-                <label class="form-check-label">Email alerts</label>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">SMS Alerts</div>
+                        <small>Receive alerts via SMS</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.PushNotificationsEnabled" />
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Blocked Messages</div>
+                        <small>Alert when a message is blocked</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.BlockAdultContent" />
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Flagged Messages</div>
+                        <small>Alert when a message is flagged</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.RequireParentApprovalForMessages" />
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Badge Earned</div>
+                        <small>Alert when child earns a badge</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.AchievementNotifications" />
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Daily Report</div>
+                        <small>Receive daily activity summary</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.MessageNotifications" />
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-title">Weekly Report</div>
+                        <small>Receive weekly safety report</small>
+                    </div>
+                    <input class="form-check-input" type="checkbox" @bind="_settings.CourseReminderNotifications" />
+                </div>
             </div>
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" @bind="_settings.PushNotificationsEnabled" />
-                <label class="form-check-label">Push alerts</label>
+        </section>
+
+        <section class="panel-card">
+            <h3>Custom Alert Keywords</h3>
+            <div class="keyword-box">
+                <input class="form-control" placeholder="Add a keyword..." @bind="_keyword" />
+                <button class="btn btn-success" @onclick="AddKeyword">Add</button>
             </div>
-            <button class="btn btn-primary mt-3" @onclick="SaveSettingsAsync" disabled="@_saving">@(_saving ? "Saving..." : "Save Settings")</button>
+            <div class="keyword-list mt-3">
+                @foreach (var keyword in _keywords)
+                {
+                    <div class="keyword-item">
+                        <span>@keyword</span>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-success" @onclick='() => ToggleKeyword(keyword)'>@(_keywordEnabled.Contains(keyword) ? "On" : "Off")</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick='() => RemoveKeyword(keyword)'>🗑️</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="quick-grid">
+            <button class="quick-card quick-primary" @onclick="SaveSettingsAsync">
+                <div>
+                    <div class="quick-title">Save Settings</div>
+                    <small>@(_saving ? "Saving..." : "Apply all changes")</small>
+                </div>
+            </button>
+            <button class="quick-card" @onclick="HandleBack">
+                <div>
+                    <div class="quick-title">Back to Dashboard</div>
+                    <small>Return to overview</small>
+                </div>
+            </button>
         </div>
     </div>
 </div>
@@ -70,8 +128,12 @@ else
         Bio = string.Empty,
         AvatarUrl = string.Empty
     };
+
     private bool _saving;
     private string? _error;
+    private string _keyword = string.Empty;
+    private readonly List<string> _keywords = new() { "fight", "hate", "bully", "skip class" };
+    private readonly HashSet<string> _keywordEnabled = new(StringComparer.OrdinalIgnoreCase) { "fight", "hate", "bully" };
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,7 +145,7 @@ else
         _error = null;
         try
         {
-            _settings = await Client.GetFromJsonAsync<UserSettingsDto>("api/settings?role=Parent") ?? _settings;
+            _settings = await ParentApiClient.GetSettingsAsync() ?? _settings;
         }
         catch (Exception ex)
         {
@@ -97,14 +159,7 @@ else
         _saving = true;
         try
         {
-            var response = await Client.PutAsJsonAsync("api/settings?role=Parent", _settings);
-            if (!response.IsSuccessStatusCode)
-            {
-                _error = await response.Content.ReadAsStringAsync();
-                return;
-            }
-
-            var updated = await response.Content.ReadFromJsonAsync<UserSettingsDto>();
+            var updated = await ParentApiClient.SaveSettingsAsync(_settings);
             if (updated is not null)
             {
                 _settings = updated;
@@ -118,6 +173,27 @@ else
         {
             _saving = false;
         }
+    }
+
+    private void AddKeyword()
+    {
+        var value = _keyword.Trim();
+        if (string.IsNullOrWhiteSpace(value) || _keywords.Contains(value, StringComparer.OrdinalIgnoreCase)) return;
+        _keywords.Add(value);
+        _keywordEnabled.Add(value);
+        _keyword = string.Empty;
+    }
+
+    private void ToggleKeyword(string keyword)
+    {
+        if (_keywordEnabled.Contains(keyword)) _keywordEnabled.Remove(keyword);
+        else _keywordEnabled.Add(keyword);
+    }
+
+    private void RemoveKeyword(string keyword)
+    {
+        _keywords.RemoveAll(x => string.Equals(x, keyword, StringComparison.OrdinalIgnoreCase));
+        _keywordEnabled.Remove(keyword);
     }
 
     private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
