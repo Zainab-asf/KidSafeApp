@@ -1,0 +1,184 @@
+@namespace KidSafeApp.Components.Pages.Parent
+@page "/parent/flagged"
+
+@inject KidSafeApp.States.RoleState RoleState
+@inject NavigationManager NavigationManager
+@inject ParentDashboardApiClient ParentApiClient
+
+@if (!RoleState.IsRoleLoaded)
+{
+    <RoleLoading />
+}
+else
+{
+<div class="parent-shell">
+    <div class="parent-content">
+        <h1 class="parent-page-title">Flagged Messages</h1>
+
+        <div class="filters-row">
+            <button class='filter-pill @(_activeFilter == FlaggedFilter.All ? "active" : string.Empty)' @onclick='() => SetFilter(FlaggedFilter.All)'>All (@_items.Count)</button>
+            <button class='filter-pill @(_activeFilter == FlaggedFilter.New ? "active" : string.Empty)' @onclick='() => SetFilter(FlaggedFilter.New)'>New Flag (@_items.Count(x => !x.IsRead))</button>
+            <button class='filter-pill @(_activeFilter == FlaggedFilter.InReview ? "active" : string.Empty)' @onclick='() => SetFilter(FlaggedFilter.InReview)'>In Review (@_items.Count(x => x.IsReview))</button>
+            <button class='filter-pill @(_activeFilter == FlaggedFilter.Resolved ? "active" : string.Empty)' @onclick='() => SetFilter(FlaggedFilter.Resolved)'>Resolved (@_items.Count(x => x.IsRead))</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <div class="flagged-list">
+            @if (_loading)
+            {
+                <div class="panel-card">Loading flagged messages...</div>
+            }
+            else if (!FilteredItems.Any())
+            {
+                <div class="panel-card">No flagged items found.</div>
+            }
+            else
+            {
+                @foreach (var item in FilteredItems)
+                {
+                    <div class="flagged-card @item.SeverityClass" @onclick="() => MarkAsRead(item)">
+                        <div class="flagged-status">
+                            <span class="@item.SignalClass">@item.SignalText</span>
+                            <span class="@(!item.IsRead ? "is-new" : "is-resolved")">@(!item.IsRead ? "New Flag" : "Resolved")</span>
+                            <span class="severity @item.SeverityClass">@item.SeverityText</span>
+                        </div>
+                        <div class="flagged-content">@item.MaskedMessage</div>
+                        <div class="flagged-meta">
+                            <span>@item.CreatedAt.ToLocalTime().ToString("g")</span>
+                            <span class="expand-icon">⌄</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="quick-grid">
+            <button class="quick-card quick-primary" @onclick="GoToNotifications">
+                <div class="quick-title">View Alerts</div>
+                <small>Open complete alerts feed</small>
+            </button>
+            <button class="quick-card" @onclick="GoToSettings">
+                <div class="quick-title">Manage Filters</div>
+                <small>Adjust keyword sensitivity</small>
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+@code {
+    private bool _loading;
+    private string? _error;
+    private readonly List<FlaggedItemViewModel> _items = new();
+    private FlaggedFilter _activeFilter = FlaggedFilter.All;
+
+    private IEnumerable<FlaggedItemViewModel> FilteredItems => _activeFilter switch
+    {
+        FlaggedFilter.New => _items.Where(x => !x.IsRead),
+        FlaggedFilter.InReview => _items.Where(x => x.IsReview),
+        FlaggedFilter.Resolved => _items.Where(x => x.IsRead),
+        _ => _items
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        _items.Clear();
+        try
+        {
+            var flagged = await ParentApiClient.GetFlaggedNotificationsAsync();
+            _items.AddRange(flagged.Select(MapToItem));
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task MarkAsRead(FlaggedItemViewModel item)
+    {
+        if (item.IsRead)
+        {
+            return;
+        }
+
+        try
+        {
+            await ParentApiClient.MarkNotificationAsReadAsync(item.Id);
+            item.IsRead = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private static FlaggedItemViewModel MapToItem(NotificationDto source)
+    {
+        var title = source.Title ?? string.Empty;
+        var message = source.Message ?? string.Empty;
+        var type = source.Type ?? string.Empty;
+
+        var isBlocked = title.Contains("block", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("block", StringComparison.OrdinalIgnoreCase);
+        var isReview = title.Contains("review", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("review", StringComparison.OrdinalIgnoreCase)
+            || type.Contains("warn", StringComparison.OrdinalIgnoreCase);
+
+        return new FlaggedItemViewModel
+        {
+            Id = source.Id,
+            IsRead = source.IsRead,
+            IsReview = isReview,
+            CreatedAt = source.CreatedAt,
+            SignalText = isBlocked ? "Blocked" : "Masked",
+            SignalClass = isBlocked ? "blocked" : "masked",
+            SeverityText = isBlocked ? "High severity" : "Low severity",
+            SeverityClass = isBlocked ? "high" : "low",
+            MaskedMessage = $"[Content masked for privacy — {message}]"
+        };
+    }
+
+    private void SetFilter(FlaggedFilter filter)
+    {
+        _activeFilter = filter;
+    }
+
+    private void GoToNotifications() => NavigationManager.NavigateTo("/parent/notifications");
+    private void GoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+
+    private enum FlaggedFilter
+    {
+        All,
+        New,
+        InReview,
+        Resolved
+    }
+
+    private sealed class FlaggedItemViewModel
+    {
+        public int Id { get; set; }
+        public bool IsRead { get; set; }
+        public bool IsReview { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string SignalText { get; set; } = string.Empty;
+        public string SignalClass { get; set; } = string.Empty;
+        public string SeverityText { get; set; } = string.Empty;
+        public string SeverityClass { get; set; } = string.Empty;
+        public string MaskedMessage { get; set; } = string.Empty;
+    }
+}
