@@ -50,7 +50,7 @@ public sealed class ChatService
 
             return messageDto;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Log error - can be connected to ILogger later
             throw;

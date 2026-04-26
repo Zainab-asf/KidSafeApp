@@ -1953,19 +1953,16 @@
     private string _chatAdminNote = string.Empty;
     private string _broadcastMessage = string.Empty;
     private string _addUserRole = "child";
-    private bool _showAddChild;
     private bool _creatingChild;
     private string _newChildName = string.Empty;
     private string _newChildRegNo = string.Empty;
     private string _newChildPassword = string.Empty;
     private int _newChildClassRoomId;
     private int _newChildCourseId;
-    private bool _showAddParent;
     private bool _creatingParent;
     private string _newParentName = string.Empty;
     private string _newParentUsername = string.Empty;
     private string _newParentPassword = string.Empty;
-    private bool _showAddTeacher;
     private bool _creatingTeacher;
     private string _newTeacherName = string.Empty;
     private string _newTeacherUsername = string.Empty;
@@ -2673,7 +2670,6 @@
             _newChildPassword = string.Empty;
             _newChildClassRoomId = 0;
             _newChildCourseId = 0;
-            _showAddChild = false;
 
             await Reload();
             _success = "Child account added successfully. Child can now log in with registration no and password.";
@@ -2725,7 +2721,6 @@
             _newParentName = string.Empty;
             _newParentUsername = string.Empty;
             _newParentPassword = string.Empty;
-            _showAddParent = false;
 
             await Reload();
             _success = "Parent account added successfully.";
@@ -2783,7 +2778,6 @@
             _newTeacherPassword = string.Empty;
             _newTeacherCourseId = 0;
             _newTeacherClassRoomId = 0;
-            _showAddTeacher = false;
 
             await Reload();
             _success = "Teacher added successfully.";
