@@ -70,33 +70,16 @@ namespace KidSafeApp.Backend.Controllers.Chat
 
             if (string.Equals(role, "Child", StringComparison.OrdinalIgnoreCase))
             {
-                var classIds = await _dataContext.ClassRoomStudents
+                var childIds = await _dataContext.Users
                     .AsNoTracking()
-                    .Where(cs => cs.StudentId == userId)
-                    .Select(cs => cs.ClassRoomId)
-                    .Distinct()
+                    .Where(u => u.Id != userId
+                                && u.IsActive
+                                && u.IsApproved
+                                && (u.Role == "Child" || u.Role == "child" || u.Role == string.Empty))
+                    .Select(u => u.Id)
                     .ToListAsync(cancellationToken);
 
-                if (classIds.Count == 0)
-                {
-                    return new HashSet<int>();
-                }
-
-                var classmateIds = await _dataContext.ClassRoomStudents
-                    .AsNoTracking()
-                    .Where(cs => classIds.Contains(cs.ClassRoomId) && cs.StudentId != userId)
-                    .Select(cs => cs.StudentId)
-                    .Distinct()
-                    .ToListAsync(cancellationToken);
-
-                var teacherIds = await _dataContext.ClassRooms
-                    .AsNoTracking()
-                    .Where(c => classIds.Contains(c.Id) && c.TeacherId.HasValue)
-                    .Select(c => c.TeacherId!.Value)
-                    .Distinct()
-                    .ToListAsync(cancellationToken);
-
-                return classmateIds.Concat(teacherIds).ToHashSet();
+                return childIds.ToHashSet();
             }
 
             if (string.Equals(role, "Teacher", StringComparison.OrdinalIgnoreCase))

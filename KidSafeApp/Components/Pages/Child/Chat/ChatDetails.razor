@@ -66,7 +66,7 @@ else
                 @bind="NewMessage" 
                 @bind:event="oninput"
                 @onkeydown="OnKeyDown"
-                disabled="_sendingMessage"
+                disabled="@_sendingMessage"
                 autocomplete="off"
                 aria-label="Message input" />
             <button class="btn btn-primary" 
@@ -172,7 +172,15 @@ else
             if (sentMessage is not null)
             {
                 Messages.Add(sentMessage);
-                ErrorService.ShowSuccess("Message sent!");
+                // Show warning if flagged
+                if (sentMessage.IsFlagged)
+                {
+                    ErrorService.ShowWarning(sentMessage.FlagReason ?? "Message flagged for review.");
+                }
+                else
+                {
+                    ErrorService.ShowSuccess("Message sent!");
+                }
             }
         }
         catch

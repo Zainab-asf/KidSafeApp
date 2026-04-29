@@ -21,7 +21,7 @@
         <div class="row g-3 g-md-4 mb-4">
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #E5EEE4, #C0E1D2);">
+              <div class="ks-stat-icon ks-stat-icon-green">
                 <span>📚</span>
               </div>
               <div class="ks-stat-content">
@@ -34,7 +34,7 @@
 
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #C0E1D2, #C0E1D2);">
+              <div class="ks-stat-icon ks-stat-icon-teal">
                 <span>✅</span>
               </div>
               <div class="ks-stat-content">
@@ -47,7 +47,7 @@
 
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #DC9B9B, #DC9B9B);">
+              <div class="ks-stat-icon ks-stat-icon-peach">
                 <span>🔥</span>
               </div>
               <div class="ks-stat-content">
@@ -60,7 +60,7 @@
 
           <div class="col-12 col-md-6 col-xl-3">
             <div class="ks-stat-card">
-              <div class="ks-stat-icon" style="background: linear-gradient(135deg, #DC9B9B, #7c3aed);">
+              <div class="ks-stat-icon ks-stat-icon-purple">
                 <span>⭐</span>
               </div>
               <div class="ks-stat-content">
@@ -82,7 +82,7 @@
         @if (IsLoading)
         {
           <div class="text-center py-5">
-            <div class="spinner-border" style="color: var(--ks-green);" role="status">
+            <div class="spinner-border ks-loader" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
@@ -102,7 +102,7 @@
                 <div class="ks-progress-card">
                   <div class="ks-progress-header">
                     <h3 class="ks-progress-title">@progress.CourseTitle</h3>
-                    <span class="ks-badge" style="background-color: @GetStatusColor(progress.Status); color: white;">
+                    <span class="ks-badge @GetStatusClass(progress.Status)">
                       @progress.Status
                     </span>
                   </div>
@@ -114,10 +114,10 @@
                       </span>
                     </div>
 
-                    <div class="progress ks-progress-bar" style="height: 8px;">
+                    <div class="progress ks-progress-bar ks-progress-track">
                       <div class="progress-bar ks-progress-fill"
                            role="progressbar"
-                           style="width: @progress.PercentageComplete%; background: linear-gradient(90deg, #E5EEE4, #C0E1D2);"
+                           style="width: @progress.PercentageComplete%"
                            aria-valuenow="@progress.PercentageComplete"
                            aria-valuemin="0"
                            aria-valuemax="100">
@@ -217,11 +217,11 @@
         }
     }
 
-    private string GetStatusColor(string status) => status switch
+    private string GetStatusClass(string status) => status switch
     {
-        "Completed" => "#C0E1D2",
-        "In Progress" => "#C0E1D2",
-        _ => "#DC9B9B"
+        "Completed" => "ks-status-badge ks-status-completed",
+        "In Progress" => "ks-status-badge ks-status-inprogress",
+        _ => "ks-status-badge ks-status-notstarted"
     };
 
     public class ProgressSummaryDto

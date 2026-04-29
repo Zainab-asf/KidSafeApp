@@ -1,17 +1,25 @@
 .ks-dashboard {
     min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .ks-main {
-    width: min(100%, var(--ks-page-width));
     min-width: 0;
-    margin: 0 auto;
-    padding: var(--ks-page-gutter);
-    display: block;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
-@media (max-width: 900px) {
-    .ks-main {
-        padding: var(--ks-page-gutter);
-    }
+:global(.page) {
+    width: 100%;
+    min-height: 100vh;
+}
+
+:global(article) {
+    width: 100%;
+    flex: 1;
 }

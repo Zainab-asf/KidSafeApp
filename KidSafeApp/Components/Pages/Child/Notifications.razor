@@ -32,23 +32,19 @@
       <!-- NOTIFICATION FILTERS -->
       <div class="ks-card mb-4">
         <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-sm" 
-                  style="@GetFilterButtonStyle("all")"
+          <button class="ks-filter-btn @(FilterType == "all" ? "active" : "")" 
                   @onclick="@(() => { FilterType = "all"; UpdateFilteredList(); })">
             All
           </button>
-          <button class="btn btn-sm" 
-                  style="@GetFilterButtonStyle("Achievement")"
+          <button class="ks-filter-btn @(FilterType == "Achievement" ? "active" : "")" 
                   @onclick="@(() => { FilterType = "Achievement"; UpdateFilteredList(); })">
             Achievements
           </button>
-          <button class="btn btn-sm" 
-                  style="@GetFilterButtonStyle("Alert")"
+          <button class="ks-filter-btn @(FilterType == "Alert" ? "active" : "")" 
                   @onclick="@(() => { FilterType = "Alert"; UpdateFilteredList(); })">
             Alerts
           </button>
-          <button class="btn btn-sm" 
-                  style="@GetFilterButtonStyle("Info")"
+          <button class="ks-filter-btn @(FilterType == "Info" ? "active" : "")" 
                   @onclick="@(() => { FilterType = "Info"; UpdateFilteredList(); })">
             Info
           </button>
@@ -60,7 +56,7 @@
         @if (IsLoading)
         {
           <div class="text-center py-5">
-            <div class="spinner-border" style="color: var(--ks-green);" role="status">
+            <div class="spinner-border ks-loader" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
@@ -77,7 +73,7 @@
             @foreach (var notification in FilteredNotifications)
             {
               <div class="ks-notification-item @(notification.IsRead ? "ks-read" : "ks-unread")">
-                <div class="ks-notification-icon" style="background-color: @GetTypeColor(notification.Type); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div class="ks-notification-icon ks-notif-icon-@(notification.Type?.ToLowerInvariant() ?? "info")">
                   @GetTypeIcon(notification.Type)
                 </div>
 
@@ -86,7 +82,7 @@
                     <h3 class="ks-notification-title mb-0">@notification.Title</h3>
                     @if (!notification.IsRead)
                     {
-                      <span class="ks-unread-dot" style="width: 8px; height: 8px; background-color: #C0E1D2; border-radius: 50%; flex-shrink: 0;"></span>
+                      <span class="ks-unread-dot"></span>
                     }
                   </div>
                   <p class="ks-notification-message mb-2">@notification.Message</p>
@@ -213,31 +209,13 @@
         }
     }
 
-    private string GetTypeColor(string type) => type switch
-    {
-        "Achievement" => "#DC9B9B",
-        "Alert" => "#DC9B9B",
-        "Warning" => "#DC9B9B",
-        _ => "#C0E1D2"
-    };
-
     private string GetTypeIcon(string type) => type switch
     {
         "Achievement" => "🏆",
-        "Alert" => "⚠️",
-        "Warning" => "⚡",
-        _ => "ℹ️"
+        "Alert"       => "⚠️",
+        "Warning"     => "⚡",
+        _             => "ℹ️"
     };
-
-    private string GetFilterButtonStyle(string type)
-    {
-        bool isActive = (FilterType == type) || (FilterType == "all" && type == "all");
-        if (isActive)
-        {
-            return "background: linear-gradient(90deg, #E5EEE4, #C0E1D2); color: #C0E1D2; border: none;";
-        }
-        return "background: transparent; color: #DC9B9B; border: 1px solid rgba(15, 23, 42, 0.1);";
-    }
 
     private string FormatTime(DateTime createdAt)
     {

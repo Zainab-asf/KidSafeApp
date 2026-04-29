@@ -1,0 +1,11 @@
+.ks-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; padding: 8px max(var(--ks-page-gutter), env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.95); border-top: 1px solid rgba(83,125,150,0.08); box-shadow: 0 -6px 18px rgba(83,125,150,0.06); }
+
+.ks-bottom-link { display: grid; justify-items: center; gap: 4px; padding: 6px 6px; text-decoration: none; color: rgba(31,41,55,0.75); border-radius: 10px; font-weight: 700; font-size: .78rem; }
+
+.ks-bottom-link .ks-bottom-icon { font-size: 18px; line-height: 1; }
+
+.ks-bottom-link.active { color: var(--ks-green); background: rgba(68,161,148,0.06); }
+
+@media (min-width: 901px) { .ks-bottom-nav { display: none; } }
+
+@media (max-width: 480px) { .ks-bottom-text { font-size: .68rem; } .ks-bottom-link { padding: 8px 6px; } }

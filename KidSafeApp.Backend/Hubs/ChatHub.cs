@@ -72,8 +72,14 @@ namespace KidSafeApp.Backend.Hubs
                     content,
                     CancellationToken.None);
 
-                // Send to recipient if they're online
+                // Send to recipient if they're online (include flagged info)
                 await Clients.User(toUserId.ToString()).MessageRecieved(messageDto);
+
+                // Notify sender if message was flagged
+                if (messageDto.IsFlagged)
+                {
+                    await Clients.Caller.MessageFlagged(new { messageId = messageDto.Id, reason = messageDto.FlagReason });
+                }
                 
                 _logger.LogInformation(
                     "Message sent from user {FromUserId} to user {ToUserId}",

@@ -113,13 +113,35 @@
   color: var(--ks-green);
 }
 
+/* Tab active / inactive states (replaces GetTabStyle() inline approach) */
+.ks-tab-active {
+    color: #C0E1D2 !important;
+    border-bottom: 3px solid #C0E1D2 !important;
+    text-decoration: none !important;
+}
+
+.ks-tab-inactive {
+    color: var(--ks-peach) !important;
+    border-bottom: 3px solid transparent !important;
+    text-decoration: none !important;
+}
+
+/* Section headings inside cards */
+.ks-h2 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--ks-green-dark);
+    margin: 0 0 1rem;
+}
+
 /* Avatar Preview */
 .ks-avatar-preview {
   display: flex;
   justify-content: flex-start;
 }
 
-.ks-avatar-preview img {
+.ks-avatar-preview img,
+.ks-avatar-image {
   max-width: 100px;
   max-height: 100px;
   border-radius: 50%;
@@ -194,42 +216,5 @@
   .ks-avatar-preview {
     width: 100%;
     justify-content: center;
-  }
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .ks-setting-item {
-    background-color: #fff;
-  }
-
-  .ks-setting-item:hover {
-    background-color: rgba(68, 161, 148, 0.08);
-  }
-
-  .ks-setting-label,
-  .ks-settings-container .btn-link {
-    color: var(--ks-green-dark);
-  }
-
-  .ks-settings-container .form-control,
-  .ks-settings-container .form-select {
-    background-color: #fff;
-    color: var(--ks-text);
-    border-color: rgba(203, 213, 225, 0.2);
-  }
-
-  .ks-settings-container .form-control:focus,
-  .ks-settings-container .form-select:focus {
-    background-color: #fff;
-    color: var(--ks-text);
-  }
-}
-
-/* Print Styles */
-@media print {
-  .ks-settings-container .btn-link,
-  .ks-settings-container .btn {
-    display: none;
   }
 }

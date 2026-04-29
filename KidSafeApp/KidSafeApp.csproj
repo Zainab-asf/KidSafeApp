@@ -88,8 +88,4 @@
     <RazorComponent Include="**\*.razor" Exclude="obj\**\*;bin\**\*" />
   </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Shared\" />
-    </ItemGroup>
-
 </Project>

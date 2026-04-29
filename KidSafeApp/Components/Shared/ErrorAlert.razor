@@ -30,15 +30,6 @@
 
     private void OnNotificationChanged()
     {
-        // Cancel existing timers
-        foreach (var timer in _autoCloseTimers.Values)
-        {
-            if (!timer.IsCompleted)
-            {
-                // Timers already started
-            }
-        }
-
         // Schedule auto-close for new notifications
         foreach (var notification in ErrorService.Notifications)
         {
@@ -61,19 +52,16 @@
     private void DismissNotification(Guid notificationId)
     {
         ErrorService.RemoveNotification(notificationId);
-        if (_autoCloseTimers.ContainsKey(notificationId))
-        {
-            _autoCloseTimers.Remove(notificationId);
-        }
+        _autoCloseTimers.Remove(notificationId);
     }
 
     private string GetAlertClass(NotificationType type) => type switch
     {
-        NotificationType.Error => "danger",
+        NotificationType.Error   => "danger",
         NotificationType.Success => "success",
         NotificationType.Warning => "warning",
-        NotificationType.Info => "info",
-        _ => "secondary"
+        NotificationType.Info    => "info",
+        _                        => "secondary"
     };
 
     async ValueTask IAsyncDisposable.DisposeAsync()
@@ -82,34 +70,3 @@
         await Task.CompletedTask;
     }
 }
-
-<style>
-.error-notification-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    max-width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.error-notification {
-    min-width: 300px;
-    max-width: 400px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    animation: slideIn 0.3s ease-in-out;
-}
-
-.notification-content {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.notification-content strong {
-    font-weight: 600;
-}
-</style>

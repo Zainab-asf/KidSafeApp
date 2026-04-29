@@ -96,13 +96,13 @@
 /* FEATURED COURSE */
 .ks-featured-course {
     background: linear-gradient(135deg, var(--ks-primary) 0%, var(--ks-primary-dark) 100%);
-    border-radius: 1.5rem;
+    border-radius: .9rem;
     padding: 2rem;
     margin-bottom: 2.5rem;
     color: white;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 12px 32px rgba(132, 204, 22, 0.24);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
 .ks-featured-course::before {
@@ -183,10 +183,10 @@
 
 .ks-learn-card {
     background: white;
-    border: 1px solid rgba(83, 125, 150, 0.12);
-    border-radius: 1.25rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: .9rem;
     overflow: hidden;
-    box-shadow: 0 8px 20px rgba(83, 125, 150, 0.08);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     display: flex;
@@ -194,9 +194,9 @@
 }
 
 .ks-learn-card:hover {
-    box-shadow: 0 12px 32px rgba(132, 204, 22, 0.14);
-    border-color: var(--ks-primary);
-    transform: translateY(-6px);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    border-color: rgba(15, 23, 42, 0.06);
+    transform: none;
 }
 
 .ks-card-flag {

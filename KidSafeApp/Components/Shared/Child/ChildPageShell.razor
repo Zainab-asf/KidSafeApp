@@ -5,6 +5,8 @@
     @ChildContent
 </ChildLayout>
 
+<Components.Shared.BottomNavbar />
+
 @code {
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
 }

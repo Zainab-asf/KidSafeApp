@@ -1,6 +1,8 @@
 @namespace KidSafeApp.Components.Pages.Parent
 @page "/parent/dashboard"
 
+<PageTitle>Parent Safety Dashboard</PageTitle>
+
 @inject KidSafeApp.States.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject ParentDashboardApiClient ParentApiClient
@@ -131,6 +133,56 @@ else
             </div>
         </button>
     </section>
+
+    <section class="parent-enhanced-grid">
+        <article class="panel-card parent-insights-card">
+            <h3>Safety Overview</h3>
+            <div class="parent-insight-row">
+                <span>Safe Rate</span>
+                <strong>@_safeRate%</strong>
+            </div>
+            <div class="parent-insight-row">
+                <span>Unread Alerts</span>
+                <strong>@_unreadAlerts</strong>
+            </div>
+            <div class="parent-insight-row">
+                <span>Flagged Signals</span>
+                <strong>@_flaggedCount</strong>
+            </div>
+            <div class="parent-insight-row">
+                <span>Safe Streak</span>
+                <strong>@_safeStreak days</strong>
+            </div>
+            <a class="parent-link-btn" href="/parent/progress">See detailed report</a>
+        </article>
+
+        <article class="panel-card parent-recent-card">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                <h3 class="m-0">Recent Alerts</h3>
+                <a class="parent-link-inline" href="/parent/notifications">View all</a>
+            </div>
+
+            @if (!_notifications.Any())
+            {
+                <div class="parent-empty-state">No recent alerts. Everything looks stable ✅</div>
+            }
+            else
+            {
+                <div class="parent-recent-list">
+                    @foreach (var alert in RecentAlerts)
+                    {
+                        <div class="parent-recent-item">
+                            <div class="parent-recent-meta">
+                                <strong>@alert.Title</strong>
+                                <small>@alert.CreatedAt.ToLocalTime().ToString("g")</small>
+                            </div>
+                            <span class="parent-alert-badge @GetAlertBadgeClass(alert)">@GetAlertBadgeText(alert)</span>
+                        </div>
+                    }
+                </div>
+            }
+        </article>
+    </section>
 </ParentPageShell>
 }
 
@@ -150,6 +202,11 @@ else
     private int _badgeBar;
     private int _safeStreak = 5;
     private int _newFlags = 2;
+
+    private IEnumerable<NotificationDto> RecentAlerts =>
+        _notifications
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(4);
 
     private readonly List<WeeklyPoint> _weekly = new()
     {
@@ -194,6 +251,22 @@ else
     private void GoToFlagged() => NavigationManager.NavigateTo("/parent/flagged");
     private void GoToProgress() => NavigationManager.NavigateTo("/parent/progress");
     private void GoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+
+    private static string GetAlertBadgeText(NotificationDto alert)
+    {
+        var title = alert.Title ?? string.Empty;
+        if (ParentDashboardApiClient.IsFlaggedSignal(alert)) return "Flagged";
+        if (title.Contains("badge", StringComparison.OrdinalIgnoreCase)) return "Achievement";
+        return "Info";
+    }
+
+    private static string GetAlertBadgeClass(NotificationDto alert)
+    {
+        var title = alert.Title ?? string.Empty;
+        if (ParentDashboardApiClient.IsFlaggedSignal(alert)) return "badge-flagged";
+        if (title.Contains("badge", StringComparison.OrdinalIgnoreCase)) return "badge-achievement";
+        return "badge-info";
+    }
 
     private sealed record WeeklyPoint(string Day, int SafeHeight, int FlaggedHeight, int BlockedHeight);
 }

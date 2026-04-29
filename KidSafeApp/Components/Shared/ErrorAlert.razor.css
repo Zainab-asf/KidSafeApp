@@ -1,0 +1,32 @@
+/* ============================================================
+   KidSafeApp — ErrorAlert scoped styles
+   Extracted from inline <style> block in ErrorAlert.razor
+   ============================================================ */
+
+.error-notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.error-notification {
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.notification-content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.notification-content strong {
+    font-weight: 600;
+}

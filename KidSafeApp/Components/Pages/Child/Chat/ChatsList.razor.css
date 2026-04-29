@@ -12,8 +12,8 @@
     --ks-primary2: #059669;
 }
 
-.d-flex {
-    padding: 14px 16px;
+:deep(.d-flex.align-items-center.justify-content-between) {
+    padding: 12px 14px;
     background: var(--ks-surface);
     border-bottom: 1px solid var(--ks-border);
     display: flex;
@@ -25,7 +25,7 @@
     color: var(--ks-text) !important;
     margin: 0 !important;
     font-weight: 700 !important;
-    font-size: 1rem !important;
+    font-size: clamp(1rem, 1.6vw, 1.1rem) !important;
     letter-spacing: -0.3px !important;
 }
 
@@ -37,7 +37,7 @@
     padding: 8px 12px !important;
     font-size: 0.875rem !important;
     transition: all 0.2s ease !important;
-    margin: 0 12px 12px 12px !important;
+    margin: 10px 12px 12px 12px !important;
 }
 
 :deep(.form-control-sm:focus) {
@@ -53,12 +53,12 @@
 
 :deep(.list-group-flush) {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: 8px 12px;
+    padding: 8px 10px;
     background: var(--ks-surface);
 }
 
-/* Custom scrollbar */
 :deep(.list-group-flush)::-webkit-scrollbar {
     width: 6px;
 }
@@ -83,11 +83,12 @@
     cursor: pointer !important;
     transition: all 0.15s ease !important;
     font-weight: 500 !important;
-    font-size: 0.9375rem !important;
+    font-size: 0.9rem !important;
     padding: 10px 12px !important;
     margin-bottom: 4px !important;
     border-radius: 8px !important;
     border-left: 3px solid transparent !important;
+    line-height: 1.3;
 }
 
 :deep(.list-group-item:hover) {
@@ -122,4 +123,37 @@
     padding: 4px 8px !important;
     font-weight: 600 !important;
     border-radius: 4px !important;
+}
+
+@media (max-width: 768px) {
+    :deep(.d-flex.align-items-center.justify-content-between) {
+        padding: 10px 12px;
+    }
+
+    :deep(.form-control-sm) {
+        margin: 8px 10px 10px 10px !important;
+    }
+
+    :deep(.list-group-flush) {
+        padding: 6px 8px;
+    }
+
+    :deep(.list-group-item) {
+        padding: 9px 10px !important;
+        font-size: 0.875rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    :deep(.d-flex.align-items-center.justify-content-between) {
+        padding: 9px 10px;
+    }
+
+    :deep(h3) {
+        font-size: 0.95rem !important;
+    }
+
+    :deep(.list-group-item) {
+        border-radius: 7px !important;
+    }
 }

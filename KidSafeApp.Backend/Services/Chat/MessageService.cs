@@ -45,6 +45,31 @@ public sealed class MessageService : IMessageService
             await _dbContext.Messages.AddAsync(message, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
+            // Run basic content moderation (placeholder).
+            // We'll flag messages containing obvious harmful keywords.
+            var flagged = false;
+            string? reason = null;
+            var lower = message.Content.ToLowerInvariant();
+            var harmfulKeywords = new[] { "hate", "kill", "die", "stfu", "idiot", "bitch" };
+            if (harmfulKeywords.Any(k => lower.Contains(k)))
+            {
+                flagged = true;
+                reason = "Harmful language detected";
+
+                // Create a notification for recipient's parent/teacher later via NotificationsController
+                var notification = new Notification
+                {
+                    UserId = toUserId,
+                    Title = "Flagged Message",
+                    Message = $"A message was flagged: {message.Content}",
+                    Type = "Alert",
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddDays(30)
+                };
+                await _dbContext.Notifications.AddAsync(notification, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
             _logger.LogInformation(
                 "Message sent from user {FromUserId} to user {ToUserId}.",
                 fromUserId, toUserId);
@@ -54,7 +79,9 @@ public sealed class MessageService : IMessageService
                 message.FromId,
                 message.ToId,
                 message.Content,
-                message.SentOn);
+                message.SentOn,
+                flagged,
+                reason);
         }
         catch (Exception ex)
         {
@@ -235,6 +262,17 @@ public sealed class MessageService : IMessageService
 
     private async Task<bool> HasSharedClassAccessAsync(int childId, int otherUserId, string otherUserRole, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(otherUserRole)
+            || string.Equals(otherUserRole, "Child", StringComparison.OrdinalIgnoreCase))
+        {
+            return await _dbContext.Users
+                .AsNoTracking()
+                .AnyAsync(u => u.Id == otherUserId
+                               && u.IsActive
+                               && u.IsApproved
+                               && (u.Role == "Child" || u.Role == "child" || u.Role == string.Empty), cancellationToken);
+        }
+
         var childClassIds = await _dbContext.ClassRoomStudents
             .AsNoTracking()
             .Where(cs => cs.StudentId == childId)
@@ -245,13 +283,6 @@ public sealed class MessageService : IMessageService
         if (childClassIds.Count == 0)
         {
             return false;
-        }
-
-        if (string.Equals(otherUserRole, "Child", StringComparison.OrdinalIgnoreCase))
-        {
-            return await _dbContext.ClassRoomStudents
-                .AsNoTracking()
-                .AnyAsync(cs => childClassIds.Contains(cs.ClassRoomId) && cs.StudentId == otherUserId, cancellationToken);
         }
 
         if (string.Equals(otherUserRole, "Teacher", StringComparison.OrdinalIgnoreCase))

@@ -9,7 +9,7 @@
 @using System.Net.Http.Headers
 @using Microsoft.AspNetCore.Components.Web
 
-<PageTitle>Admin Portal</PageTitle>
+<PageTitle>Admin Control Center</PageTitle>
 
 @if (!AuthState.IsAuthenticated || !string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase) || !AdminSession.IsAdmin)
 {
@@ -512,7 +512,7 @@
                                     <button class="btn btn-primary w-100" @onclick="ComposeAdminBroadcast">Compose Broadcast</button>
                                 </div>
 
-                                <div class="card p-3 admin-notification-side-card">
+                                <div class="card p-3 mb-3 admin-notification-side-card">
                                     <h6 class="mb-3">Alert Settings</h6>
                                     <div class="admin-setting-row">
                                         <span>Cyberbullying Alerts</span>
