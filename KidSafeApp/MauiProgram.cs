@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using KidSafeApp.Services;
-using KidSafeApp.States;
+using KidSafeApp.StateManagement;
 using System.Net.Http;
 
 namespace KidSafeApp
@@ -38,6 +38,14 @@ namespace KidSafeApp
 
             // Chat service for Messages.razor and dashboards
             builder.Services.AddScoped<ChatService>();
+            builder.Services.AddScoped<AdminUsersApiClient>();
+            
+            // Add missing services from Phase 2
+            builder.Services.AddScoped<ErrorService>();
+            builder.Services.AddScoped<MessageApiClient>();
+            builder.Services.AddScoped<HubConnectionService>();
+            builder.Services.AddScoped<AuthenticationService>();
+            builder.Services.AddScoped<ParentDashboardApiClient>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

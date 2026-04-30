@@ -11,15 +11,15 @@ namespace KidSafeApp.Backend.Data.Entities
         public int Id { get; set; }
 
         [Required, Unicode(false), MaxLength(25)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         public DateTime AddedOn { get; set; }
 
         [Required, Unicode(false), MaxLength(50)]
-        public string Username { get; set; }
+        public string Username { get; set; } = string.Empty;
 
-        [Required, MaxLength(20)]
-        public string Password { get; set; }
+        [Required, Column(TypeName = "nvarchar(max)")]
+        public string Password { get; set; } = string.Empty;
 
         [Required, Unicode(false), MaxLength(20)]
         public string Role { get; set; } = "Child";

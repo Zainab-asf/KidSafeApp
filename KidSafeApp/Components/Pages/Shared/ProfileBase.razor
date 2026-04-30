@@ -1,0 +1,27 @@
+@namespace KidSafeApp.Components.Pages.Shared
+
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.RoleState RoleState
+
+<section class="panel-card">
+    <h3>Profile</h3>
+    <div class="d-flex gap-3 align-items-center">
+        <div class="ks-profile-avatar">👤</div>
+        <div>
+            <div class="ks-profile-name">@((AuthState.User?.Name) ?? "User")</div>
+            <div class="ks-profile-role">@RoleState.CurrentRole</div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <button class="btn btn-outline-primary me-2" @onclick="Edit">Edit Profile</button>
+        <button class="btn btn-outline-secondary" @onclick="ChangeAvatar">Change Avatar</button>
+    </div>
+</section>
+
+@code {
+    private void Edit() { /* placeholder, does not change existing behaviour */ }
+    private void ChangeAvatar() { }
+}
+
+

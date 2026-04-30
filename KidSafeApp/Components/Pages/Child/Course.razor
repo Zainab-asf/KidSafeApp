@@ -4,8 +4,7 @@
 @inject HttpClient Client
 @inject NavigationManager NavigationManager
 
-<ChildLayout>
-  <section class="ks-content">
+<ChildPageShell>
     <div class="container py-3">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
@@ -69,8 +68,7 @@
         </div>
       }
     </div>
-  </section>
-</ChildLayout>
+</ChildPageShell>
 
 @code {
   [Parameter] public int CourseId { get; set; }
@@ -139,3 +137,5 @@
     }
   }
 }
+
+

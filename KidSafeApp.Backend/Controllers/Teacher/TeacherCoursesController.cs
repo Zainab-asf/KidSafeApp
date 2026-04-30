@@ -38,9 +38,29 @@ public sealed class TeacherCoursesController : ControllerBase
     [HttpGet("children")]
     public async Task<ActionResult<List<AssignableChildDto>>> GetChildrenForAssignment(CancellationToken cancellationToken)
     {
+        var teacherId = await GetActingTeacherIdAsync(cancellationToken);
+
+        var classIds = await _context.ClassRooms
+            .AsNoTracking()
+            .Where(c => c.TeacherId == teacherId)
+            .Select(c => c.Id)
+            .ToListAsync(cancellationToken);
+
+        if (classIds.Count == 0)
+        {
+            return Ok(new List<AssignableChildDto>());
+        }
+
+        var studentIds = await _context.ClassRoomStudents
+            .AsNoTracking()
+            .Where(cs => classIds.Contains(cs.ClassRoomId))
+            .Select(cs => cs.StudentId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
         var children = await _context.Users
             .AsNoTracking()
-            .Where(u => u.Role == "Child" && u.IsActive)
+            .Where(u => studentIds.Contains(u.Id) && u.Role == "Child" && u.IsActive)
             .OrderBy(u => u.Name)
             .Select(u => new AssignableChildDto
             {

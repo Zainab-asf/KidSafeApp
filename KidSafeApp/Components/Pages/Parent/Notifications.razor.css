@@ -1,26 +1,92 @@
-.parent-module {
-    --portal-primary: #C0E1D2;
-    --portal-primary-dark: #C0E1D2;
-    --portal-bg: #F6F4E8;
+/* Parent pages share layout via ParentPageShell */
+/* Shared tokens (panel-card, filter pills, alert)
+   live in parent shell styles                    */
+
+/* ── Notification list ── */
+.notification-list {
+    display: grid;
+    gap: .75rem;
+    width: 100%;
+    grid-auto-flow: row;
 }
 
-.parent-module {
-    max-width: 1200px;
+.notif-card {
+    background: var(--ks-surface);
+    border-radius: .9rem;
+    padding: .95rem 1rem;
+    display: grid;
+    grid-template-columns: 42px 1fr 10px;
+    gap: .85rem;
+    align-items: center;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    border-left: 4px solid transparent;
+    cursor: pointer;
+    transition: transform .15s;
+    position: relative;
+    z-index: 0;
 }
 
-.parent-module .card {
-    border: 1px solid rgba(132, 204, 22, 0.22);
-    border-radius: 1rem;
-    background: linear-gradient(180deg, #F6F4E8 0%, #F6F4E8 100%);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+.notif-card:active { transform: scale(.99); }
+
+.notif-card.flagged { border-left-color: #f8cc55; }
+.notif-card.blocked { border-left-color: #ef4444; }
+.notif-card.badge   { border-left-color: var(--ks-green); }
+
+.notif-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: .8rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.05rem;
+    background: #eef9f3;
+    flex-shrink: 0;
 }
 
-.parent-module .btn-primary {
-    background: linear-gradient(135deg, var(--portal-primary), var(--portal-primary-dark));
-    border: none;
+.notif-card.blocked .notif-icon { background: #fff0f0; }
+.notif-card.flagged .notif-icon { background: #fff7e1; }
+.notif-card.badge   .notif-icon { background: #edf9ef; }
+
+.notif-copy { min-width: 0; }
+
+.notif-title {
+    font-weight: 800;
+    font-size: .92rem;
+    color: #111827;
+    line-height: 1.2;
 }
 
-.parent-module .btn-outline-primary {
-    border-color: var(--portal-primary);
-    color: var(--portal-primary);
+.notif-message {
+    color: #4b5563;
+    font-size: .86rem;
+    margin-top: .2rem;
+    line-height: 1.4;
+}
+
+.notif-meta {
+    color: #9ca3af;
+    font-size: .74rem;
+    margin-top: .3rem;
+}
+
+.notif-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ks-green);
+    justify-self: end;
+    flex-shrink: 0;
+}
+
+.notif-dot.read { background: #d1d5db; }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .notif-card {
+        grid-template-columns: 42px 1fr;
+        padding: .85rem;
+    }
+
+    .notif-dot { display: none; }
 }

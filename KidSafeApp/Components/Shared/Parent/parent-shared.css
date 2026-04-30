@@ -1,0 +1,2 @@
+/* Parent shared styles moved to ParentPageShell.razor.css
+   using ::deep selectors so all Parent pages render consistently. */

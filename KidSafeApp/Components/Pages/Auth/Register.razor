@@ -5,64 +5,95 @@
 
 <PageTitle>Access Request - KidSafeApp</PageTitle>
 
-
-<div class="ks-auth-shell auth-page-clean">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4 col-md-3 col-sm-2"></div>
-            <div class="col-lg-4 col-md-6 col-sm-8">
-                <EditForm Model="RegisterModel" OnValidSubmit="RegisterAsync">
-                    <div class="card ks-auth-card br-0 mt-5">
-                        <div class="card-header bg-main br-0 ks-auth-header">
-                            <h2 class="mb-0">Access Request 📝</h2>
+<div class="auth-page-wrapper">
+    <div class="auth-container">
+        <div class="auth-card-wrapper">
+            <EditForm Model="RegisterModel" OnValidSubmit="RegisterAsync">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="auth-logo">
+                            <span class="logo-icon">📝</span>
+                            <h1 class="auth-title">Request Access</h1>
                         </div>
-                        <div class="card-body">
-                            <DataAnnotationsValidator />
-                            @if (!string.IsNullOrWhiteSpace(errorMessage))
-                            {
-                                <p class="text-danger">@errorMessage</p>
-                            }
-                            <div class="alert alert-info">
-                                Self registration is disabled. Please contact your school admin to create your account.
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Name</label>
-                                <InputText @bind-Value="RegisterModel.Name" DisplayName="Name" class="form-control" placeholder="Enter name" />
-                                <ValidationMessage For="() => RegisterModel.Name" />
-                            </div>
+                        <p class="auth-subtitle">Submit a request to join KidSafe</p>
+                    </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Username</label>
-                                <InputText @bind-Value="RegisterModel.Username" DisplayName="Username" class="form-control" placeholder="Enter username" />
-                                <ValidationMessage For="() => RegisterModel.Username" />
+                    <div class="auth-body">
+                        <DataAnnotationsValidator />
+                        
+                        @if (!string.IsNullOrWhiteSpace(errorMessage))
+                        {
+                            <div class="@(errorMessage.Contains("success") ? "success-message" : "error-message")">
+                                <span class="error-icon">@(errorMessage.Contains("success") ? "✅" : "⚠️")</span>
+                                <span>@errorMessage</span>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <InputText type="password" @bind-Value="RegisterModel.Password" DisplayName="Password" class="form-control" placeholder="Enter password" />
-                                <ValidationMessage For="() => RegisterModel.Password" />
-                            </div>
+                        }
+
+                        <div class="info-banner">
+                            <span class="info-icon">ℹ️</span>
+                            <p>Self-registration is disabled. Your request will be reviewed by an administrator.</p>
                         </div>
-                        <div class="card-footer">
-                            <NavLink href="/login" Match="NavLinkMatch.All" class="btn btn-outline-primary float-start">Login</NavLink>
 
-                            @if (_isBusy)
-                            {
-                                <button class="btn btn-success float-end" type="button" disabled>
-                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    Loading...
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="submit" class="btn btn-success float-end">Request Access ✅</button>
-                            }
+                        <div class="form-group">
+                            <label class="form-label" for="name">
+                                <span class="label-icon">👤</span>
+                                Full Name
+                            </label>
+                            <div class="input-wrapper">
+                                <InputText id="name" @bind-Value="RegisterModel.Name" 
+                                    class="form-control" placeholder="Enter your full name" />
+                            </div>
+                            <ValidationMessage For="() => RegisterModel.Name" class="validation-message" />
+                        </div>
 
-                            <div class="clearfix"></div>
+                        <div class="form-group">
+                            <label class="form-label" for="username">
+                                <span class="label-icon">🔖</span>
+                                Username
+                            </label>
+                            <div class="input-wrapper">
+                                <InputText id="username" @bind-Value="RegisterModel.Username" 
+                                    class="form-control" placeholder="Choose a username" />
+                            </div>
+                            <ValidationMessage For="() => RegisterModel.Username" class="validation-message" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="password">
+                                <span class="label-icon">🔒</span>
+                                Password
+                            </label>
+                            <div class="input-wrapper">
+                                <InputText id="password" type="password" @bind-Value="RegisterModel.Password" 
+                                    class="form-control" placeholder="Create a password" />
+                            </div>
+                            <ValidationMessage For="() => RegisterModel.Password" class="validation-message" />
                         </div>
                     </div>
-                </EditForm>
-            </div>
-            <div class="col-lg-4 col-md-3 col-sm-2"></div>
+
+                    <div class="auth-footer">
+                        <NavLink href="/login" class="btn btn-secondary">
+                            <span class="btn-icon">←</span>
+                            Back to Login
+                        </NavLink>
+
+                        @if (_isBusy)
+                        {
+                            <button class="btn btn-primary btn-loading" type="button" disabled>
+                                <span class="spinner"></span>
+                                Submitting...
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-primary">
+                                Submit Request
+                                <span class="btn-icon">→</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </EditForm>
         </div>
     </div>
 </div>
@@ -74,6 +105,7 @@
     private RegisterDto RegisterModel { get; set; } = new();
     private bool _isBusy = false;
     private string? errorMessage = null;
+
     private async Task RegisterAsync()
     {
         try
@@ -83,11 +115,10 @@
             var response = await HttpClient.PostAsJsonAsync<RegisterDto>("api/account/register", RegisterModel);
             if (response.IsSuccessStatusCode)
             {
-                errorMessage = "Request submitted.";
+                errorMessage = "Request submitted successfully. Please wait for admin approval.";
             }
             else
             {
-                // Login wasnt successfull
                 string? errorContent = null;
                 try
                 {
@@ -98,7 +129,7 @@
                 }
                 if (string.IsNullOrWhiteSpace(errorContent))
                 {
-                    errorContent = $"Error {response.StatusCode} - ${response.ReasonPhrase}";
+                    errorContent = $"Error {response.StatusCode} - {response.ReasonPhrase}";
                 }
                 _isBusy = false;
                 errorMessage = errorContent;
@@ -111,3 +142,5 @@
         }
     }
 }
+
+

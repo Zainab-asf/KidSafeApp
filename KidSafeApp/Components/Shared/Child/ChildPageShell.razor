@@ -1,0 +1,13 @@
+@namespace KidSafeApp.Components.Shared.Child
+@using KidSafeApp.Components.Pages.Shared
+
+<ChildLayout>
+    @ChildContent
+</ChildLayout>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
+}
+
+
+

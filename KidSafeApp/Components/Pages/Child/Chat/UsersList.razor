@@ -32,8 +32,22 @@
             foreach (var user in FilteredUsers)
             {
                 <li class="list-group-item d-flex align-items-center justify-content-between" @onclick="() => HandleUserClick(user)" style="cursor: pointer;">
-                    <span>@user.Name</span>
-                    <span class="badge rounded-pill bg-success">Online</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-circle" style="width:28px;height:28px;">
+                            @if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+                            {
+                                <img src="@user.AvatarUrl" alt="avatar" class="avatar-img" />
+                            }
+                            else
+                            {
+                                <span class="avatar-initials">@GetInitials(user.Name)</span>
+                            }
+                        </div>
+                        <span>@user.Name</span>
+                    </div>
+                    <span class="badge rounded-pill @(user.IsOnline ? "bg-success" : "bg-secondary")">
+                        @(user.IsOnline ? "Online" : "Offline")
+                    </span>
                 </li>
             }
         }
@@ -60,4 +74,14 @@
     {
         await OnUserSelected.InvokeAsync(user);
     }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return string.Concat(parts[0][0], parts[^1][0]).ToUpper();
+    }
 }
+
+

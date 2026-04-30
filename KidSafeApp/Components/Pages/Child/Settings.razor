@@ -3,8 +3,7 @@
 @inject HttpClient Client
 @inject NavigationManager NavigationManager
 
-<ChildLayout>
-  <section class="ks-content">
+<ChildPageShell>
     <div class="ks-settings-container">
       <!-- HEADER -->
       <div class="ks-card mb-4">
@@ -17,7 +16,7 @@
       @if (IsLoading)
       {
         <div class="text-center py-5">
-            <div class="spinner-border" style="color: var(--ks-green);" role="status">
+            <div class="spinner-border ks-loader" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
         </div>
@@ -27,23 +26,19 @@
         <!-- TABS -->
         <div class="ks-card mb-4">
           <div class="d-flex gap-2 border-bottom flex-wrap">
-            <button class="btn btn-link p-2" 
-                    style="@GetTabStyle("profile")"
+            <button class="btn btn-link p-2 @(ActiveTab == "profile" ? "ks-tab-active" : "ks-tab-inactive")" 
                     @onclick="@(() => ActiveTab = "profile")">
               👤 Profile
             </button>
-            <button class="btn btn-link p-2"
-                    style="@GetTabStyle("notifications")"
+            <button class="btn btn-link p-2 @(ActiveTab == "notifications" ? "ks-tab-active" : "ks-tab-inactive")"
                     @onclick="@(() => ActiveTab = "notifications")">
               🔔 Notifications
             </button>
-            <button class="btn btn-link p-2"
-                    style="@GetTabStyle("privacy")"
+            <button class="btn btn-link p-2 @(ActiveTab == "privacy" ? "ks-tab-active" : "ks-tab-inactive")"
                     @onclick="@(() => ActiveTab = "privacy")">
-              🔐 Privacy & Safety
+              🔐 Privacy &amp; Safety
             </button>
-            <button class="btn btn-link p-2"
-                    style="@GetTabStyle("display")"
+            <button class="btn btn-link p-2 @(ActiveTab == "display" ? "ks-tab-active" : "ks-tab-inactive")"
                     @onclick="@(() => ActiveTab = "display")">
               🎨 Display
             </button>
@@ -74,7 +69,7 @@
               {
                 <div class="col-12">
                   <div class="ks-avatar-preview">
-                    <img src="@UserSettings.AvatarUrl" alt="Avatar" style="max-width: 100px; border-radius: 50%; border: 2px solid #C0E1D2;" />
+                    <img src="@UserSettings.AvatarUrl" alt="Avatar" class="ks-avatar-image" />
                   </div>
                 </div>
               }
@@ -282,11 +277,10 @@
         }
       }
     </div>
-  </section>
-</ChildLayout>
+</ChildPageShell>
 
 @code {
-    private UserSettingsDto UserSettings;
+    private UserSettingsDto UserSettings = new();
     private bool IsLoading = false;
     private string ActiveTab = "profile";
 
@@ -382,13 +376,6 @@
             Console.WriteLine($"Error saving display: {ex.Message}");
         }
     }
-
-    private string GetTabStyle(string tab)
-    {
-        if (ActiveTab == tab)
-        {
-            return "color: #C0E1D2; border-bottom: 3px solid #C0E1D2; text-decoration: none;";
-        }
-        return "color: #DC9B9B; border-bottom: 3px solid transparent; text-decoration: none;";
-    }
 }
+
+

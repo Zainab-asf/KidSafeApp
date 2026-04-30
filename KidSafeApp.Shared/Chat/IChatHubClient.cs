@@ -9,4 +9,7 @@ public interface IChatHubClient
 	Task OnlineUsersList(IEnumerable<UserDto> users);
 	Task UserIsOnline(int userId);
 	Task MessageRecieved(MessageDto message);
+    Task RosterUpdated(int classRoomId);
+	// Notify client that a sent message was flagged by moderation
+	Task MessageFlagged(object payload);
 }

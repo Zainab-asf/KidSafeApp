@@ -1,145 +1,116 @@
 using KidSafeApp.Backend.Data;
 using KidSafeApp.Backend.Data.Entities;
+using KidSafeApp.Backend.Domain.Auth;
+using KidSafeApp.Backend.Hubs;
+using KidSafeApp.Backend.Services;
+using KidSafeApp.Backend.Services.Users;
+using KidSafeApp.Shared.Chat;
+using KidSafeApp.Shared.DTOs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 
 namespace KidSafeApp.Backend.Controllers.Admin;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = Roles.Admin)]
 public sealed class AdminController : ControllerBase
 {
     private readonly DataContext _dataContext;
+    private readonly IUserService _userService;
+    private readonly IHubContext<ChatHub, IChatHubClient> _chatHubContext;
 
-    public AdminController(DataContext dataContext)
+    public AdminController(DataContext dataContext, IUserService userService, IHubContext<ChatHub, IChatHubClient> chatHubContext)
     {
         _dataContext = dataContext;
+        _userService = userService;
+        _chatHubContext = chatHubContext;
     }
 
     [HttpGet("users")]
     public async Task<ActionResult<List<AdminUserDto>>> GetUsers(CancellationToken cancellationToken)
     {
-        var users = await _dataContext.Users
-            .AsNoTracking()
-            .OrderByDescending(u => u.AddedOn)
-            .Select(u => new AdminUserDto(
-                u.Id,
-                u.Name,
-                u.Username,
-                u.Role,
-                u.IsApproved,
-                u.IsActive,
-                u.AddedOn
-            ))
-            .ToListAsync(cancellationToken);
+        var query = new AdminUsersQueryDto { PageNumber = 1, PageSize = 500 };
+        var users = await _userService.GetUsersAsync(query, cancellationToken);
+        return Ok(users.Items.ToList());
+    }
 
+    [HttpGet("users/paged")]
+    public async Task<ActionResult<PagedResultDto<AdminUserDto>>> GetUsersPaged([FromQuery] AdminUsersQueryDto query, CancellationToken cancellationToken)
+    {
+        var users = await _userService.GetUsersAsync(query, cancellationToken);
         return Ok(users);
     }
 
     [HttpPost("users")]
     public async Task<ActionResult<AdminUserDto>> CreateUser([FromBody] AdminCreateUserDto dto, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+        try
         {
-            return BadRequest("Name, Username and Password are required.");
+            var createdUser = await _userService.CreateUserAsync(dto, cancellationToken);
+
+            // Keep child/class workflow transactional from admin perspective:
+            // create account + map to class + apply class course mappings.
+            if (string.Equals(dto.Role, Roles.Child, StringComparison.OrdinalIgnoreCase) && dto.ClassRoomId.HasValue && dto.ClassRoomId.Value > 0)
+            {
+                var didChangeRoster = await AssignStudentToClassRoomCoreAsync(dto.ClassRoomId.Value, createdUser.Id, cancellationToken);
+                await BackfillStudentCoursesFromClassRoomAsync(dto.ClassRoomId.Value, createdUser.Id, cancellationToken);
+
+                if (dto.CourseId.HasValue && dto.CourseId.Value > 0)
+                {
+                    await AssignCourseToClassRoomCoreAsync(dto.ClassRoomId.Value, dto.CourseId.Value, cancellationToken);
+                }
+
+                if (didChangeRoster)
+                {
+                    await NotifyRosterUpdatedAsync(dto.ClassRoomId.Value);
+                }
+            }
+            else if (string.Equals(dto.Role, Roles.Teacher, StringComparison.OrdinalIgnoreCase) && dto.ClassRoomId.HasValue && dto.ClassRoomId.Value > 0)
+            {
+                var didChangeRoster = await AssignTeacherToClassRoomCoreAsync(dto.ClassRoomId.Value, createdUser.Id, cancellationToken);
+                if (didChangeRoster)
+                {
+                    await NotifyRosterUpdatedAsync(dto.ClassRoomId.Value);
+                }
+            }
+
+            return Ok(createdUser);
         }
-
-        var role = (dto.Role ?? string.Empty).Trim();
-        var allowedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Child", "Parent", "Teacher", "Admin" };
-        if (!allowedRoles.Contains(role))
+        catch (ServiceException ex)
         {
-            return BadRequest("Invalid role. Allowed: Child, Parent, Teacher, Admin.");
+            return StatusCode(ex.StatusCode, ex.Message);
         }
-
-        var usernameExists = await _dataContext.Users
-            .AsNoTracking()
-            .AnyAsync(u => u.Username == dto.Username, cancellationToken);
-        if (usernameExists)
-        {
-            return BadRequest("Username already exists.");
-        }
-
-        var user = new User
-        {
-            Name = dto.Name.Trim(),
-            Username = dto.Username.Trim(),
-            Password = dto.Password,
-            Role = role,
-            IsApproved = dto.IsApproved,
-            IsActive = dto.IsActive,
-            AddedOn = DateTime.UtcNow
-        };
-
-        await _dataContext.Users.AddAsync(user, cancellationToken);
-        await _dataContext.SaveChangesAsync(cancellationToken);
-
-        return Ok(new AdminUserDto(
-            user.Id,
-            user.Name,
-            user.Username,
-            user.Role,
-            user.IsApproved,
-            user.IsActive,
-            user.AddedOn
-        ));
     }
 
     [HttpPut("users/{id:int}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody] AdminUpdateUserDto dto, CancellationToken cancellationToken)
     {
-        var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
-        if (user is null)
+        try
         {
-            return NotFound();
+            await _userService.UpdateUserAsync(id, dto, cancellationToken);
+            return NoContent();
         }
-
-        var role = (dto.Role ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(role))
+        catch (ServiceException ex)
         {
-            return BadRequest("Role is required.");
+            return StatusCode(ex.StatusCode, ex.Message);
         }
-
-        var allowedRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Child", "Parent", "Teacher", "Admin" };
-        if (!allowedRoles.Contains(role))
-        {
-            return BadRequest("Invalid role. Allowed: Child, Parent, Teacher, Admin.");
-        }
-
-        user.Role = role;
-        user.IsApproved = dto.IsApproved;
-        user.IsActive = dto.IsActive;
-
-        await _dataContext.SaveChangesAsync(cancellationToken);
-        return NoContent();
     }
 
     [HttpDelete("users/{id:int}")]
     public async Task<IActionResult> DeleteUser(int id, CancellationToken cancellationToken)
     {
-        var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
-        if (user is null)
+        try
         {
-            return NotFound();
+            await _userService.DeleteUserAsync(id, cancellationToken);
+            return NoContent();
         }
-
-        if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+        catch (ServiceException ex)
         {
-            var otherActiveAdmins = await _dataContext.Users
-                .AsNoTracking()
-                .CountAsync(u => u.Id != id && u.IsActive && u.Role == "Admin", cancellationToken);
-
-            if (otherActiveAdmins == 0)
-            {
-                return BadRequest("Cannot delete the last active admin.");
-            }
+            return StatusCode(ex.StatusCode, ex.Message);
         }
-
-        user.IsActive = false;
-        user.IsApproved = false;
-        await _dataContext.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
     }
 
     [HttpPost("bootstrap")]
@@ -160,21 +131,17 @@ public sealed class AdminController : ControllerBase
             return BadRequest("Admin already exists.");
         }
 
-        var adminUser = new KidSafeApp.Backend.Data.Entities.User
+        var created = await _userService.CreateUserAsync(new AdminCreateUserDto
         {
             Name = "School Admin",
             Username = "admin",
             Password = "admin",
-            AddedOn = DateTime.Now,
-            Role = "Admin",
+            Role = Roles.Admin,
             IsApproved = true,
             IsActive = true
-        };
+        }, cancellationToken);
 
-        await _dataContext.Users.AddAsync(adminUser, cancellationToken);
-        await _dataContext.SaveChangesAsync(cancellationToken);
-
-        return Ok(new { adminUser.Username, adminUser.Password });
+        return Ok(new { created.Username });
     }
 
     [HttpGet("classrooms")]
@@ -418,37 +385,21 @@ public sealed class AdminController : ControllerBase
     [HttpPost("classrooms/{classRoomId:int}/students")]
     public async Task<IActionResult> AssignStudentToClassRoom(int classRoomId, [FromBody] AdminAssignStudentDto dto, CancellationToken cancellationToken)
     {
-        var room = await _dataContext.ClassRooms
-            .FirstOrDefaultAsync(c => c.Id == classRoomId, cancellationToken);
-        if (room is null)
+        try
         {
-            return NotFound("Classroom not found.");
-        }
+            var didChangeRoster = await AssignStudentToClassRoomCoreAsync(classRoomId, dto.StudentId, cancellationToken);
+            await BackfillStudentCoursesFromClassRoomAsync(classRoomId, dto.StudentId, cancellationToken);
+            if (didChangeRoster)
+            {
+                await NotifyRosterUpdatedAsync(classRoomId);
+            }
 
-        var student = await _dataContext.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.Id == dto.StudentId && u.Role == "Child", cancellationToken);
-        if (student is null)
-        {
-            return BadRequest("Student does not exist or is not a child account.");
-        }
-
-        var exists = await _dataContext.ClassRoomStudents
-            .AnyAsync(x => x.ClassRoomId == classRoomId && x.StudentId == dto.StudentId, cancellationToken);
-        if (exists)
-        {
             return Ok();
         }
-
-        await _dataContext.ClassRoomStudents.AddAsync(new ClassRoomStudent
+        catch (ServiceException ex)
         {
-            ClassRoomId = classRoomId,
-            StudentId = dto.StudentId,
-            AssignedAt = DateTime.UtcNow
-        }, cancellationToken);
-
-        await _dataContext.SaveChangesAsync(cancellationToken);
-        return Ok();
+            return StatusCode(ex.StatusCode, ex.Message);
+        }
     }
 
     [HttpDelete("classrooms/{classRoomId:int}/students/{studentId:int}")]
@@ -464,65 +415,139 @@ public sealed class AdminController : ControllerBase
 
         _dataContext.ClassRoomStudents.Remove(mapping);
         await _dataContext.SaveChangesAsync(cancellationToken);
+        await NotifyRosterUpdatedAsync(classRoomId);
         return NoContent();
     }
 
     [HttpPut("classrooms/{classRoomId:int}/teacher")]
     public async Task<IActionResult> AssignTeacherToClassRoom(int classRoomId, [FromBody] AdminAssignTeacherDto dto, CancellationToken cancellationToken)
     {
-        var classRoom = await _dataContext.ClassRooms
-            .FirstOrDefaultAsync(c => c.Id == classRoomId, cancellationToken);
-        if (classRoom is null)
+        try
         {
-            return NotFound("Classroom not found.");
-        }
+            var didChangeRoster = await AssignTeacherToClassRoomCoreAsync(classRoomId, dto.TeacherId, cancellationToken);
+            if (didChangeRoster)
+            {
+                await NotifyRosterUpdatedAsync(classRoomId);
+            }
 
-        var teacherExists = await _dataContext.Users
-            .AsNoTracking()
-            .AnyAsync(u => u.Id == dto.TeacherId && u.Role == "Teacher" && u.IsActive, cancellationToken);
-        if (!teacherExists)
+            return NoContent();
+        }
+        catch (ServiceException ex)
         {
-            return BadRequest("Teacher does not exist.");
+            return StatusCode(ex.StatusCode, ex.Message);
         }
-
-        classRoom.TeacherId = dto.TeacherId;
-        await _dataContext.SaveChangesAsync(cancellationToken);
-        return NoContent();
     }
 
     [HttpPost("classrooms/{classRoomId:int}/courses")]
     public async Task<IActionResult> AssignCourseToClassRoom(int classRoomId, [FromBody] AdminAssignCourseToClassDto dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await AssignCourseToClassRoomCoreAsync(classRoomId, dto.CourseId, cancellationToken);
+            await NotifyRosterUpdatedAsync(classRoomId);
+            return Ok();
+        }
+        catch (ServiceException ex)
+        {
+            return StatusCode(ex.StatusCode, ex.Message);
+        }
+    }
+
+    private async Task<bool> AssignStudentToClassRoomCoreAsync(int classRoomId, int studentId, CancellationToken cancellationToken)
+    {
+        var roomExists = await _dataContext.ClassRooms
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == classRoomId, cancellationToken);
+        if (!roomExists)
+        {
+            throw new ServiceException("Classroom not found.", StatusCodes.Status404NotFound);
+        }
+
+        var studentExists = await _dataContext.Users
+            .AsNoTracking()
+            .AnyAsync(u => u.Id == studentId && u.Role == Roles.Child && u.IsActive, cancellationToken);
+        if (!studentExists)
+        {
+            throw new ServiceException("Student does not exist or is not an active child account.", StatusCodes.Status400BadRequest);
+        }
+
+        var exists = await _dataContext.ClassRoomStudents
+            .AnyAsync(x => x.ClassRoomId == classRoomId && x.StudentId == studentId, cancellationToken);
+        if (exists)
+        {
+            return false;
+        }
+
+        await _dataContext.ClassRoomStudents.AddAsync(new ClassRoomStudent
+        {
+            ClassRoomId = classRoomId,
+            StudentId = studentId,
+            AssignedAt = DateTime.UtcNow
+        }, cancellationToken);
+
+        await _dataContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private async Task<bool> AssignTeacherToClassRoomCoreAsync(int classRoomId, int teacherId, CancellationToken cancellationToken)
+    {
+        var classRoom = await _dataContext.ClassRooms
+            .FirstOrDefaultAsync(c => c.Id == classRoomId, cancellationToken);
+        if (classRoom is null)
+        {
+            throw new ServiceException("Classroom not found.", StatusCodes.Status404NotFound);
+        }
+
+        var teacherExists = await _dataContext.Users
+            .AsNoTracking()
+            .AnyAsync(u => u.Id == teacherId && u.Role == Roles.Teacher && u.IsActive, cancellationToken);
+        if (!teacherExists)
+        {
+            throw new ServiceException("Teacher does not exist.", StatusCodes.Status400BadRequest);
+        }
+
+        if (classRoom.TeacherId == teacherId)
+        {
+            return false;
+        }
+
+        classRoom.TeacherId = teacherId;
+        await _dataContext.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    private async Task AssignCourseToClassRoomCoreAsync(int classRoomId, int courseId, CancellationToken cancellationToken)
     {
         var classRoom = await _dataContext.ClassRooms
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == classRoomId, cancellationToken);
         if (classRoom is null)
         {
-            return NotFound("Classroom not found.");
+            throw new ServiceException("Classroom not found.", StatusCodes.Status404NotFound);
         }
 
         var course = await _dataContext.Courses
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == dto.CourseId, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == courseId, cancellationToken);
         if (course is null)
         {
-            return BadRequest("Course does not exist.");
+            throw new ServiceException("Course does not exist.", StatusCodes.Status400BadRequest);
         }
 
         if (!course.IsPublished)
         {
-            return BadRequest("Only published courses can be assigned to class.");
+            throw new ServiceException("Only published courses can be assigned to class.", StatusCodes.Status400BadRequest);
         }
 
         var existing = await _dataContext.ClassRoomCourseAssignments
-            .FirstOrDefaultAsync(a => a.ClassRoomId == classRoomId && a.CourseId == dto.CourseId, cancellationToken);
+            .FirstOrDefaultAsync(a => a.ClassRoomId == classRoomId && a.CourseId == courseId, cancellationToken);
 
         if (existing is null)
         {
             await _dataContext.ClassRoomCourseAssignments.AddAsync(new ClassRoomCourseAssignment
             {
                 ClassRoomId = classRoomId,
-                CourseId = dto.CourseId,
+                CourseId = courseId,
                 IsActive = true,
                 AssignedAt = DateTime.UtcNow
             }, cancellationToken);
@@ -541,13 +566,13 @@ public sealed class AdminController : ControllerBase
         foreach (var studentId in studentIds)
         {
             var studentCourse = await _dataContext.CourseAssignments
-                .FirstOrDefaultAsync(a => a.CourseId == dto.CourseId && a.ChildId == studentId, cancellationToken);
+                .FirstOrDefaultAsync(a => a.CourseId == courseId && a.ChildId == studentId, cancellationToken);
 
             if (studentCourse is null)
             {
                 await _dataContext.CourseAssignments.AddAsync(new CourseAssignment
                 {
-                    CourseId = dto.CourseId,
+                    CourseId = courseId,
                     ChildId = studentId,
                     IsActive = true,
                     AssignedAt = DateTime.UtcNow
@@ -560,6 +585,41 @@ public sealed class AdminController : ControllerBase
         }
 
         await _dataContext.SaveChangesAsync(cancellationToken);
-        return Ok();
+    }
+
+    private async Task BackfillStudentCoursesFromClassRoomAsync(int classRoomId, int studentId, CancellationToken cancellationToken)
+    {
+        var activeClassCourseIds = await _dataContext.ClassRoomCourseAssignments
+            .AsNoTracking()
+            .Where(x => x.ClassRoomId == classRoomId && x.IsActive)
+            .Select(x => x.CourseId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var courseId in activeClassCourseIds)
+        {
+            var existing = await _dataContext.CourseAssignments
+                .FirstOrDefaultAsync(x => x.ChildId == studentId && x.CourseId == courseId, cancellationToken);
+            if (existing is null)
+            {
+                await _dataContext.CourseAssignments.AddAsync(new CourseAssignment
+                {
+                    ChildId = studentId,
+                    CourseId = courseId,
+                    IsActive = true,
+                    AssignedAt = DateTime.UtcNow
+                }, cancellationToken);
+            }
+            else
+            {
+                existing.IsActive = true;
+            }
+        }
+
+        await _dataContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private Task NotifyRosterUpdatedAsync(int classRoomId)
+    {
+        return _chatHubContext.Clients.All.RosterUpdated(classRoomId);
     }
 }

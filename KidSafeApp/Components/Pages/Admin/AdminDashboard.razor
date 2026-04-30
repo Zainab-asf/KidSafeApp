@@ -1,460 +1,949 @@
 @page "/admin"
 @page "/admin/dashboard"
-@page "/admin/users"
-@page "/admin/roles"
-@page "/admin/approvals"
-@page "/admin/classes"
-@page "/admin/students"
-@page "/admin/teachers"
-@page "/admin/courses"
-@page "/admin/activity-logs"
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JsRuntime
-@inject KidSafeApp.States.AdminSessionState AdminSession
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AdminSessionState AdminSession
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 @using System.Text.Json
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Components.Web
 
-<PageTitle>Admin Dashboard</PageTitle>
+<PageTitle>Admin Control Center</PageTitle>
 
 @if (!AuthState.IsAuthenticated || !string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase) || !AdminSession.IsAdmin)
 {
     <div class="container py-5" style="max-width: 720px;">
-        <div class="alert alert-warning mb-3">
-            Admin access required.
-        </div>
+        <div class="alert alert-warning mb-3">Admin access required.</div>
         <button class="btn btn-primary" @onclick="GoToAdminLogin">Go to Admin Login</button>
     </div>
     return;
 }
+
 <div class="admin-shell">
-
-    <!-- Main Content -->
     <div class="admin-main">
-        <!-- Main Dashboard Content -->
         <div class="admin-content">
-            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-4">
+            <div class="admin-topbar mb-4">
                 <div>
-                    <h2 class="h4 mb-1">Admin Dashboard</h2>
-                    <small class="text-muted">Manage users, classes and approvals.</small>
+                    <h2 class="h4 mb-1">@HeaderTitle</h2>
+                    <small class="text-muted">@HeaderSubtitle</small>
                 </div>
-                <button class="btn btn-outline-primary" @onclick="ReloadAndNotify">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-                </button>
-            </div>
-
-            <!-- Dashboard Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Total Users</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@_users.Count</h4>
-                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 12.5% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-a" style="font-size: 2.5rem;">
-                                    <i class="bi bi-people"></i>
-                                </div>
-                            </div>
-                        </div>
+                <div class="admin-topbar-actions">
+                    <div class="admin-search-wrap">
+                        <i class="bi bi-search"></i>
+                        <input class="form-control" placeholder="Search..." @bind="_search" @bind:event="oninput" />
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Pending Approvals</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@PendingApprovalsCount</h4>
-                                    <small class="text-danger"><i class="bi bi-arrow-down"></i> 8.3% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-b" style="font-size: 2.5rem;">
-                                    <i class="bi bi-inbox"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Total Classes</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@_classRoomDetails.Count</h4>
-                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 5.6% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-c" style="font-size: 2.5rem;">
-                                    <i class="bi bi-book"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Active Students</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@_students.Count</h4>
-                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 10.2% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-d" style="font-size: 2.5rem;">
-                                    <i class="bi bi-mortarboard"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <button class="btn btn-outline-primary admin-refresh-btn" @onclick="ReloadAndNotify" title="Refresh">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <div class="admin-date-chip">Apr 16, 2026</div>
+                    <div class="admin-avatar-chip">A</div>
                 </div>
             </div>
 
-            <!-- Tabs for Management -->
-            <ul class="nav nav-tabs mb-4 admin-tabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link @(_activeTab == "users" ? "active" : string.Empty)" id="users-tab" type="button" role="tab" @onclick='() => SetActiveTab("users")'>
-                        <i class="bi bi-people me-2"></i>User Management
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link @(_activeTab == "classes" ? "active" : string.Empty)" id="classes-tab" type="button" role="tab" @onclick='() => SetActiveTab("classes")'>
-                        <i class="bi bi-book me-2"></i>Classes
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link @(_activeTab == "approvals" ? "active" : string.Empty)" id="approvals-tab" type="button" role="tab" @onclick='() => SetActiveTab("approvals")'>
-                        <i class="bi bi-check-circle me-2"></i>Approvals
-                    </button>
-                </li>
-            </ul>
+            @if (_loading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border" style="color: var(--ks-green);" role="status"></div>
+                </div>
+            }
+            else
+            {
+                @switch (_activeSection)
+                {
+                    case "child-chat":
+                        <div class="row g-3 admin-child-shell">
+                            <div class="col-12 col-xl-3">
+                                <div class="card p-3 h-100 admin-child-students-card">
+                                    <div class="admin-search-wrap mb-2 w-100">
+                                        <i class="bi bi-search"></i>
+                                        <input class="form-control" placeholder="Search students..." @bind="_childSearch" @bind:event="oninput" />
+                                    </div>
+                                    <div class="admin-child-filter-group mb-3">
+                                        <button type="button" class='btn btn-sm @(string.Equals(_childChatFilter, "all", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _childChatFilter = "all"'>All</button>
+                                        <button type="button" class='btn btn-sm @(string.Equals(_childChatFilter, "blocked", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _childChatFilter = "blocked"'>Blocked</button>
+                                        <button type="button" class='btn btn-sm @(string.Equals(_childChatFilter, "warning", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _childChatFilter = "warning"'>Warning</button>
+                                        <button type="button" class='btn btn-sm @(string.Equals(_childChatFilter, "safe", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _childChatFilter = "safe"'>Safe</button>
+                                    </div>
 
-            <!-- Tab Content -->
-            <div class="tab-content">
-                <!-- User Management Tab -->
-                <div class="tab-pane fade @(_activeTab == "users" ? "show active" : string.Empty)" id="users-content" role="tabpanel">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom">
-                            <div class="row g-3 align-items-end">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">Search Users</label>
-                                    <input class="form-control" placeholder="Search by name or username" @bind="_search" @bind:event="oninput" />
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Status</label>
-                                    <select class="form-select" @bind="_filter">
-                                        <option value="all">Active users</option>
-                                        <option value="pending">Pending approvals</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="disabled">Disabled</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Role</label>
-                                    <select class="form-select" @bind="_roleFilter">
-                                        <option value="all">All roles</option>
-                                        <option value="Child">Children</option>
-                                        <option value="Parent">Parents</option>
-                                        <option value="Teacher">Teachers</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Class</label>
-                                    <select class="form-select" @bind="_selectedClassFilterId">
-                                        <option value="0">All classes</option>
-                                        @foreach (var c in _classRoomDetails.OrderBy(x => x.Name))
+                                    <div class="admin-list admin-child-students-list">
+                                        @foreach (var child in ChildChatStudents)
                                         {
-                                            <option value="@c.Id">@c.Name</option>
+                                            <button class='admin-list-item admin-child-student-item @(child.Id == _selectedStudentId ? "active" : string.Empty)' @onclick='() => _selectedStudentId = child.Id'>
+                                                <span class="admin-alert-avatar">@GetInitials(child.Name)</span>
+                                                <div class="admin-child-student-meta">
+                                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                                        <strong>@child.Name</strong>
+                                                        <small class="text-muted">@GetChildLastSeenText(child.Id)</small>
+                                                    </div>
+                                                    <small class="text-muted"><span class='admin-chat-dot @GetChildStatusDotClass(child.Id)'></span>@GetChildPreviewText(child.Id)</small>
+                                                </div>
+                                                @if (GetChildUnreadCount(child.Id) > 0)
+                                                {
+                                                    <span class="admin-child-unread-badge">@GetChildUnreadCount(child.Id)</span>
+                                                }
+                                            </button>
                                         }
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-1 d-grid">
-                                    <button class="btn btn-outline-success w-100" @onclick="ClearFilters">Clear</button>
-                                </div>
-                                <div class="col-12 col-md-1 d-grid">
-                                    <button class="btn btn-outline-primary w-100" @onclick="ReloadAndNotify">↻</button>
-                                </div>
-                                <div class="col-12 col-md-12 col-lg-2">
-                                    <button class="btn btn-success w-100" @onclick="@(() => _showCreateUserForm = !_showCreateUserForm)">
-                                        <i class="bi bi-plus-circle me-2"></i>New User
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
-
-                            @if (_showCreateUserForm)
-                            {
-                                <hr class="my-3" />
-                                <div class="row g-3 align-items-end admin-create-user-row">
-                                    <div class="col-12 col-md-4 col-lg-3">
-                                        <label class="form-label">Name</label>
-                                        <input class="form-control" @bind="_newUser.Name" placeholder="Full name" />
-                                    </div>
-                                    <div class="col-12 col-md-3 col-lg-2">
-                                        <label class="form-label">Username</label>
-                                        <input class="form-control" @bind="_newUser.Username" placeholder="Username" />
-                                    </div>
-                                    <div class="col-12 col-md-3 col-lg-2">
-                                        <label class="form-label">Password</label>
-                                        <input class="form-control" type="password" @bind="_newUser.Password" placeholder="Password" />
-                                    </div>
-                                    <div class="col-12 col-md-2 col-lg-2">
-                                        <label class="form-label">Role</label>
-                                        <select class="form-select" @bind="_newUser.Role">
-                                            <option value="Child">Child</option>
-                                            <option value="Parent">Parent</option>
-                                            <option value="Teacher">Teacher</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-12 col-lg-3 d-grid">
-                                        <button class="btn btn-success" @onclick="CreateUser">Create User</button>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                        <div class="card-body admin-table-wrap" style="max-height: 600px; overflow-y: auto;">
-                            @if (_loading)
-                            {
-                                <div class="text-center py-5">
-                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                                    <span class="text-muted">Loading users...</span>
-                                </div>
-                            }
-                            else if (FilteredUsers.Count() == 0)
-                            {
-                                <div class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                    <p class="mt-2">No users to display</p>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0 admin-data-table">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Name</th>
-                                                <th>Username</th>
-                                                <th>Role</th>
-                                                <th>Approved</th>
-                                                <th>Active</th>
-                                                <th>Added</th>
-                                                <th style="width: 220px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var u in FilteredUsers)
-                                            {
-                                                <tr>
-                                                    <td>@u.Id</td>
-                                                    <td>@u.Name</td>
-                                                    <td>@u.Username</td>
-                                                    <td>
-                                                        <select class="form-select form-select-sm" style="min-width:140px" disabled="@(string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))" @onchange="@((ChangeEventArgs e) => SetRole(u, e.Value?.ToString()))">
-                                                            @if (string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-                                                            {
-                                                                <option value="Admin" selected>Admin</option>
-                                                            }
-                                                            <option value="Child" selected="@(u.Role == "Child")">Child</option>
-                                                            <option value="Parent" selected="@(u.Role == "Parent")">Parent</option>
-                                                            <option value="Teacher" selected="@(u.Role == "Teacher")">Teacher</option>
-                                                        </select>
-                                                    </td>
-                                                    <td>
-                                                        <input type="checkbox" class="form-check-input" checked="@u.IsApproved" @onchange="@((ChangeEventArgs e) => SetApproved(u, (bool)(e.Value ?? false)))" />
-                                                    </td>
-                                                    <td>
-                                                        <input type="checkbox" class="form-check-input" checked="@u.IsActive" @onchange="@((ChangeEventArgs e) => SetActive(u, (bool)(e.Value ?? false)))" />
-                                                    </td>
-                                                    <td class="text-muted small">@u.AddedOn.ToString("yyyy-MM-dd")</td>
-                                                    <td>
-                                                        <div class="d-flex gap-2">
-                                                            <button class="btn btn-sm btn-success admin-btn-compact" @onclick="@(() => Save(u))">Save</button>
-                                                            @if (!string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-                                                            {
-                                                                <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => ConfirmDeleteUser(u))">Delete</button>
-                                                            }
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Classes Tab -->
-                <div class="tab-pane fade @(_activeTab == "classes" ? "show active" : string.Empty)" id="classes-content" role="tabpanel">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">Class Name</label>
-                                    <input class="form-control" @bind="_newClassRoom.Name" placeholder="e.g., Grade 5A" />
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Grade</label>
-                                    <input class="form-control" @bind="_newClassRoom.Grade" placeholder="e.g., 5" />
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Section</label>
-                                    <input class="form-control" @bind="_newClassRoom.Section" placeholder="e.g., A" />
-                                </div>
-                                <div class="col-12 col-md-4 d-grid">
-                                    <button class="btn btn-success" @onclick="CreateClassRoom">
-                                        <i class="bi bi-plus-circle me-2"></i>Create Class
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            @if (_classRoomDetails.Count == 0)
-                            {
-                                <div class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                    <p class="mt-2">No classrooms created yet</p>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="row g-3">
-                                    @foreach (var room in _classRoomDetails)
+                            <div class="col-12 col-xl-7">
+                                <div class="card p-3 h-100 admin-child-chat-card">
+                                    @if (SelectedStudent is null)
                                     {
-                                        <div class="col-md-6">
-                                            <div class="card h-100">
-                                                <div class="card-header bg-light">
-                                                    <h6 class="mb-0">@room.Name <span class="badge bg-secondary">@room.Grade-@room.Section</span></h6>
+                                        <div class="text-muted">Select a student chat to monitor.</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2 flex-wrap admin-child-chat-head">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="admin-alert-avatar">@GetInitials(SelectedStudent.Name)</span>
+                                                <div>
+                                                    <h6 class="mb-0">@SelectedStudent.Name</h6>
+                                                    <small class="text-muted">@GetStudentGradeLabel(SelectedStudent.Id)</small>
                                                 </div>
-                                                <div class="card-body">
-                                                    <p class="mb-2"><small class="text-muted">Students: <strong>@room.Students.Count</strong></small></p>
-                                                    <p class="mb-2"><small class="text-muted">Teacher: <strong>@(string.IsNullOrWhiteSpace(room.TeacherName) ? "Not assigned" : room.TeacherName)</strong></small></p>
-
-                                                    @if (room.Students.Count > 0)
-                                                    {
-                                                        <details class="mb-3">
-                                                            <summary class="small fw-bold">View students (@room.Students.Count)</summary>
-                                                            <ul class="mt-2 mb-0">
-                                                                @foreach (var student in room.Students)
-                                                                {
-                                                                    <li class="d-flex justify-content-between align-items-center py-1">
-                                                                        <span>@student.Name</span>
-                                                                        <button class="btn btn-xs btn-outline-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @onclick="@(() => RemoveStudent(room.Id, student.Id))">Remove</button>
-                                                                    </li>
-                                                                }
-                                                            </ul>
-                                                        </details>
-                                                    }
-
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Assign Student</small>
-                                                        <div class="d-flex gap-2">
-                                                            <select class="form-select form-select-sm" @bind="_selectedStudentByClass[room.Id]">
-                                                                <option value="0">Select student</option>
-                                                                @foreach (var s in _users.Where(u => u.Role == "Child"))
-                                                                {
-                                                                    <option value="@s.Id">@s.Name</option>
-                                                                }
-                                                            </select>
-                                                            <button class="btn btn-sm btn-outline-success" @onclick="@(() => AssignStudent(room.Id))">Assign</button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Assign Teacher</small>
-                                                        <div class="d-flex gap-2">
-                                                            <select class="form-select form-select-sm" @bind="_selectedTeacherByClass[room.Id]">
-                                                                <option value="0">Select teacher</option>
-                                                                @foreach (var t in _teachers)
-                                                                {
-                                                                    <option value="@t.Id">@t.Name</option>
-                                                                }
-                                                            </select>
-                                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => AssignTeacher(room.Id))">Assign</button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="mt-3 d-grid">
-                                                        <button class="btn btn-sm btn-outline-danger" @onclick="@(() => ConfirmDeleteClassRoom(room.Id))">
-                                                            <i class="bi bi-trash me-1"></i>Delete Class
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                                <span class='admin-severity-pill @GetChildRiskPillClass(SelectedStudent.Id)'>@GetChildRiskLevel(SelectedStudent.Id)</span>
                                             </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-sm btn-outline-success" @onclick='() => _success = "Flag added for review."'>
+                                                    <i class="bi bi-flag me-1"></i>Flag
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" @onclick='() => _success = "Parent has been notified."'>
+                                                    <i class="bi bi-person-lines-fill me-1"></i>Notify Parent
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="admin-chat-box admin-child-chat-stream">
+                                            @foreach (var line in GetDemoChat(SelectedStudent.Id))
+                                            {
+                                                <div class="admin-chat-line">
+                                                    @if (line.IsAlert)
+                                                    {
+                                                        <small class="admin-chat-alert-label"><i class="bi bi-exclamation-triangle"></i> @(line.Text.Contains("pathetic", StringComparison.OrdinalIgnoreCase) ? "Harassment language" : "Cyberbullying detected")</small>
+                                                    }
+                                                    <div class='chat-bubble @(line.IsAlert ? "alert" : line.IsFromStudent ? "left" : "right")'>@line.Text</div>
+                                                    <small class="text-muted admin-chat-time">@GetChatTimeText(line)</small>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="admin-chat-note mt-3">
+                                            <div class="admin-chat-note-input">
+                                                <i class="bi bi-pencil"></i>
+                                                <input class="form-control" placeholder="Add admin note or annotation..." @bind="_chatAdminNote" />
+                                            </div>
+                                            <button class="btn btn-success" @onclick="SaveChatNote">Save Note</button>
                                         </div>
                                     }
                                 </div>
-                            }
+                            </div>
+                            <div class="col-12 col-xl-2">
+                                <div class="card p-3 mb-3 admin-child-side-card">
+                                    <h6>Chat Overview</h6>
+                                    <div class="d-flex justify-content-between admin-overview-row"><span><i class="bi bi-people"></i> Total Students</span><strong>@GetChildChatOverviewTotalStudents()</strong></div>
+                                    <div class="d-flex justify-content-between admin-overview-row"><span><i class="bi bi-chat-dots"></i> Active Chats</span><strong>@GetChildChatOverviewActiveChats()</strong></div>
+                                    <div class="d-flex justify-content-between admin-overview-row"><span><i class="bi bi-flag"></i> Flagged Today</span><strong>@GetChildChatOverviewFlaggedToday()</strong></div>
+                                    <div class="d-flex justify-content-between admin-overview-row"><span><i class="bi bi-shield-x"></i> Blocked</span><strong>@GetChildChatOverviewBlocked()</strong></div>
+                                </div>
+                                <div class="card p-3 admin-child-side-card">
+                                    <h6>AI Filter Status</h6>
+                                    <small class="text-muted">Bullying Detection <strong class="float-end">98%</strong></small>
+                                    <div class="progress mb-2 admin-ai-progress"><div class="progress-bar bg-success" style="width:98%"></div></div>
+                                    <small class="text-muted">Link Scanning <strong class="float-end">100%</strong></small>
+                                    <div class="progress mb-2 admin-ai-progress"><div class="progress-bar bg-success" style="width:100%"></div></div>
+                                    <small class="text-muted">Keyword Filter <strong class="float-end">95%</strong></small>
+                                    <div class="progress admin-ai-progress"><div class="progress-bar bg-success" style="width:95%"></div></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                        break;
 
-                <!-- Approvals Tab -->
-                <div class="tab-pane fade @(_activeTab == "approvals" ? "show active" : string.Empty)" id="approvals-content" role="tabpanel">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            @if (PendingApprovalsCount == 0)
+                    case "parent-portal":
+                        <div class="admin-parent-kpi-grid mb-3">
+                            <div class="card p-3 admin-parent-kpi-card admin-parent-kpi-soft">
+                                <div class="admin-kpi-icon icon-students"><i class="bi bi-people"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Total Parents</small>
+                                    <h4 class="mb-0">@GetParentPortalTotalParents()</h4>
+                                </div>
+                            </div>
+                            <div class="card p-3 admin-parent-kpi-card admin-parent-kpi-soft">
+                                <div class="admin-kpi-icon icon-chat"><i class="bi bi-person-check"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Active This Week</small>
+                                    <h4 class="mb-0">@GetParentPortalActiveThisWeek()</h4>
+                                </div>
+                            </div>
+                            <div class="card p-3 admin-parent-kpi-card admin-parent-kpi-soft">
+                                <div class="admin-kpi-icon icon-blocked"><i class="bi bi-exclamation-triangle"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Pending Alerts</small>
+                                    <h4 class="mb-0">@GetParentPortalPendingAlerts()</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-8">
+                                <div class="card p-3 admin-parent-directory-card">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                        <h6 class="mb-0">Parent Directory</h6>
+                                        <div class="admin-status-filter" role="group" aria-label="Parent status filter">
+                                            <button type="button" class='btn btn-sm @(string.Equals(_parentPortalStatus, "all", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _parentPortalStatus = "all"'>All</button>
+                                            <button type="button" class='btn btn-sm @(string.Equals(_parentPortalStatus, "active", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _parentPortalStatus = "active"'>Active</button>
+                                            <button type="button" class='btn btn-sm @(string.Equals(_parentPortalStatus, "inactive", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _parentPortalStatus = "inactive"'>Inactive</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive admin-parent-table-wrap">
+                                        <table class="table table-sm align-middle mb-0 admin-parent-table">
+                                            <thead><tr><th>Parent</th><th>Student</th><th>Contact</th><th>Last Active</th><th>Alerts</th><th>Action</th></tr></thead>
+                                            <tbody>
+                                                @foreach (var p in ParentPortalRows)
+                                                {
+                                                    <tr class='@(_selectedParentId == p.Id ? "admin-row-selected" : string.Empty)' @onclick='() => _selectedParentId = p.Id' style="cursor:pointer;">
+                                                        <td>
+                                                            <div class="admin-parent-name-cell">
+                                                                <span class="admin-alert-avatar">@GetInitials(p.Name)</span>
+                                                                <strong>@p.Name</strong>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="fw-semibold">@p.ChildName</div>
+                                                            <small class="text-muted">@p.ChildGrade</small>
+                                                        </td>
+                                                        <td>
+                                                            <div>@p.Email</div>
+                                                            <small class="text-muted">@p.Phone</small>
+                                                        </td>
+                                                        <td class="text-muted">@p.LastActive</td>
+                                                        <td>
+                                                            @if (p.PendingAlerts > 0)
+                                                            {
+                                                                <span class="admin-parent-alert-number">@p.PendingAlerts</span>
+                                                                <span class="admin-severity-pill admin-severity-blocked">pending</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="admin-severity-pill admin-severity-safe">Clear</span>
+                                                            }
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-outline-primary" @onclick='() => _selectedParentId = p.Id' @onclick:stopPropagation="true">Message</button>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <div class="card p-4 mb-3 text-center admin-parent-side-card">
+                                    <div class="admin-select-parent-icon mb-3"><i class="bi bi-people"></i></div>
+                                    <h6 class="mb-2">Select a Parent</h6>
+                                    <div class="text-muted small">Click on a parent to view details and messages.</div>
+                                    <div class="text-muted small mt-1">@SelectedParentLabel</div>
+                                </div>
+                                <div class="card p-3 admin-parent-side-card">
+                                    <h6>Broadcast Message</h6>
+                                    <small class="text-muted d-block mb-2">Send a message to all parents at once</small>
+                                    <textarea class="form-control mb-3" rows="4" placeholder="Type your broadcast message..." @bind="_broadcastMessage"></textarea>
+                                    <button class="btn btn-primary w-100" @onclick="SendBroadcast">Send to All Parents</button>
+                                </div>
+                            </div>
+                        </div>
+                        break;
+
+                    case "teacher-module":
+                        <div class="admin-teacher-kpi-grid mb-3">
+                            <div class="card p-3 admin-parent-kpi-card">
+                                <div class="admin-kpi-icon icon-students"><i class="bi bi-mortarboard"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Total Teachers</small>
+                                    <h4 class="mb-0">@FilteredTeachers.Count</h4>
+                                </div>
+                            </div>
+                            <div class="card p-3 admin-parent-kpi-card">
+                                <div class="admin-kpi-icon icon-chat"><i class="bi bi-person-check"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Active Teachers</small>
+                                    <h4 class="mb-0">@FilteredTeachers.Count(t => !string.Equals(GetTeacherStatus(t.Id), "On Leave", StringComparison.OrdinalIgnoreCase))</h4>
+                                </div>
+                            </div>
+                            <div class="card p-3 admin-parent-kpi-card">
+                                <div class="admin-kpi-icon icon-flagged"><i class="bi bi-people"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Total Students</small>
+                                    <h4 class="mb-0">@FilteredTeachers.Sum(t => GetTeacherStudentCount(t.Id))</h4>
+                                </div>
+                            </div>
+                            <div class="card p-3 admin-parent-kpi-card">
+                                <div class="admin-kpi-icon icon-blocked"><i class="bi bi-exclamation-triangle"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Total Alerts</small>
+                                    <h4 class="mb-0">@FilteredTeachers.Sum(t => GetTeacherAlertCount(t.Id))</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-xl-8">
+                                <div class="card p-3">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                        <h6 class="mb-0">Teacher Directory</h6>
+                                        <button class="btn btn-outline-success btn-sm" @onclick='() => Nav.NavigateTo("/admin/add-user")'>
+                                            <i class="bi bi-person-plus me-1"></i>Add via Add User
+                                        </button>
+                                    </div>
+
+                                    <div class="table-responsive admin-parent-table-wrap">
+                                        <table class="table table-sm align-middle mb-0 admin-parent-table">
+                                            <thead><tr><th>Teacher</th><th>Subject</th><th>Classes</th><th>Students</th><th>Alerts</th><th>Status</th><th>Action</th></tr></thead>
+                                            <tbody>
+                                                @foreach (var t in FilteredTeachers)
+                                                {
+                                                    <tr class='@(_selectedTeacherId == t.Id ? "admin-row-selected" : string.Empty)' @onclick='() => _selectedTeacherId = t.Id' style="cursor:pointer;">
+                                                        <td>
+                                                            <div class="admin-parent-name-cell">
+                                                                <span class="admin-alert-avatar">@GetInitials(t.Name)</span>
+                                                                <div>
+                                                                    <strong>@t.Name</strong>
+                                                                    <small class="text-muted d-block">@t.Username</small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>@GetTeacherSubject(t.Id)</td>
+                                                        <td>
+                                                            <div class="admin-class-pill-wrap">
+                                                                @foreach (var cls in GetTeacherClassLabels(t.Id).Take(2))
+                                                                {
+                                                                    <span class="admin-class-pill">@cls</span>
+                                                                }
+                                                                @if (GetTeacherClassLabels(t.Id).Count > 2)
+                                                                {
+                                                                    <span class="admin-class-pill">+@(GetTeacherClassLabels(t.Id).Count - 2)</span>
+                                                                }
+                                                            </div>
+                                                        </td>
+                                                        <td>@GetTeacherStudentCount(t.Id)</td>
+                                                        <td class="fw-semibold">@GetTeacherAlertCount(t.Id)</td>
+                                                        <td><span class="admin-severity-pill @(GetTeacherStatusClass(t.Id))">@GetTeacherStatus(t.Id)</span></td>
+                                                        <td>
+                                                            <button class="btn btn-sm btn-outline-primary" @onclick='(e) => ViewTeacherReport(e, t.Name)' @onclick:stopPropagation="true">Report</button>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-xl-4">
+                                <div class="card p-4 text-center">
+                                    <div class="admin-select-parent-icon mb-3"><i class="bi bi-mortarboard"></i></div>
+                                    <h6 class="mb-2">Select a Teacher</h6>
+                                    <div class="text-muted small">@SelectedTeacherLabel</div>
+                                </div>
+                            </div>
+                        </div>
+                        break;
+
+                    case "add-user":
+                        <div class="card p-3 p-lg-4 admin-add-user-card">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <h6 class="mb-0">Add User</h6>
+                                <div class="admin-status-filter" role="group" aria-label="Add user role selector">
+                                    <button type="button" class='btn btn-sm @(_addUserRole == "child" ? "btn-success" : "btn-light")' @onclick='() => _addUserRole = "child"'>Child</button>
+                                    <button type="button" class='btn btn-sm @(_addUserRole == "parent" ? "btn-success" : "btn-light")' @onclick='() => _addUserRole = "parent"'>Parent</button>
+                                    <button type="button" class='btn btn-sm @(_addUserRole == "teacher" ? "btn-success" : "btn-light")' @onclick='() => _addUserRole = "teacher"'>Teacher</button>
+                                </div>
+                            </div>
+
+                            @if (_addUserRole == "child")
                             {
-                                <div class="text-center py-5 text-muted">
-                                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
-                                    <p class="mt-2">All pending requests approved!</p>
+                                <div class="admin-add-user-form">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Child Name</label>
+                                            <input class="form-control" @bind="_newChildName" placeholder="Enter child name" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Registration No (login id)</label>
+                                            <input class="form-control" @bind="_newChildRegNo" placeholder="e.g. CH-1001" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" @bind="_newChildPassword" placeholder="Enter password" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Class</label>
+                                            <select class="form-select" @bind="_newChildClassRoomId">
+                                                <option value="0">Select class</option>
+                                                @foreach (var classRoom in _classRoomDetails.OrderBy(c => c.Name))
+                                                {
+                                                    <option value="@classRoom.Id">@classRoom.Name (@classRoom.Grade-@classRoom.Section)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-success mt-3" @onclick="AddChildAsync" disabled="@_creatingChild">@(_creatingChild ? "Adding..." : "Add Child")</button>
+                                </div>
+                            }
+                            else if (_addUserRole == "parent")
+                            {
+                                <div class="admin-add-user-form">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Parent Name</label>
+                                            <input class="form-control" @bind="_newParentName" placeholder="Enter parent name" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Username / Email</label>
+                                            <input class="form-control" @bind="_newParentUsername" placeholder="Enter username or email" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" @bind="_newParentPassword" placeholder="Enter password" />
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-success mt-3" @onclick="AddParentAsync" disabled="@_creatingParent">@(_creatingParent ? "Adding..." : "Add Parent")</button>
                                 </div>
                             }
                             else
                             {
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle admin-data-table">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Name</th>
-                                                <th>Username</th>
-                                                <th>Role</th>
-                                                <th>Requested On</th>
-                                                <th style="width: 120px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var u in FilteredUsers.Where(u => !u.IsApproved && u.IsActive))
-                                            {
-                                                <tr>
-                                                    <td>#@u.Id</td>
-                                                    <td>@u.Name</td>
-                                                    <td>@u.Username</td>
-                                                    <td>
-                                                        <span class="badge" style="background-color: @GetRoleColor(u.Role)">@u.Role</span>
-                                                    </td>
-                                                    <td>@u.AddedOn.ToString("MMM dd, yyyy")</td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-success me-1 admin-btn-icon" @onclick="@(async () => { await ApproveUser(u); })">✓</button>
-                                                        <button class="btn btn-sm btn-danger admin-btn-icon" @onclick="@(async () => { await DenyUser(u); })">✕</button>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
+                                <div class="admin-add-user-form">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Teacher Name</label>
+                                            <input class="form-control" @bind="_newTeacherName" placeholder="Enter teacher name" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Username</label>
+                                            <input class="form-control" @bind="_newTeacherUsername" placeholder="Enter username" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" @bind="_newTeacherPassword" placeholder="Enter password" />
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Course of Study</label>
+                                            <select class="form-select" @bind="_newTeacherCourseId">
+                                                <option value="0">Select course</option>
+                                                @foreach (var course in _courses.OrderBy(c => c.Title))
+                                                {
+                                                    <option value="@course.Id">@course.Title</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Class</label>
+                                            <select class="form-select" @bind="_newTeacherClassRoomId">
+                                                <option value="0">Select class</option>
+                                                @foreach (var classRoom in _classRoomDetails.OrderBy(c => c.Name))
+                                                {
+                                                    <option value="@classRoom.Id">@classRoom.Name (@classRoom.Grade-@classRoom.Section)</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-success mt-3" @onclick="AddTeacherAsync" disabled="@_creatingTeacher">@(_creatingTeacher ? "Adding..." : "Add Teacher")</button>
                                 </div>
                             }
                         </div>
-                    </div>
-                </div>
-            </div>
+                        break;
 
-            <!-- Toast Messages -->
+                    case "notifications":
+                        <div class="row g-3">
+                            <div class="col-12 col-xl-8">
+                                <div class="card p-3 admin-notifications-card">
+                                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <h6 class="mb-0">Notifications</h6>
+                                            <span class="admin-count-chip">@GetNewNotificationCount() new</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <div class="admin-status-filter" role="group" aria-label="Notification filter">
+                                                <button type="button" class='btn btn-sm @(string.Equals(_notificationFilter, "all", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _notificationFilter = "all"'>All</button>
+                                                <button type="button" class='btn btn-sm @(string.Equals(_notificationFilter, "blocked", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _notificationFilter = "blocked"'>Blocked</button>
+                                                <button type="button" class='btn btn-sm @(string.Equals(_notificationFilter, "warning", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _notificationFilter = "warning"'>Warning</button>
+                                                <button type="button" class='btn btn-sm @(string.Equals(_notificationFilter, "safe", StringComparison.OrdinalIgnoreCase) ? "btn-success" : "btn-light")' @onclick='() => _notificationFilter = "safe"'>Safe</button>
+                                            </div>
+                                            <button class="btn btn-link btn-sm text-decoration-none p-0" @onclick="MarkAllNotificationsRead">Mark all read</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="admin-notifications-list">
+                                        @foreach (var n in FilteredNotificationFeed)
+                                        {
+                                            <div class="admin-notification-row">
+                                                <div class='admin-notification-icon @GetNotificationIconClass(n.Severity)'>
+                                                    <i class='bi @GetNotificationIcon(n.Severity)'></i>
+                                                </div>
+                                                <div class="admin-notification-body">
+                                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                        <div class="fw-semibold">@n.Title</div>
+                                                        <span class='admin-severity-pill @GetSeverityPillClass(n.Severity)'>@n.Severity</span>
+                                                        @if (n.IsNew)
+                                                        {
+                                                            <span class="admin-new-dot"></span>
+                                                        }
+                                                    </div>
+                                                    <small class="text-muted">@n.Description</small>
+                                                </div>
+                                                <small class="text-muted text-nowrap">@n.When</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-xl-4">
+                                <div class="card p-3 mb-3 admin-notification-side-card">
+                                    <h6 class="mb-3">Summary</h6>
+                                    <div class="admin-summary-item blocked">Blocked Alerts <strong>@GetNotificationCountBySeverity("Blocked")</strong></div>
+                                    <div class="admin-summary-item warning">Warnings <strong>@GetNotificationCountBySeverity("Warning")</strong></div>
+                                    <div class="admin-summary-item safe">Safe Updates <strong>@GetNotificationCountBySeverity("Safe")</strong></div>
+                                </div>
+
+                                <div class="card p-3 mb-3 admin-notification-side-card">
+                                    <h6 class="mb-1">Send Broadcast</h6>
+                                    <small class="text-muted d-block mb-3">Notify all parents and teachers instantly</small>
+                                    <button class="btn btn-primary w-100" @onclick="ComposeAdminBroadcast">Compose Broadcast</button>
+                                </div>
+
+                                <div class="card p-3 mb-3 admin-notification-side-card">
+                                    <h6 class="mb-3">Alert Settings</h6>
+                                    <div class="admin-setting-row">
+                                        <span>Cyberbullying Alerts</span>
+                                        <input type="checkbox" class="form-check-input" @bind="_notifyCyberbullyingAlerts" />
+                                    </div>
+                                    <div class="admin-setting-row">
+                                        <span>External Link Alerts</span>
+                                        <input type="checkbox" class="form-check-input" @bind="_notifyExternalLinkAlerts" />
+                                    </div>
+                                    <div class="admin-setting-row">
+                                        <span>Parent Notifications</span>
+                                        <input type="checkbox" class="form-check-input" @bind="_notifyParentNotifications" />
+                                    </div>
+                                    <div class="admin-setting-row mb-0">
+                                        <span>Weekly Reports</span>
+                                        <input type="checkbox" class="form-check-input" @bind="_notifyWeeklyReports" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        break;
+
+                    case "settings":
+                        <div class="row g-3 admin-settings-shell">
+                            <div class="col-12 col-lg-3">
+                                <div class="card p-3 admin-settings-menu-card">
+                                    <button class='admin-settings-menu-item @(string.Equals(_adminSettingsTab, "general", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => _adminSettingsTab = "general"'>
+                                        <i class="bi bi-gear"></i> General
+                                    </button>
+                                    <button class='admin-settings-menu-item @(string.Equals(_adminSettingsTab, "security", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => _adminSettingsTab = "security"'>
+                                        <i class="bi bi-shield-lock"></i> Security
+                                    </button>
+                                    <button class='admin-settings-menu-item @(string.Equals(_adminSettingsTab, "notifications", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => _adminSettingsTab = "notifications"'>
+                                        <i class="bi bi-bell"></i> Notifications
+                                    </button>
+                                    <button class='admin-settings-menu-item @(string.Equals(_adminSettingsTab, "user-management", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => _adminSettingsTab = "user-management"'>
+                                        <i class="bi bi-person"></i> User Management
+                                    </button>
+                                    <button class='admin-settings-menu-item @(string.Equals(_adminSettingsTab, "ai-filter", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => _adminSettingsTab = "ai-filter"'>
+                                        <i class="bi bi-sliders"></i> AI Filter
+                                    </button>
+                                    <button class='admin-settings-menu-item @(string.Equals(_adminSettingsTab, "about", StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty)' @onclick='() => _adminSettingsTab = "about"'>
+                                        <i class="bi bi-info-circle"></i> About
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-9">
+                                <div class="card p-3 p-lg-4 admin-settings-content-card">
+                                    @if (string.Equals(_adminSettingsTab, "general", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <h6 class="mb-3">General Settings</h6>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">School / Institution Name</label>
+                                                <input class="form-control" @bind="_settingsInstitutionName" />
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Admin Email</label>
+                                                <input class="form-control" @bind="_settingsAdminEmail" />
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Platform Language</label>
+                                                <select class="form-select" @bind="_settingsLanguage">
+                                                    <option value="English">English</option>
+                                                    <option value="Urdu">Urdu</option>
+                                                    <option value="Arabic">Arabic</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Theme</label>
+                                                <select class="form-select" @bind="_adminSettings.ThemePreference">
+                                                    <option value="light">Light</option>
+                                                    <option value="dark">Dark</option>
+                                                    <option value="system">System</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Timezone</label>
+                                                <select class="form-select" @bind="_settingsTimezone">
+                                                    <option value="UTC+5:00 (PKT)">UTC+5:00 (PKT)</option>
+                                                    <option value="UTC+4:00 (GST)">UTC+4:00 (GST)</option>
+                                                    <option value="UTC+0:00 (GMT)">UTC+0:00 (GMT)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-6 d-flex align-items-end">
+                                                <div class="form-check form-switch m-0">
+                                                    <input class="form-check-input" type="checkbox" id="adminCompactMode" @bind="_adminSettings.CompactMode">
+                                                    <label class="form-check-label" for="adminCompactMode">Enable compact layout</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Institution Address</label>
+                                                <input class="form-control" @bind="_settingsInstitutionAddress" />
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-success px-4" @onclick="SaveAdminGeneralSettingsAsync" disabled="@_savingAdminSettings">@(_savingAdminSettings ? "Saving..." : "Save Changes")</button>
+                                    }
+                                    else if (string.Equals(_adminSettingsTab, "security", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <h6 class="mb-3">Security Settings</h6>
+                                        <div class="admin-settings-grid mb-3">
+                                            <div class="admin-setting-row"><span>Public admin profile</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.IsProfilePublic" /></div>
+                                            <div class="admin-setting-row"><span>Allow direct message requests</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.AllowMessageRequests" /></div>
+                                            <div class="admin-setting-row"><span>Require approval for sensitive messages</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.RequireParentApprovalForMessages" /></div>
+                                            <div class="admin-setting-row mb-0"><span>Screen time limit (minutes/day)</span><input class="form-control admin-settings-mini-input" type="number" min="30" max="1440" @bind="_adminSettings.ScreenTimeLimit" /></div>
+                                        </div>
+                                        <button class="btn btn-success px-4" @onclick="SaveAdminSecuritySettingsAsync" disabled="@_savingAdminSettings">@(_savingAdminSettings ? "Saving..." : "Save Security")</button>
+                                    }
+                                    else if (string.Equals(_adminSettingsTab, "notifications", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <h6 class="mb-3">Notification Settings</h6>
+                                        <div class="admin-settings-grid mb-3">
+                                            <div class="admin-setting-row"><span>Email notifications</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.EmailNotificationsEnabled" /></div>
+                                            <div class="admin-setting-row"><span>Push notifications</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.PushNotificationsEnabled" /></div>
+                                            <div class="admin-setting-row"><span>Achievement notifications</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.AchievementNotifications" /></div>
+                                            <div class="admin-setting-row"><span>Message notifications</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.MessageNotifications" /></div>
+                                            <div class="admin-setting-row mb-0"><span>Weekly/course reminder notifications</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.CourseReminderNotifications" /></div>
+                                        </div>
+                                        <button class="btn btn-success px-4" @onclick="SaveAdminNotificationSettingsAsync" disabled="@_savingAdminSettings">@(_savingAdminSettings ? "Saving..." : "Save Notifications")</button>
+                                    }
+                                    else if (string.Equals(_adminSettingsTab, "user-management", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <h6 class="mb-3">User Management Defaults</h6>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Escalation Contact Email</label>
+                                                <input class="form-control" @bind="_adminSettings.ParentEmail" />
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Portal Logo URL</label>
+                                                <input class="form-control" @bind="_adminSettings.AvatarUrl" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Admin Profile / Policy Note</label>
+                                                <textarea class="form-control" rows="4" @bind="_adminSettings.Bio"></textarea>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-success px-4" @onclick="SaveAdminUserManagementSettingsAsync" disabled="@_savingAdminSettings">@(_savingAdminSettings ? "Saving..." : "Save User Management")</button>
+                                    }
+                                    else if (string.Equals(_adminSettingsTab, "ai-filter", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <h6 class="mb-3">AI Filter Controls</h6>
+                                        <div class="admin-settings-grid mb-3">
+                                            <div class="admin-setting-row"><span>Strict content filter</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.StrictContentFilter" /></div>
+                                            <div class="admin-setting-row"><span>Block adult content</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.BlockAdultContent" /></div>
+                                            <div class="admin-setting-row mb-0"><span>Realtime moderation alerts</span><input type="checkbox" class="form-check-input" @bind="_adminSettings.MessageNotifications" /></div>
+                                        </div>
+                                        <button class="btn btn-success px-4" @onclick="SaveAdminAiFilterSettingsAsync" disabled="@_savingAdminSettings">@(_savingAdminSettings ? "Saving..." : "Save AI Filter")</button>
+                                    }
+                                    else if (string.Equals(_adminSettingsTab, "about", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <h6 class="mb-2">About</h6>
+                                        <div class="text-muted mb-3">KidSafe Admin Panel on .NET 10 MAUI BlazorWebView</div>
+                                        <div class="admin-settings-grid mb-3">
+                                            <div class="admin-setting-row"><span>App Version</span><strong>1.0</strong></div>
+                                            <div class="admin-setting-row"><span>Theme Preference</span><strong>@_adminSettings.ThemePreference</strong></div>
+                                            <div class="admin-setting-row mb-0"><span>Language</span><strong>@_settingsLanguage</strong></div>
+                                        </div>
+                                        <button class="btn btn-outline-success" @onclick="ReloadAndNotify">Refresh System Data</button>
+                                    }
+                                    else
+                                    {
+                                        <h6 class="mb-2">@GetSettingsTabTitle()</h6>
+                                        <p class="text-muted mb-0">This section is ready for configuration.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        break;
+
+                    case "help":
+                        <div class="row g-3">
+                            <div class="col-12 col-xl-8">
+                                <div class="card p-3 admin-help-card mb-3">
+                                    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+                                        <div>
+                                            <h6 class="mb-1">Help Center</h6>
+                                            <small class="text-muted">Find answers, troubleshoot issues, and contact support.</small>
+                                        </div>
+                                        <div class="admin-search-wrap admin-help-search">
+                                            <i class="bi bi-search"></i>
+                                            <input class="form-control" placeholder="Search help topics..." @bind="_helpSearch" @bind:event="oninput" />
+                                        </div>
+                                    </div>
+
+                                    <div class="admin-help-faq-list">
+                                        @foreach (var item in FilteredAdminHelpItems)
+                                        {
+                                            <button class='admin-help-faq-item @(item.IsExpanded ? "expanded" : string.Empty)' @onclick='() => ToggleHelpItem(item.Id)'>
+                                                <div class="d-flex justify-content-between align-items-center gap-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="admin-help-tag">@item.Category</span>
+                                                        <strong>@item.Question</strong>
+                                                    </div>
+                                                    <i class='bi @(item.IsExpanded ? "bi-chevron-up" : "bi-chevron-down")'></i>
+                                                </div>
+                                                @if (item.IsExpanded)
+                                                {
+                                                    <small class="text-muted d-block mt-2">@item.Answer</small>
+                                                }
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="card p-3 admin-help-card">
+                                    <h6 class="mb-3">Submit Support Ticket</h6>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Category</label>
+                                            <select class="form-select" @bind="_supportCategory">
+                                                <option value="General">General</option>
+                                                <option value="Security">Security</option>
+                                                <option value="Notifications">Notifications</option>
+                                                <option value="User Management">User Management</option>
+                                                <option value="AI Filter">AI Filter</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label">Priority</label>
+                                            <select class="form-select" @bind="_supportPriority">
+                                                <option value="Low">Low</option>
+                                                <option value="Medium">Medium</option>
+                                                <option value="High">High</option>
+                                                <option value="Critical">Critical</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Subject</label>
+                                            <input class="form-control" @bind="_supportSubject" placeholder="Briefly describe the issue" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Description</label>
+                                            <textarea class="form-control" rows="4" @bind="_supportMessage" placeholder="Share details, steps to reproduce, and expected behavior"></textarea>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-success" @onclick="SubmitSupportTicketAsync" disabled="@_submittingSupport">@(_submittingSupport ? "Submitting..." : "Submit Ticket")</button>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-xl-4">
+                                <div class="card p-3 mb-3 admin-help-side-card">
+                                    <h6 class="mb-3">Quick Links</h6>
+                                    <div class="admin-help-links">
+                                        <button class="btn btn-outline-primary btn-sm" @onclick='() => _activeSection = "dashboard"'>Admin Dashboard Guide</button>
+                                        <button class="btn btn-outline-primary btn-sm" @onclick='() => _activeSection = "child-chat"'>Child Chat Moderation Tips</button>
+                                        <button class="btn btn-outline-primary btn-sm" @onclick='() => _activeSection = "notifications"'>Notification Setup Guide</button>
+                                    </div>
+                                </div>
+
+                                <div class="card p-3 mb-3 admin-help-side-card">
+                                    <h6 class="mb-2">Support Channels</h6>
+                                    <div class="admin-help-channel"><i class="bi bi-envelope"></i><span>support@kidsafe.edu</span></div>
+                                    <div class="admin-help-channel"><i class="bi bi-telephone"></i><span>+1 800-555-KIDS</span></div>
+                                    <div class="admin-help-channel"><i class="bi bi-clock"></i><span>Mon-Fri, 9:00 AM - 6:00 PM</span></div>
+                                </div>
+
+                                <div class="card p-3 admin-help-side-card">
+                                    <h6 class="mb-3">Recent Tickets</h6>
+                                    <div class="admin-help-ticket-list">
+                                        @foreach (var ticket in _adminSupportTickets.Take(4))
+                                        {
+                                            <div class="admin-help-ticket-item">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <strong>@ticket.Subject</strong>
+                                                    <span class='admin-severity-pill @GetTicketPriorityPillClass(ticket.Priority)'>@ticket.Priority</span>
+                                                </div>
+                                                <small class="text-muted">@ticket.Category • @ticket.CreatedAtText</small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        break;
+
+                    default:
+                        <div class="admin-kpi-grid mb-4">
+                            <div class="card p-3 admin-kpi-card">
+                                <div class="admin-kpi-icon icon-students"><i class="bi bi-person"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Active Students</small>
+                                    <h3 class="mb-0">@_students.Count</h3>
+                                </div>
+                                <span class="admin-kpi-change positive">+12</span>
+                            </div>
+                            <div class="card p-3 admin-kpi-card">
+                                <div class="admin-kpi-icon icon-chat"><i class="bi bi-chat"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Chats Monitored</small>
+                                    <h3 class="mb-0">@(FilteredChildren.Count * 3)</h3>
+                                </div>
+                                <span class="admin-kpi-change positive">+87</span>
+                            </div>
+                            <div class="card p-3 admin-kpi-card">
+                                <div class="admin-kpi-icon icon-flagged"><i class="bi bi-flag"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Flagged Messages</small>
+                                    <h3 class="mb-0">@RecentAlerts.Count(a => a.Severity == "Warning")</h3>
+                                </div>
+                                <span class="admin-kpi-change negative">-3</span>
+                            </div>
+                            <div class="card p-3 admin-kpi-card">
+                                <div class="admin-kpi-icon icon-blocked"><i class="bi bi-shield-lock"></i></div>
+                                <div>
+                                    <small class="text-muted d-block">Blocked Users</small>
+                                    <h3 class="mb-0">@RecentAlerts.Count(a => a.Severity == "Blocked")</h3>
+                                </div>
+                                <span class="admin-kpi-change negative">+1</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-lg-8">
+                                <div class="card p-3 h-100">
+                                    <div class="d-flex justify-content-between align-items-start mb-4">
+                                        <div>
+                                            <h6 class="mb-1">Weekly Activity</h6>
+                                            <small class="text-muted">Messages monitored this week</small>
+                                        </div>
+                                        <div class="admin-legend d-flex gap-3">
+                                            <span><i class="bi bi-circle-fill text-success"></i> Safe</span>
+                                            <span><i class="bi bi-circle-fill text-warning"></i> Warning</span>
+                                            <span><i class="bi bi-circle-fill text-danger"></i> Blocked</span>
+                                        </div>
+                                    </div>
+                                    <div class="admin-activity-chart">
+                                        <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <div class="card p-3 h-100">
+                                    <h6 class="mb-3">Quick Access</h6>
+                                    <div class="admin-quick-grid">
+                                        <button class="admin-quick-item" @onclick='() => Nav.NavigateTo("/admin/child-chat")'>
+                                            <span class="admin-quick-icon"><i class="bi bi-chat-square-text"></i></span>
+                                            <strong>Child Chat</strong>
+                                            <small>Monitor chats</small>
+                                        </button>
+                                        <button class="admin-quick-item" @onclick='() => Nav.NavigateTo("/admin/parent-portal")'>
+                                            <span class="admin-quick-icon"><i class="bi bi-people"></i></span>
+                                            <strong>Parent Portal</strong>
+                                            <small>Manage updates</small>
+                                        </button>
+                                        <button class="admin-quick-item" @onclick='() => Nav.NavigateTo("/admin/teacher-module")'>
+                                            <span class="admin-quick-icon"><i class="bi bi-mortarboard"></i></span>
+                                            <strong>Teacher Module</strong>
+                                            <small>Class reports</small>
+                                        </button>
+                                        <button class="admin-quick-item" @onclick='() => Nav.NavigateTo("/admin/settings")'>
+                                            <span class="admin-quick-icon"><i class="bi bi-gear"></i></span>
+                                            <strong>Settings</strong>
+                                            <small>System preferences</small>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-8">
+                                <div class="card p-0 overflow-hidden">
+                                    <div class="admin-panel-head px-3 py-3 d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">Recent Alerts</h6>
+                                        <button class="btn btn-sm btn-link text-success p-0" @onclick='() => Nav.NavigateTo("/admin/notifications")'>View all</button>
+                                    </div>
+                                    <div class="admin-alert-list">
+                                        @foreach (var alert in RecentAlerts)
+                                        {
+                                            <div class="admin-alert-row">
+                                                <div class="admin-alert-avatar">@GetInitials(alert.Title)</div>
+                                                <div class="admin-alert-body">
+                                                    <div class="admin-alert-title">@alert.Title</div>
+                                                    <small class="text-muted">@alert.Description</small>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="admin-severity-pill @GetSeverityPillClass(alert.Severity)">@alert.Severity</span>
+                                                    <div class="text-muted small">2 min ago</div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-4">
+                                <div class="card p-3 mb-3">
+                                    <h6 class="mb-3">Top Reporting Teachers</h6>
+                                    <div class="admin-teacher-list">
+                                        @foreach (var teacher in TopTeacherStats)
+                                        {
+                                            <div class="admin-teacher-row">
+                                                <div class="admin-alert-avatar">@GetInitials(teacher.Teacher.Name)</div>
+                                                <div>
+                                                    <div class="fw-semibold">@teacher.Teacher.Name</div>
+                                                    <small class="text-muted">@teacher.Teacher.Username</small>
+                                                </div>
+                                                <strong class="text-success">@teacher.ClassCount</strong>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <small class="text-muted">Platform Safety Score</small>
+                                            <strong>@SafetyScore%</strong>
+                                        </div>
+                                        <div class="progress" style="height: 8px;"><div class="progress-bar bg-success" style="width:@($"{SafetyScore}%")"></div></div>
+                                    </div>
+                                </div>
+
+                                <div class="card p-3">
+                                    <h6 class="mb-3">System Status</h6>
+                                    <div class="d-flex justify-content-between mb-2"><span>Chat Monitor</span><small class="text-success">● Online</small></div>
+                                    <div class="d-flex justify-content-between mb-2"><span>AI Filter</span><small class="text-success">● Online</small></div>
+                                    <div class="d-flex justify-content-between"><span>Parent Alerts</span><small class="text-success">● Online</small></div>
+                                </div>
+                            </div>
+                        </div>
+                        break;
+                }
+            }
+
             <div class="admin-toast-stack" aria-live="polite" aria-atomic="true">
                 @if (!string.IsNullOrWhiteSpace(_error))
                 {
                     <div class="admin-toast admin-toast-error" role="alert">
-                        <div class="admin-toast-body">
-                            <strong>Error:</strong> @_error
-                        </div>
+                        <div class="admin-toast-body"><strong>Error:</strong> @_error</div>
                         <button type="button" class="btn-close" @onclick="@(() => _error = null)"></button>
                     </div>
                 }
-
                 @if (!string.IsNullOrWhiteSpace(_success))
                 {
                     <div class="admin-toast admin-toast-success" role="status">
@@ -470,91 +959,852 @@
 <style>
     .admin-shell {
         min-height: 100vh;
-        background-color: var(--ks-bg);
+        background: var(--ks-bg);
+    }
+
+    .admin-main {
+        min-width: 0;
     }
 
     .admin-content {
-        padding: 1.6rem !important;
+        padding: 1.1rem 1.25rem 1.35rem !important;
         max-width: 1320px;
         margin: 0 auto;
         width: 100%;
     }
 
-    .admin-create-user-row .form-label {
-        margin-bottom: .45rem;
-        font-weight: 600;
+    .admin-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        flex-wrap: wrap;
     }
 
-    .admin-create-user-row .form-control,
-    .admin-create-user-row .form-select {
-        min-height: 44px;
+    .admin-topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        flex-wrap: wrap;
     }
 
-    .admin-topbar h2 {
-        font-size: 1.8rem;
+    .admin-search-wrap {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 12px;
+        padding: .3rem .65rem;
+        background: #fff;
+        min-width: 240px;
+    }
+
+    .admin-search-wrap i {
+        color: #9aa6b2;
+    }
+
+    .admin-search-wrap .form-control {
+        border: none;
+        box-shadow: none;
+        padding: .2rem 0;
+    }
+
+    .admin-refresh-btn {
+        width: 38px;
+        height: 38px;
+        padding: 0;
+    }
+
+    .admin-date-chip {
+        font-size: .88rem;
+        color: #6b7280;
+    }
+
+    .admin-avatar-chip {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        color: #fff;
         font-weight: 700;
-    }
-
-    .admin-metric-card .card-body {
-        padding: 1.05rem 1.05rem 0.95rem;
-    }
-
-    .admin-metric-icon {
-        opacity: 0.95;
-    }
-
-    .admin-metric-icon-a {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-icon-b {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-icon-c {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-icon-d {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-value {
-        font-size: 2rem;
-        line-height: 1.05;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-    }
-
-    .admin-main {
-        overflow-y: auto;
-        min-width: 0;
-    }
-
-    .admin-search-group {
-        width: 320px;
-        max-width: 100%;
-    }
-
-    .admin-tabs .nav-link {
-        color: var(--ks-text) !important;
-        background: transparent;
-        border: 1px solid transparent;
-    }
-
-    .admin-tabs .nav-link.active {
-        color: var(--ks-green-dark) !important;
-        background: var(--ks-surface);
-        border-color: rgba(192, 225, 210, 0.65) rgba(192, 225, 210, 0.65) var(--ks-surface);
-    }
-
-    .admin-table-wrap {
-        padding-top: 0.85rem;
+        background: #35b36a;
     }
 
     .admin-content .card {
         border-radius: 14px;
         border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .admin-kpi-grid {
+        display: grid;
+        gap: .75rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .admin-parent-kpi-grid {
+        display: grid;
+        gap: .75rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .admin-teacher-kpi-grid {
+        display: grid;
+        gap: .75rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .admin-parent-kpi-card {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .admin-parent-kpi-soft {
+        border-radius: 14px !important;
+    }
+
+    .admin-status-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        background: #f5f7fa;
+        border-radius: 12px;
+        padding: .25rem;
+    }
+
+    .admin-status-filter .btn {
+        border-radius: 10px;
+        min-width: 64px;
+    }
+
+    .admin-inline-form {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr .9fr auto;
+        gap: .5rem;
+    }
+
+    .admin-inline-form-extended {
+        grid-template-columns: 1.1fr 1fr .9fr 1fr 1fr auto;
+    }
+
+    .admin-parent-table-wrap {
+        max-height: 430px;
+        overflow-y: auto;
+    }
+
+    .admin-parent-directory-card,
+    .admin-parent-side-card {
+        border-radius: 14px !important;
+    }
+
+    .admin-parent-table thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 1;
+    }
+
+    .admin-parent-table tbody tr.admin-row-selected {
+        background: #eef9f3;
+    }
+
+    .admin-parent-table tbody tr {
+        transition: background .18s ease;
+    }
+
+    .admin-parent-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .admin-parent-name-cell {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+    }
+
+    .admin-parent-alert-number {
+        color: #de4a4a;
+        font-weight: 700;
+        margin-right: .3rem;
+    }
+
+    .admin-child-shell > [class*="col-"] {
+        min-width: 0;
+    }
+
+    .admin-child-filter-group {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .4rem;
+    }
+
+    .admin-child-filter-group .btn {
+        border-radius: 10px;
+        font-size: .75rem;
+        padding: .35rem .25rem;
+    }
+
+    .admin-child-students-card,
+    .admin-child-chat-card {
+        min-height: 660px;
+        border-radius: 16px !important;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .admin-child-students-list {
+        max-height: 560px;
+    }
+
+    .admin-child-student-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: .55rem;
+        border-radius: 12px;
+    }
+
+    .admin-child-student-meta {
+        min-width: 0;
+    }
+
+    .admin-child-student-meta small,
+    .admin-child-student-meta strong {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    .admin-child-unread-badge {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        font-size: .72rem;
+        display: grid;
+        place-items: center;
+        padding: 0 .25rem;
+        font-weight: 700;
+    }
+
+    .admin-chat-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 999px;
+        display: inline-block;
+        margin-right: .35rem;
+        position: relative;
+        top: -1px;
+    }
+
+    .admin-chat-dot.safe {
+        background: #2e9f58;
+    }
+
+    .admin-chat-dot.warning {
+        background: #d1a72d;
+    }
+
+    .admin-chat-dot.blocked {
+        background: #d94b4b;
+    }
+
+    .admin-child-chat-head {
+        padding-bottom: .75rem;
+    }
+
+    .admin-child-chat-stream {
+        min-height: 440px;
+        max-height: 540px;
+        overflow-y: auto;
+        background: #fbfcfd;
+    }
+
+    .admin-chat-line {
+        display: grid;
+        gap: .2rem;
+    }
+
+    .admin-chat-alert-label {
+        color: #ef4444;
+        font-size: .72rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+    }
+
+    .admin-chat-time {
+        font-size: .72rem;
+    }
+
+    .admin-chat-note {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: .6rem;
+    }
+
+    .admin-chat-note-input {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 10px;
+        padding: .2rem .55rem;
+        background: #fff;
+    }
+
+    .admin-chat-note-input i {
+        color: #94a3b8;
+    }
+
+    .admin-chat-note-input .form-control {
+        border: none;
+        box-shadow: none;
+        padding-left: 0;
+    }
+
+    .admin-child-side-card {
+        border-radius: 14px !important;
+    }
+
+    .admin-overview-row {
+        font-size: .86rem;
+        margin-bottom: .45rem;
+    }
+
+    .admin-overview-row span {
+        color: #5f6b7a;
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .admin-ai-progress {
+        height: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #edf3ef;
+    }
+
+    .admin-select-parent-icon {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #ecf9ef;
+        color: #2e9f58;
+        font-size: 1.35rem;
+    }
+
+    .admin-class-pill-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .3rem;
+    }
+
+    .admin-class-pill {
+        font-size: .68rem;
+        border-radius: 999px;
+        padding: .12rem .45rem;
+        background: #edf3ff;
+        color: #4269c8;
+        font-weight: 600;
+    }
+
+    .admin-severity-info {
+        background: #e7f7ec;
+        color: #2f9b54;
+    }
+
+    .admin-kpi-card {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        position: relative;
+    }
+
+    .admin-kpi-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 1rem;
+    }
+
+    .icon-students {
+        background: #ecf9ef;
+        color: #2e9f58;
+    }
+
+    .icon-chat {
+        background: #edf3ff;
+        color: #4b75d4;
+    }
+
+    .icon-flagged {
+        background: #fff8e7;
+        color: #c28a1b;
+    }
+
+    .icon-blocked {
+        background: #ffeeee;
+        color: #d94b4b;
+    }
+
+    .admin-kpi-change {
+        margin-left: auto;
+        font-size: .78rem;
+        padding: .2rem .5rem;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    .admin-kpi-change.positive {
+        background: #e7f7ec;
+        color: #2f9b54;
+    }
+
+    .admin-kpi-change.negative {
+        background: #ffecec;
+        color: #cf4545;
+    }
+
+    .admin-legend {
+        font-size: .82rem;
+        color: #5f6b7a;
+    }
+
+    .admin-legend i {
+        font-size: .55rem;
+        position: relative;
+        top: -1px;
+    }
+
+    .admin-activity-chart {
+        min-height: 190px;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: linear-gradient(to bottom, rgba(15, 23, 42, 0.03), rgba(15, 23, 42, 0.01));
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        align-items: end;
+        padding: .75rem;
+        color: #8a97a5;
+        font-size: .8rem;
+        text-align: center;
+    }
+
+    .admin-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .65rem;
+    }
+
+    .admin-quick-item {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 12px;
+        background: #fff;
+        padding: .7rem;
+        text-align: left;
+        display: grid;
+        gap: .25rem;
+    }
+
+    .admin-quick-item strong {
+        font-size: .9rem;
+        color: var(--ks-text);
+    }
+
+    .admin-quick-item small {
+        color: #7d8794;
+        font-size: .74rem;
+    }
+
+    .admin-quick-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #eef7f1;
+        color: #2e9f58;
+    }
+
+    .admin-panel-head {
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .admin-alert-list {
+        max-height: 310px;
+        overflow-y: auto;
+    }
+
+    .admin-alert-row,
+    .admin-teacher-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: .7rem;
+        padding: .75rem 1rem;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .admin-teacher-row {
+        padding: .55rem 0;
+        border-bottom: none;
+    }
+
+    .admin-alert-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #eef2f7;
+        color: #455468;
+        font-size: .82rem;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+    }
+
+    .admin-alert-title {
+        font-weight: 700;
+        font-size: .93rem;
+    }
+
+    .admin-severity-pill {
+        display: inline-block;
+        font-size: .75rem;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: .18rem .5rem;
+    }
+
+    .admin-severity-safe {
+        background: #e6f7ea;
+        color: #2e9f58;
+    }
+
+    .admin-severity-warning {
+        background: #fff6de;
+        color: #b7791f;
+    }
+
+    .admin-severity-blocked {
+        background: #ffe8e8;
+        color: #cd4141;
+    }
+
+    .admin-teacher-list {
+        display: grid;
+        gap: .2rem;
+    }
+
+    .admin-list {
+        display: grid;
+        gap: .55rem;
+        max-height: 540px;
+        overflow-y: auto;
+    }
+
+    .admin-list-item {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: .65rem;
+        padding: .65rem .75rem;
+        text-align: left;
+        background: #fff;
+    }
+
+    button.admin-list-item {
+        width: 100%;
+    }
+
+    .admin-list-item.active {
+        border-color: rgba(192, 225, 210, 0.95);
+        background: #eef9f3;
+    }
+
+    .admin-list-item.static {
+        cursor: default;
+    }
+
+    .admin-chat-box {
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: .75rem;
+        min-height: 360px;
+        padding: 1rem;
+        display: grid;
+        gap: .55rem;
+    }
+
+    .chat-bubble {
+        padding: .45rem .75rem;
+        border-radius: .7rem;
+        max-width: 80%;
+        font-size: .92rem;
+    }
+
+    .chat-bubble.left {
+        background: #f4f7fb;
+    }
+
+    .chat-bubble.right {
+        background: #dff3e8;
+        margin-left: auto;
+    }
+
+    .chat-bubble.alert {
+        border: 1px solid #dc9b9b;
+        color: #8c3a3a;
+        background: #fff3f3;
+    }
+
+    .admin-notifications-card {
+        border-radius: 14px !important;
+    }
+
+    .admin-count-chip {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: #ffeded;
+        color: #de4a4a;
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .2rem .5rem;
+    }
+
+    .admin-notifications-list {
+        display: grid;
+        gap: .35rem;
+        max-height: 610px;
+        overflow-y: auto;
+    }
+
+    .admin-notification-row {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: start;
+        gap: .7rem;
+        padding: .8rem .7rem;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .admin-notification-row:last-child {
+        border-bottom: none;
+    }
+
+    .admin-notification-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: .85rem;
+    }
+
+    .admin-notification-icon.blocked {
+        background: #ffecec;
+        color: #d94b4b;
+    }
+
+    .admin-notification-icon.warning {
+        background: #fff6de;
+        color: #c28a1b;
+    }
+
+    .admin-notification-icon.safe {
+        background: #e7f7ec;
+        color: #2f9b54;
+    }
+
+    .admin-new-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #3b82f6;
+        display: inline-block;
+    }
+
+    .admin-notification-side-card {
+        border-radius: 14px !important;
+    }
+
+    .admin-summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 10px;
+        padding: .55rem .65rem;
+        font-size: .86rem;
+        margin-bottom: .45rem;
+        font-weight: 600;
+    }
+
+    .admin-summary-item.blocked {
+        background: #fff1f1;
+        color: #b33a3a;
+    }
+
+    .admin-summary-item.warning {
+        background: #fff8e7;
+        color: #a06f16;
+    }
+
+    .admin-summary-item.safe {
+        background: #edf8ef;
+        color: #2e8f4f;
+        margin-bottom: 0;
+    }
+
+    .admin-setting-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: .5rem;
+        padding: .5rem 0;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        font-size: .87rem;
+    }
+
+    .admin-setting-row:last-child {
+        border-bottom: none;
+    }
+
+    .admin-setting-row .form-check-input {
+        margin-top: 0;
+        cursor: pointer;
+    }
+
+    .admin-settings-shell .card {
+        border-radius: 14px !important;
+    }
+
+    .admin-settings-menu-card {
+        display: grid;
+        gap: .35rem;
+    }
+
+    .admin-settings-menu-item {
+        border: none;
+        background: transparent;
+        text-align: left;
+        padding: .55rem .65rem;
+        border-radius: 10px;
+        color: #5f6b7a;
+        font-size: .88rem;
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+    }
+
+    .admin-settings-menu-item.active {
+        background: #e8f6ec;
+        color: #2f9b54;
+        font-weight: 700;
+    }
+
+    .admin-settings-content-card .form-label {
+        font-size: .82rem;
+        color: #667587;
+        margin-bottom: .3rem;
+        font-weight: 600;
+    }
+
+    .admin-settings-grid {
+        display: grid;
+        gap: .35rem;
+    }
+
+    .admin-settings-mini-input {
+        width: 120px;
+        min-height: 32px;
+        font-size: .85rem;
+    }
+
+    .admin-add-user-card {
+        border-radius: 14px !important;
+    }
+
+    .admin-add-user-form {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 12px;
+        padding: .9rem;
+        background: #fff;
+    }
+
+    .admin-help-card,
+    .admin-help-side-card {
+        border-radius: 14px !important;
+    }
+
+    .admin-help-search {
+        min-width: 280px;
+    }
+
+    .admin-help-faq-list {
+        display: grid;
+        gap: .5rem;
+        max-height: 380px;
+        overflow-y: auto;
+    }
+
+    .admin-help-faq-item {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 12px;
+        background: #fff;
+        text-align: left;
+        padding: .65rem .75rem;
+    }
+
+    .admin-help-faq-item.expanded {
+        border-color: rgba(192, 225, 210, 0.95);
+        background: #f6fbf8;
+    }
+
+    .admin-help-tag {
+        font-size: .7rem;
+        border-radius: 999px;
+        background: #edf3ff;
+        color: #4b75d4;
+        padding: .15rem .45rem;
+        font-weight: 700;
+    }
+
+    .admin-help-links {
+        display: grid;
+        gap: .5rem;
+    }
+
+    .admin-help-links .btn {
+        text-align: left;
+    }
+
+    .admin-help-channel {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        color: #5f6b7a;
+        font-size: .88rem;
+        margin-bottom: .45rem;
+    }
+
+    .admin-help-ticket-list {
+        display: grid;
+        gap: .45rem;
+    }
+
+    .admin-help-ticket-item {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 10px;
+        padding: .5rem .6rem;
+        background: #fff;
     }
 
     .admin-toast-stack {
@@ -595,166 +1845,370 @@
         line-height: 1.35;
     }
 
-    .admin-data-table {
-        font-size: 0.95rem;
-    }
-
-    .admin-data-table > :not(caption) > * > * {
-        padding-top: 0.55rem;
-        padding-bottom: 0.55rem;
-        vertical-align: middle;
-    }
-
-    .admin-data-table thead th {
-        font-size: 0.84rem;
-        letter-spacing: 0.01em;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: var(--ks-text);
-        white-space: nowrap;
-    }
-
-    .admin-btn-compact {
-        min-width: 3.6rem;
-        padding: 0.3rem 0.55rem;
-        font-weight: 600;
-    }
-
-    .admin-btn-icon {
-        min-width: 2.2rem;
-        padding: 0.2rem 0.45rem;
-        font-weight: 700;
-    }
-
-    .card {
-        transition: box-shadow 0.2s ease;
-    }
-
-    .card:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
-    }
-
-    .btn-link {
-        border: none;
-        padding: 0;
-    }
-
-    @@media (max-width: 991.98px) {
-        .admin-shell {
-            flex-direction: column;
+    @@media (max-width: 992px) {
+        .admin-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .admin-main {
-            width: 100%;
+        .admin-parent-kpi-grid {
+            grid-template-columns: 1fr;
         }
 
-        .admin-search-group {
-            width: 100%;
+        .admin-teacher-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .admin-content {
-            padding: 1rem !important;
+            padding: 1rem .9rem 1.1rem !important;
         }
 
-        .admin-topbar h2 {
-            font-size: 1.3rem;
+        .admin-topbar {
+            align-items: flex-start;
         }
 
-        .admin-metric-value {
-            font-size: 1.55rem;
+        .admin-topbar-actions {
+            width: 100%;
         }
 
+        .admin-inline-form {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .admin-inline-form-extended {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .admin-child-students-card,
+        .admin-child-chat-card {
+            min-height: auto;
+        }
+
+        .admin-child-students-list,
+        .admin-child-chat-stream {
+            max-height: 360px;
+        }
+
+        .admin-notifications-list {
+            max-height: 460px;
+        }
     }
 
+    @@media (max-width: 768px) {
+        .admin-kpi-grid,
+        .admin-quick-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-child-filter-group {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .admin-teacher-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-chat-note {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-inline-form {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-inline-form-extended {
+            grid-template-columns: 1fr;
+        }
+
+        .admin-toast-stack {
+            left: 1rem;
+            right: 1rem;
+            bottom: .75rem;
+            width: auto;
+        }
+
+        .admin-search-wrap {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .admin-notification-row {
+            grid-template-columns: auto 1fr;
+        }
+    }
 </style>
 
 @code {
     private bool _loading = true;
     private string? _error;
     private string? _success;
-    private string _activeTab = "users";
-    private bool _showCreateUserForm = false;
+    private string _activeSection = "dashboard";
+    private string _search = string.Empty;
+    private int _selectedStudentId;
+    private int _selectedParentId;
+    private int _selectedTeacherId;
+    private int _selectedClassId = 0;
+    private string _parentPortalStatus = "all";
+    private string _childChatFilter = "all";
+    private string _childSearch = string.Empty;
+    private string _chatAdminNote = string.Empty;
+    private string _broadcastMessage = string.Empty;
+    private string _addUserRole = "child";
+    private bool _creatingChild;
+    private string _newChildName = string.Empty;
+    private string _newChildRegNo = string.Empty;
+    private string _newChildPassword = string.Empty;
+    private int _newChildClassRoomId;
+    private int _newChildCourseId;
+    private bool _creatingParent;
+    private string _newParentName = string.Empty;
+    private string _newParentUsername = string.Empty;
+    private string _newParentPassword = string.Empty;
+    private bool _creatingTeacher;
+    private string _newTeacherName = string.Empty;
+    private string _newTeacherUsername = string.Empty;
+    private string _newTeacherPassword = string.Empty;
+    private int _newTeacherCourseId;
+    private int _newTeacherClassRoomId;
+    private readonly UserSettingsDto _adminSettings = new();
+    private bool _savingAdminSettings;
+    private string _adminSettingsTab = "general";
+    private string _settingsInstitutionName = "Greenfield Academy";
+    private string _settingsAdminEmail = "admin@greenfield.edu";
+    private string _settingsLanguage = "English";
+    private string _settingsTimezone = "UTC+5:00 (PKT)";
+    private string _settingsInstitutionAddress = "123 Education Street, Karachi, Pakistan";
+    private const string AdminGeneralSettingsStoreKey = "admin.general.settings";
+    private string _notificationFilter = "all";
+    private bool _notifyCyberbullyingAlerts = true;
+    private bool _notifyExternalLinkAlerts = true;
+    private bool _notifyParentNotifications = true;
+    private bool _notifyWeeklyReports;
+    private string _helpSearch = string.Empty;
+    private string _supportCategory = "General";
+    private string _supportPriority = "Medium";
+    private string _supportSubject = string.Empty;
+    private string _supportMessage = string.Empty;
+    private bool _submittingSupport;
+
+    private readonly List<AdminHelpItem> _adminHelpItems = new()
+    {
+        new() { Id = 1, Category = "General", Question = "How do I monitor live student chats?", Answer = "Open Child Chat, select a student, and review flagged messages in realtime with AI alerts.", IsExpanded = true },
+        new() { Id = 2, Category = "Security", Question = "How can I block unsafe users quickly?", Answer = "From Child Chat or Notifications, flag high-risk activity and use moderation actions to trigger parent notifications and block workflows." },
+        new() { Id = 3, Category = "Notifications", Question = "How do I customize alert preferences?", Answer = "Go to Notifications section and configure Cyberbullying, Link Alerts, Parent Notifications, and Weekly Reports toggles." },
+        new() { Id = 4, Category = "User Management", Question = "How do I approve pending users?", Answer = "Use Dashboard alerts and user administration pages to review approval requests and activate accounts." },
+        new() { Id = 5, Category = "AI Filter", Question = "Can I tighten AI moderation sensitivity?", Answer = "In Settings > AI Filter, enable strict content filtering and adult content blocking for stronger moderation." }
+    };
+
+    private readonly List<AdminSupportTicket> _adminSupportTickets = new()
+    {
+        new() { Subject = "Notification delay", Category = "Notifications", Priority = "High", CreatedAtText = "Today, 10:22 AM" },
+        new() { Subject = "Parent portal access issue", Category = "User Management", Priority = "Medium", CreatedAtText = "Yesterday" },
+        new() { Subject = "AI false positive review", Category = "AI Filter", Priority = "Low", CreatedAtText = "2 days ago" }
+    };
+
+    private readonly List<AdminNotificationItem> _adminNotificationFeed = new()
+    {
+        new() { Title = "User Blocked", Severity = "Blocked", Description = "Aiden Clarke (Grade 8) has been automatically blocked due to repeated cyberbullying violations.", When = "2 min ago", IsNew = true },
+        new() { Title = "Suspicious Link Detected", Severity = "Warning", Description = "Sophia Malik shared an unverified external link in chat. Manual review required.", When = "15 min ago", IsNew = true },
+        new() { Title = "Unusual Meeting Arrangement", Severity = "Warning", Description = "Ethan Brooks sent a message suggesting an off-campus meeting. Parent notified.", When = "32 min ago", IsNew = true },
+        new() { Title = "Weekly Report Ready", Severity = "Safe", Description = "The weekly safety report for April 7–13 is now available. 3,920 messages monitored.", When = "1 hr ago" },
+        new() { Title = "New Teacher Registered", Severity = "Safe", Description = "Ms. Yuki Tanaka has been added to the Computer Science department.", When = "3 hr ago" },
+        new() { Title = "Parent Response Pending", Severity = "Warning", Description = "Mr. David Brooks has not responded to the alert notification sent 24 hours ago.", When = "5 hr ago" },
+        new() { Title = "System Backup Complete", Severity = "Safe", Description = "Automated system backup completed successfully. All data secured.", When = "Yesterday" },
+        new() { Title = "Repeated Violation", Severity = "Blocked", Description = "A student in Grade 9 has triggered the automated block threshold (5 violations in 24h).", When = "Yesterday" },
+        new() { Title = "Parent Portal Update", Severity = "Safe", Description = "12 new parents have registered on the parent portal this week.", When = "2 days ago" },
+        new() { Title = "Keyword Alert", Severity = "Warning", Description = "Keyword 'fight' detected in 3 separate conversations. Flagged for review.", When = "2 days ago" }
+    };
+
+    private readonly List<DemoChildChatProfile> _demoChildProfiles = new()
+    {
+        new() { Id = 9001, Name = "Aiden Clarke", Username = "aiden.c", Grade = "Grade 8", RiskLevel = "Blocked", LastSeen = "2m ago", UnreadCount = 3, Preview = "You're such a loser, nobody likes you" },
+        new() { Id = 9002, Name = "Sophia Malik", Username = "sophia.m", Grade = "Grade 7", RiskLevel = "Warning", LastSeen = "15m ago", UnreadCount = 1, Preview = "Check this link out, it's really cool" },
+        new() { Id = 9003, Name = "Ethan Brooks", Username = "ethan.b", Grade = "Grade 8", RiskLevel = "Warning", LastSeen = "32m ago", UnreadCount = 2, Preview = "Meet me after school at the back gate" },
+        new() { Id = 9004, Name = "Layla Hassan", Username = "layla.h", Grade = "Grade 8", RiskLevel = "Safe", LastSeen = "1h ago", UnreadCount = 0, Preview = "Did you finish the homework for tomorrow?" },
+        new() { Id = 9005, Name = "Noah Patel", Username = "noah.p", Grade = "Grade 7", RiskLevel = "Safe", LastSeen = "2h ago", UnreadCount = 0, Preview = "The science project is due Friday right?" },
+        new() { Id = 9006, Name = "Mia Johnson", Username = "mia.j", Grade = "Grade 8", RiskLevel = "Safe", LastSeen = "3h ago", UnreadCount = 0, Preview = "Can we study together after class?" },
+        new() { Id = 9007, Name = "Lucas Wang", Username = "lucas.w", Grade = "Grade 8", RiskLevel = "Safe", LastSeen = "4h ago", UnreadCount = 0, Preview = "I got 95 on the math test!" }
+    };
+
+    private readonly List<DemoParentPortalProfile> _demoParentProfiles = new()
+    {
+        new() { Id = 9101, Name = "Mr. & Mrs. Clarke", ChildName = "Aiden Clarke", ChildGrade = "Grade 8", Email = "clarke.family@email.com", Phone = "+1 555-0101", LastActive = "Today, 9:15 AM", PendingAlerts = 3 },
+        new() { Id = 9102, Name = "Mrs. Amina Malik", ChildName = "Sophia Malik", ChildGrade = "Grade 6", Email = "amina.malik@email.com", Phone = "+1 555-0202", LastActive = "Today, 11:30 AM", PendingAlerts = 1 },
+        new() { Id = 9103, Name = "Mr. David Brooks", ChildName = "Ethan Brooks", ChildGrade = "Grade 9", Email = "d.brooks@email.com", Phone = "+1 555-0303", LastActive = "Yesterday, 6:00 PM", PendingAlerts = 2 },
+        new() { Id = 9104, Name = "Mrs. Fatima Hassan", ChildName = "Layla Hassan", ChildGrade = "Grade 7", Email = "f.hassan@email.com", Phone = "+1 555-0404", LastActive = "Today, 8:00 AM", PendingAlerts = 0 },
+        new() { Id = 9105, Name = "Mr. Raj Patel", ChildName = "Noah Patel", ChildGrade = "Grade 10", Email = "raj.patel@email.com", Phone = "+1 555-0505", LastActive = "Today, 7:45 AM", PendingAlerts = 0 },
+        new() { Id = 9106, Name = "Ms. Karen Johnson", ChildName = "Mia Johnson", ChildGrade = "Grade 5", Email = "k.johnson@email.com", Phone = "+1 555-0606", LastActive = "2 days ago", PendingAlerts = 0 },
+        new() { Id = 9107, Name = "Mr. & Mrs. Wang", ChildName = "Lucas Wang", ChildGrade = "Grade 11", Email = "wang.family@email.com", Phone = "+1 555-0707", LastActive = "Today, 10:00 AM", PendingAlerts = 0 }
+    };
+
     private List<AdminUserDto> _users = new();
     private List<AdminStudentOverviewDto> _students = new();
     private List<AdminClassRoomDetailDto> _classRoomDetails = new();
+    private List<AdminCourseLiteDto> _courses = new();
     private List<AdminUserDto> _teachers = new();
-    private readonly Dictionary<int, int> _selectedStudentByClass = new();
-    private readonly Dictionary<int, int> _selectedTeacherByClass = new();
-    private AdminCreateUserDto _newUser = new() { Role = "Child", IsApproved = true, IsActive = true };
-    private AdminCreateClassRoomDto _newClassRoom = new();
-    private string _search = string.Empty;
-    private string _filter = "all";
-    private string _roleFilter = "all";
-    private int _selectedClassFilterId = 0;
 
-    private int PendingApprovalsCount => _users.Count(u => !u.IsApproved && u.IsActive);
+    private List<AdminAlertItem> RecentAlerts => BuildAlerts();
 
-    private IEnumerable<AdminUserDto> FilteredUsers
+    private List<(AdminUserDto Teacher, int ClassCount)> TopTeacherStats => _teachers
+        .Select(t => (Teacher: t, ClassCount: _classRoomDetails.Count(c => c.TeacherId == t.Id)))
+        .OrderByDescending(x => x.ClassCount)
+        .ThenBy(x => x.Teacher.Name)
+        .Take(3)
+        .ToList();
+
+    private List<AdminNotificationItem> FilteredNotificationFeed => _adminNotificationFeed
+        .Where(n => _notificationFilter switch
+        {
+            "blocked" => string.Equals(n.Severity, "Blocked", StringComparison.OrdinalIgnoreCase),
+            "warning" => string.Equals(n.Severity, "Warning", StringComparison.OrdinalIgnoreCase),
+            "safe" => string.Equals(n.Severity, "Safe", StringComparison.OrdinalIgnoreCase),
+            _ => true
+        })
+        .ToList();
+
+    private List<AdminHelpItem> FilteredAdminHelpItems => _adminHelpItems
+        .Where(h => string.IsNullOrWhiteSpace(_helpSearch)
+            || h.Question.Contains(_helpSearch, StringComparison.OrdinalIgnoreCase)
+            || h.Answer.Contains(_helpSearch, StringComparison.OrdinalIgnoreCase)
+            || h.Category.Contains(_helpSearch, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private int SafetyScore => 94;
+
+    private string HeaderTitle => _activeSection switch
+    {
+        "child-chat" => "Child Chat Monitor",
+        "parent-portal" => "Parent Portal",
+        "teacher-module" => "Teacher Module",
+        "add-user" => "Add User",
+        "notifications" => "Notifications",
+        "settings" => "Settings",
+        "help" => "Help & Support",
+        _ => "Admin Dashboard"
+    };
+
+    private string HeaderSubtitle => _activeSection switch
+    {
+        "child-chat" => "Realtime moderation and student chat safety.",
+        "parent-portal" => "Parent communications and student links.",
+        "teacher-module" => "Teacher performance and class oversight.",
+        "add-user" => "Create child, parent, and teacher accounts with role-specific details.",
+        "notifications" => "Alerts, broadcasts and system messages.",
+        "settings" => "System configuration and preferences.",
+        "help" => "Support resources for admin users.",
+        _ => "Overview of platform safety and activity."
+    };
+
+    private List<AdminUserDto> FilteredChildren => _users
+        .Where(u => u.IsActive && string.Equals(u.Role, "Child", StringComparison.OrdinalIgnoreCase))
+        .Where(MatchesSearch)
+        .ToList();
+
+    private bool UseDemoChildChatData => FilteredChildren.Count == 0;
+
+    private List<AdminUserDto> ChildChatSource => UseDemoChildChatData
+        ? _demoChildProfiles.Select(p => new AdminUserDto(
+            p.Id,
+            p.Name,
+            p.Username,
+            "Child",
+            true,
+            true,
+            DateTime.UtcNow)).ToList()
+        : FilteredChildren;
+
+    private List<AdminUserDto> ChildChatStudents => ChildChatSource
+        .Where(c => string.IsNullOrWhiteSpace(_childSearch)
+            || c.Name.Contains(_childSearch, StringComparison.OrdinalIgnoreCase)
+            || c.Username.Contains(_childSearch, StringComparison.OrdinalIgnoreCase))
+        .Where(c => IsChildMatchForFilter(c.Id))
+        .ToList();
+
+    private List<AdminUserDto> FilteredParents => _users
+        .Where(u => u.IsActive && string.Equals(u.Role, "Parent", StringComparison.OrdinalIgnoreCase))
+        .Where(MatchesSearch)
+        .ToList();
+
+    private List<AdminUserDto> ParentPortalParents => FilteredParents
+        .Where(p => IsParentMatchForPortalStatus(p.Id))
+        .ToList();
+
+    private bool UseDemoParentPortalData => ParentPortalParents.Count == 0;
+
+    private List<ParentPortalRowItem> ParentPortalRows => UseDemoParentPortalData
+        ? _demoParentProfiles
+            .Where(p => IsDemoParentMatchForPortalStatus(p.LastActive))
+            .Where(p => string.IsNullOrWhiteSpace(_search)
+                || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                || p.Email.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                || p.ChildName.Contains(_search, StringComparison.OrdinalIgnoreCase))
+            .Select(p => new ParentPortalRowItem
+            {
+                Id = p.Id,
+                Name = p.Name,
+                ChildName = p.ChildName,
+                ChildGrade = p.ChildGrade,
+                Email = p.Email,
+                Phone = p.Phone,
+                LastActive = p.LastActive,
+                PendingAlerts = p.PendingAlerts
+            })
+            .ToList()
+        : ParentPortalParents
+            .Select(p => new ParentPortalRowItem
+            {
+                Id = p.Id,
+                Name = p.Name,
+                ChildName = GetLinkedChildForParent(p.Id),
+                ChildGrade = GetLinkedChildGradeLabel(p.Id),
+                Email = p.Username,
+                Phone = GetParentContactPhone(p.Id),
+                LastActive = GetParentLastActive(p.Id),
+                PendingAlerts = GetParentPendingAlerts(p.Id)
+            })
+            .ToList();
+
+    private List<AdminUserDto> FilteredTeachers => _teachers
+        .Where(MatchesSearch)
+        .ToList();
+
+    private AdminUserDto? SelectedStudent => ChildChatStudents.FirstOrDefault(x => x.Id == _selectedStudentId) ?? ChildChatSource.FirstOrDefault(x => x.Id == _selectedStudentId);
+
+    private string SelectedParentLabel
     {
         get
         {
-            IEnumerable<AdminUserDto> query = _users;
-
-            query = _filter switch
-            {
-                "pending" => query.Where(u => !u.IsApproved && u.IsActive),
-                "approved" => query.Where(u => u.IsApproved && u.IsActive),
-                "disabled" => query.Where(u => !u.IsActive),
-                _ => query.Where(u => u.IsActive)
-            };
-
-            if (!string.Equals(_roleFilter, "all", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Where(u => string.Equals(u.Role, _roleFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (_selectedClassFilterId > 0)
-            {
-                var selectedClass = _classRoomDetails.FirstOrDefault(c => c.Id == _selectedClassFilterId);
-                var selectedStudentIds = selectedClass?.Students.Select(s => s.Id).ToHashSet() ?? new HashSet<int>();
-
-                query = query.Where(u =>
-                    !string.Equals(u.Role, "Child", StringComparison.OrdinalIgnoreCase)
-                    || selectedStudentIds.Contains(u.Id));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_search))
-            {
-                var s = _search.Trim();
-                query = query.Where(u =>
-                    u.Name.Contains(s, StringComparison.OrdinalIgnoreCase) ||
-                    u.Username.Contains(s, StringComparison.OrdinalIgnoreCase));
-            }
-
-            return query;
+            var p = ParentPortalRows.FirstOrDefault(x => x.Id == _selectedParentId);
+            return p is null ? "Click Message to select a parent." : $"Selected: {p.Name} ({p.Email})";
         }
     }
 
-    private async Task ConfirmDeleteUser(AdminUserDto user)
+    private string SelectedTeacherLabel
     {
-        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete user '{user.Username}'? This cannot be undone.");
-        if (!confirmed)
+        get
         {
-            return;
+            var t = FilteredTeachers.FirstOrDefault(x => x.Id == _selectedTeacherId);
+            return t is null ? "Click on a teacher to view their details and reports" : $"Selected: {t.Name} ({GetTeacherSubject(t.Id)})";
         }
-
-        await DeleteUser(user);
     }
-
-    private string GetRoleColor(string role) => role switch
-    {
-        "Child" => "#C0E1D2",
-        "Parent" => "#E5EEE4",
-        "Teacher" => "#C0E1D2",
-        "Admin" => "#C0E1D2",
-        _ => "#DC9B9B"
-    };
 
     protected override async Task OnInitializedAsync()
     {
+        if (!string.IsNullOrWhiteSpace(AuthState.Token))
+        {
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthState.Token);
+        }
+
         InitializeActiveSectionFromRoute();
         Nav.LocationChanged += OnLocationChanged;
         await Reload();
+        await LoadAdminSettingsAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        InitializeActiveSectionFromRoute();
     }
 
     private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -763,80 +2217,63 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    protected override void OnParametersSet()
-    {
-        InitializeActiveSectionFromRoute();
-    }
-
-    private void SetActiveTab(string tab)
-    {
-        var route = tab switch
-        {
-            "users" => "/admin/users",
-            "classes" => "/admin/classes",
-            "approvals" => "/admin/approvals",
-            _ => "/admin/dashboard"
-        };
-
-        Nav.NavigateTo(route);
-    }
-
     private void InitializeActiveSectionFromRoute()
     {
-        var relativePath = Nav.ToBaseRelativePath(Nav.Uri).Trim('/').ToLowerInvariant();
-        var segment = relativePath.StartsWith("admin/")
-            ? relativePath["admin/".Length..]
-            : relativePath == "admin" ? "dashboard" : relativePath;
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Trim('/').ToLowerInvariant();
+        var segment = path.StartsWith("admin/") ? path["admin/".Length..] : "dashboard";
 
-        if (string.IsNullOrWhiteSpace(segment))
+        _activeSection = segment switch
         {
-            segment = "dashboard";
-        }
-
-        _activeTab = segment switch
-        {
-            "classes" or "students" or "teachers" or "courses" => "classes",
-            "approvals" or "activity" or "activity-logs" => "approvals",
-            _ => "users"
+            "child-chat" => "child-chat",
+            "parent-portal" => "parent-portal",
+            "teacher-module" => "teacher-module",
+            "add-user" => "add-user",
+            "notifications" => "notifications",
+            "settings" => "settings",
+            "help" => "help",
+            _ => "dashboard"
         };
     }
 
-    private void ClearFilters()
+    private void InitializeSelectedItems()
     {
-        _search = string.Empty;
-        _filter = "all";
-        _roleFilter = "all";
-        _selectedClassFilterId = 0;
+        if (_selectedStudentId == 0)
+        {
+            _selectedStudentId = ChildChatSource.FirstOrDefault()?.Id ?? 0;
+        }
+
+        if (_selectedParentId == 0)
+        {
+            _selectedParentId = ParentPortalRows.FirstOrDefault()?.Id ?? 0;
+        }
+
+        if (_selectedTeacherId == 0)
+        {
+            _selectedTeacherId = FilteredTeachers.FirstOrDefault()?.Id ?? 0;
+        }
     }
 
-    private void GoToAdminLogin() => Nav.NavigateTo("/admin-login");
-
-    private async Task HandleLogout()
+    private bool MatchesSearch(AdminUserDto user)
     {
-        AdminSession.SignOut();
-        AuthState.UnLoadState();
-        await JsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
-        Nav.NavigateTo("/", replace: true);
+        if (string.IsNullOrWhiteSpace(_search)) return true;
+        var s = _search.Trim();
+        return user.Name.Contains(s, StringComparison.OrdinalIgnoreCase)
+            || user.Username.Contains(s, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task Reload()
     {
         _loading = true;
         _error = null;
-        _success = null;
         try
         {
-            var users = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/users");
-            _users = users ?? new();
+            _users = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/users") ?? new();
             _students = await Http.GetFromJsonAsync<List<AdminStudentOverviewDto>>("api/admin/students") ?? new();
             _classRoomDetails = await Http.GetFromJsonAsync<List<AdminClassRoomDetailDto>>("api/admin/classrooms/details") ?? new();
+            _courses = await Http.GetFromJsonAsync<List<AdminCourseLiteDto>>("api/admin/courses") ?? new();
             _teachers = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/teachers") ?? new();
 
-            foreach (var room in _classRoomDetails)
-            {
-                if (!_selectedStudentByClass.ContainsKey(room.Id)) _selectedStudentByClass[room.Id] = 0;
-                if (!_selectedTeacherByClass.ContainsKey(room.Id)) _selectedTeacherByClass[room.Id] = 0;
-            }
+            InitializeSelectedItems();
         }
         catch (Exception ex)
         {
@@ -857,334 +2294,872 @@
         }
     }
 
-    private async Task ConfirmDeleteClassRoom(int classRoomId)
+    private string GetStudentClassName(int studentId)
     {
-        var room = _classRoomDetails.FirstOrDefault(x => x.Id == classRoomId);
-        var roomName = room?.Name ?? $"ID {classRoomId}";
-        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete class '{roomName}'? This cannot be undone.");
-        if (!confirmed)
+        var cls = GetStudentClassRoom(studentId);
+        return cls is null ? "Unassigned" : $"{cls.Name} ({cls.Grade}-{cls.Section})";
+    }
+
+    private string GetStudentGradeLabel(int studentId)
+    {
+        if (TryGetDemoChildProfile(studentId, out var demoProfile))
         {
+            return demoProfile.Grade;
+        }
+
+        var cls = GetStudentClassRoom(studentId);
+        return cls is null ? "Grade -" : $"Grade {cls.Grade}";
+    }
+
+    private string GetLinkedChildForParent(int parentId)
+    {
+        var children = GetLinkedChildrenForParent();
+
+        if (children.Count == 0) return "-";
+        var idx = Math.Abs(parentId.GetHashCode()) % children.Count;
+        return children[idx].Name;
+    }
+
+    private string GetLinkedChildGradeLabel(int parentId)
+    {
+        var childName = GetLinkedChildForParent(parentId);
+        var classRoom = _classRoomDetails.FirstOrDefault(c => c.Students.Any(s => s.Name == childName));
+        return classRoom is null ? "Grade -" : $"Grade {classRoom.Grade}";
+    }
+
+    private List<AdminClassRoomStudentDto> GetLinkedChildrenForParent()
+    {
+        if (_selectedClassId > 0)
+        {
+            return _classRoomDetails.FirstOrDefault(c => c.Id == _selectedClassId)?.Students ?? new List<AdminClassRoomStudentDto>();
+        }
+
+        return _classRoomDetails.SelectMany(c => c.Students).ToList();
+    }
+
+    private AdminClassRoomDetailDto? GetStudentClassRoom(int studentId)
+        => _classRoomDetails.FirstOrDefault(c => c.Students.Any(s => s.Id == studentId));
+
+    private string GetParentContactPhone(int parentId)
+    {
+        var suffix = 1000 + Math.Abs(parentId % 9000);
+        return $"+1 555-{suffix:0000}";
+    }
+
+    private string GetParentLastActive(int parentId)
+    {
+        var items = new[]
+        {
+            "Today, 9:15 AM",
+            "Today, 11:30 AM",
+            "Yesterday, 6:00 PM",
+            "Today, 8:00 AM",
+            "Today, 7:45 AM",
+            "2 days ago",
+            "Today, 10:00 AM"
+        };
+
+        return items[Math.Abs(parentId.GetHashCode()) % items.Length];
+    }
+
+    private string GetChildRiskLevel(int childId)
+    {
+        if (TryGetDemoChildProfile(childId, out var demoProfile))
+        {
+            return demoProfile.RiskLevel;
+        }
+
+        var seed = Math.Abs(childId.GetHashCode()) % 5;
+        return seed switch
+        {
+            0 => "Blocked",
+            1 or 2 => "Warning",
+            _ => "Safe"
+        };
+    }
+
+    private string GetChildRiskPillClass(int childId)
+    {
+        var level = GetChildRiskLevel(childId);
+        return level switch
+        {
+            "Blocked" => "admin-severity-blocked",
+            "Warning" => "admin-severity-warning",
+            _ => "admin-severity-safe"
+        };
+    }
+
+    private string GetChildStatusDotClass(int childId)
+    {
+        var level = GetChildRiskLevel(childId);
+        return level switch
+        {
+            "Blocked" => "blocked",
+            "Warning" => "warning",
+            _ => "safe"
+        };
+    }
+
+    private bool IsChildMatchForFilter(int childId)
+    {
+        var level = GetChildRiskLevel(childId);
+        return _childChatFilter switch
+        {
+            "blocked" => string.Equals(level, "Blocked", StringComparison.OrdinalIgnoreCase),
+            "warning" => string.Equals(level, "Warning", StringComparison.OrdinalIgnoreCase),
+            "safe" => string.Equals(level, "Safe", StringComparison.OrdinalIgnoreCase),
+            _ => true
+        };
+    }
+
+    private int GetChildUnreadCount(int childId)
+    {
+        if (TryGetDemoChildProfile(childId, out var demoProfile))
+        {
+            return demoProfile.UnreadCount;
+        }
+
+        var count = Math.Abs((childId * 13) % 4);
+        return count;
+    }
+
+    private string GetChildLastSeenText(int childId)
+    {
+        if (TryGetDemoChildProfile(childId, out var demoProfile))
+        {
+            return demoProfile.LastSeen;
+        }
+
+        var items = new[] { "2m ago", "15m ago", "32m ago", "1h ago", "2h ago", "3h ago", "4h ago" };
+        return items[Math.Abs(childId.GetHashCode()) % items.Length];
+    }
+
+    private string GetChildPreviewText(int childId)
+    {
+        if (TryGetDemoChildProfile(childId, out var demoProfile))
+        {
+            return demoProfile.Preview;
+        }
+
+        var items = new[]
+        {
+            "You're such a loser, nobody likes you",
+            "Check this link out, it's really cool",
+            "Meet me after school at the back gate",
+            "Did you finish the homework for tomorrow?",
+            "The science project is due Friday right?",
+            "Can we study together after class?",
+            "I got 95 on the math test!"
+        };
+        return items[Math.Abs(childId.GetHashCode()) % items.Length];
+    }
+
+    private string GetChatTimeText(DemoChatLine line)
+    {
+        var text = line.Text;
+        if (text.Contains("Hey man", StringComparison.OrdinalIgnoreCase)) return "10:02 AM";
+        if (text.Contains("Nothing much", StringComparison.OrdinalIgnoreCase)) return "10:03 AM";
+        if (text.Contains("loser", StringComparison.OrdinalIgnoreCase)) return "10:05 AM";
+        if (text.Contains("not cool", StringComparison.OrdinalIgnoreCase)) return "10:06 AM";
+        if (text.Contains("pathetic", StringComparison.OrdinalIgnoreCase)) return "10:07 AM";
+        return "10:08 AM";
+    }
+
+    private string GetTeacherSubject(int teacherId)
+    {
+        var subjects = new[] { "Mathematics", "Science", "English Literature", "History", "Computer Science", "Physical Education" };
+        return subjects[Math.Abs(teacherId.GetHashCode()) % subjects.Length];
+    }
+
+    private List<string> GetTeacherClassLabels(int teacherId)
+    {
+        var labels = _classRoomDetails
+            .Where(c => c.TeacherId == teacherId)
+            .Select(c => $"Grade {c.Grade}{c.Section}")
+            .ToList();
+
+        if (labels.Count == 0)
+        {
+            labels.Add($"Grade {(Math.Abs(teacherId) % 6) + 5}A");
+            labels.Add($"Grade {(Math.Abs(teacherId) % 6) + 6}B");
+        }
+
+        return labels;
+    }
+
+    private int GetTeacherStudentCount(int teacherId)
+    {
+        var fromAssignedClasses = _classRoomDetails
+            .Where(c => c.TeacherId == teacherId)
+            .Sum(c => c.Students.Count);
+
+        return fromAssignedClasses > 0 ? fromAssignedClasses : 55 + Math.Abs((teacherId * 7) % 60);
+    }
+
+    private int GetTeacherAlertCount(int teacherId) => 1 + Math.Abs((teacherId * 3) % 14);
+
+    private string GetTeacherStatus(int teacherId)
+    {
+        return Math.Abs(teacherId.GetHashCode()) % 6 == 0 ? "On Leave" : "Active";
+    }
+
+    private string GetTeacherStatusClass(int teacherId)
+        => string.Equals(GetTeacherStatus(teacherId), "On Leave", StringComparison.OrdinalIgnoreCase)
+            ? "admin-severity-warning"
+            : "admin-severity-info";
+
+    private int GetParentPendingAlerts(int parentId) => Math.Abs(parentId.GetHashCode()) % 4;
+
+    private bool IsDemoParentMatchForPortalStatus(string lastActive)
+    {
+        return _parentPortalStatus switch
+        {
+            "active" => !lastActive.Contains("days", StringComparison.OrdinalIgnoreCase),
+            "inactive" => lastActive.Contains("days", StringComparison.OrdinalIgnoreCase),
+            _ => true
+        };
+    }
+
+    private bool IsParentMatchForPortalStatus(int parentId)
+    {
+        return _parentPortalStatus switch
+        {
+            "active" => !GetParentLastActive(parentId).Contains("days", StringComparison.OrdinalIgnoreCase),
+            "inactive" => GetParentLastActive(parentId).Contains("days", StringComparison.OrdinalIgnoreCase),
+            _ => true
+        };
+    }
+
+    private int GetParentPortalTotalParents() => UseDemoParentPortalData ? _demoParentProfiles.Count : ParentPortalRows.Count;
+
+    private int GetParentPortalActiveThisWeek() => UseDemoParentPortalData
+        ? _demoParentProfiles.Count(p => !p.LastActive.Contains("days", StringComparison.OrdinalIgnoreCase))
+        : ParentPortalRows.Count(p => !p.LastActive.Contains("days", StringComparison.OrdinalIgnoreCase));
+
+    private int GetParentPortalPendingAlerts() => UseDemoParentPortalData ? _demoParentProfiles.Sum(p => p.PendingAlerts) : ParentPortalRows.Sum(p => p.PendingAlerts);
+
+    private List<AdminAlertItem> BuildAlerts()
+    {
+        var alerts = new List<AdminAlertItem>();
+
+        alerts.AddRange(_users.Where(u => !u.IsApproved && u.IsActive).Take(5).Select(u => new AdminAlertItem
+        {
+            Title = u.Name,
+            Description = "Pending approval request",
+            Severity = "Warning"
+        }));
+
+        alerts.AddRange(_users.Where(u => !u.IsActive).Take(3).Select(u => new AdminAlertItem
+        {
+            Title = u.Name,
+            Description = "User inactive / blocked",
+            Severity = "Blocked"
+        }));
+
+        if (alerts.Count == 0)
+        {
+            alerts.Add(new AdminAlertItem { Title = "All clear", Description = "No active issues detected.", Severity = "Safe" });
+        }
+
+        return alerts;
+    }
+
+    private string GetSeverityBadgeClass(string severity) => severity switch
+    {
+        "Warning" => "text-bg-warning",
+        "Blocked" => "text-bg-danger",
+        _ => "text-bg-success"
+    };
+
+    private string GetSeverityPillClassFromStatus(string severity) => GetSeverityPillClass(severity);
+
+    private string GetSeverityPillClass(string severity) => severity switch
+    {
+        "Warning" => "admin-severity-warning",
+        "Blocked" => "admin-severity-blocked",
+        _ => "admin-severity-safe"
+    };
+
+    private string GetInitials(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "NA";
+        var words = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 1) return words[0][..Math.Min(2, words[0].Length)].ToUpperInvariant();
+        return string.Concat(words[0][0], words[^1][0]).ToUpperInvariant();
+    }
+
+    private List<DemoChatLine> GetDemoChat(int studentId)
+    {
+        if (TryGetDemoChildProfile(studentId, out var profile)
+            && string.Equals(profile.Name, "Aiden Clarke", StringComparison.OrdinalIgnoreCase))
+        {
+            return new List<DemoChatLine>
+            {
+                new() { Text = "Hey man what's up", IsFromStudent = true },
+                new() { Text = "Nothing much, you coming to practice?", IsFromStudent = false },
+                new() { Text = "You're such a loser, nobody likes you", IsFromStudent = true, IsAlert = true },
+                new() { Text = "That's not cool man", IsFromStudent = false },
+                new() { Text = "Whatever, you're pathetic", IsFromStudent = true, IsAlert = true }
+            };
+        }
+
+        var isEven = studentId % 2 == 0;
+        return new List<DemoChatLine>
+        {
+            new() { Text = "Hey man what's up", IsFromStudent = true },
+            new() { Text = "Nothing much, you coming to practice?", IsFromStudent = false },
+            new() { Text = isEven ? "You're such a loser, nobody likes you" : "Let's finish homework first", IsFromStudent = true, IsAlert = isEven },
+            new() { Text = isEven ? "That's not cool man" : "Great job today!", IsFromStudent = false },
+            new() { Text = isEven ? "Whatever, you're pathetic" : "See you at practice", IsFromStudent = true, IsAlert = isEven }
+        };
+    }
+
+    private void SaveChatNote()
+    {
+        if (string.IsNullOrWhiteSpace(_chatAdminNote))
+        {
+            _error = "Please add a note before saving.";
             return;
         }
 
-        await DeleteClassRoom(classRoomId);
+        _success = "Chat note saved.";
+        _chatAdminNote = string.Empty;
     }
 
-    private void SetRole(AdminUserDto user, string? role)
+    private async Task AddChildAsync()
     {
-        if (string.IsNullOrWhiteSpace(role)) return;
-        if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase)) return;
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
+        if (_creatingChild) return;
+
+        if (string.IsNullOrWhiteSpace(_newChildName)
+            || string.IsNullOrWhiteSpace(_newChildRegNo)
+            || string.IsNullOrWhiteSpace(_newChildPassword)
+            || _newChildClassRoomId <= 0
+            || _newChildCourseId <= 0)
         {
-            _users[idx] = user with { Role = role };
+            _error = "Child name, registration no, password, class, and course are required.";
+            return;
         }
-    }
 
-    private void SetApproved(AdminUserDto user, bool isApproved)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsApproved = isApproved };
-        }
-    }
-
-    private void SetActive(AdminUserDto user, bool isActive)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsActive = isActive };
-        }
-    }
-
-    private async Task ApproveUser(AdminUserDto user)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsApproved = true };
-            await Save(_users[idx]);
-        }
-    }
-
-    private async Task DenyUser(AdminUserDto user)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsActive = false };
-            await Save(_users[idx]);
-        }
-    }
-
-    private async Task Save(AdminUserDto user)
-    {
+        _creatingChild = true;
         _error = null;
-        _success = null;
+
         try
         {
-            var dto = new AdminUpdateUserDto
+            var dto = new AdminCreateUserDto
             {
-                Role = user.Role,
-                IsApproved = user.IsApproved,
-                IsActive = user.IsActive
+                Name = _newChildName.Trim(),
+                Username = _newChildRegNo.Trim(),
+                Password = _newChildPassword,
+                Role = "Child",
+                IsApproved = true,
+                IsActive = true,
+                RegistrationNo = _newChildRegNo.Trim(),
+                ClassRoomId = _newChildClassRoomId,
+                CourseId = _newChildCourseId
             };
 
-            var resp = await Http.PutAsJsonAsync($"api/admin/users/{user.Id}", dto);
-            if (!resp.IsSuccessStatusCode)
+            var response = await Http.PostAsJsonAsync("api/admin/users", dto);
+            if (!response.IsSuccessStatusCode)
             {
-                _error = await ExtractErrorMessageAsync(resp);
+                _error = await response.Content.ReadAsStringAsync();
                 return;
             }
 
-            _success = $"User '{user.Username}' updated successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task DeleteUser(AdminUserDto user)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                _error = "Admin user cannot be deleted from this list.";
-                return;
-            }
-
-            var resp = await Http.DeleteAsync($"api/admin/users/{user.Id}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
+            _newChildName = string.Empty;
+            _newChildRegNo = string.Empty;
+            _newChildPassword = string.Empty;
+            _newChildClassRoomId = 0;
+            _newChildCourseId = 0;
 
             await Reload();
-            _success = $"User '{user.Username}' deleted successfully.";
+            _success = "Child account added successfully. Child can now log in with registration no and password.";
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
-    }
-
-    private async Task CreateUser()
-    {
-        _error = null;
-        _success = null;
-        try
+        finally
         {
-            if (string.IsNullOrWhiteSpace(_newUser.Name) || string.IsNullOrWhiteSpace(_newUser.Username) || string.IsNullOrWhiteSpace(_newUser.Password))
-            {
-                _error = "Name, Username and Password are required.";
-                return;
-            }
-
-            var resp = await Http.PostAsJsonAsync("api/admin/users", _newUser);
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            _newUser = new AdminCreateUserDto { Role = "Child", IsApproved = true, IsActive = true };
-            _showCreateUserForm = false;
-            await Reload();
-            _success = "User created successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
+            _creatingChild = false;
         }
     }
 
-    private async Task CreateClassRoom()
+    private async Task AddParentAsync()
     {
+        if (_creatingParent) return;
+
+        if (string.IsNullOrWhiteSpace(_newParentName)
+            || string.IsNullOrWhiteSpace(_newParentUsername)
+            || string.IsNullOrWhiteSpace(_newParentPassword))
+        {
+            _error = "Parent name, username and password are required.";
+            return;
+        }
+
+        _creatingParent = true;
         _error = null;
-        _success = null;
+
         try
         {
-            var resp = await Http.PostAsJsonAsync("api/admin/classrooms", _newClassRoom);
-            if (!resp.IsSuccessStatusCode)
+            var dto = new AdminCreateUserDto
             {
-                _error = await ExtractErrorMessageAsync(resp);
+                Name = _newParentName.Trim(),
+                Username = _newParentUsername.Trim(),
+                Password = _newParentPassword,
+                Role = "Parent",
+                IsApproved = true,
+                IsActive = true
+            };
+
+            var response = await Http.PostAsJsonAsync("api/admin/users", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
                 return;
             }
 
-            _newClassRoom = new AdminCreateClassRoomDto();
-            await Reload();
-            _success = "Class created successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task DeleteClassRoom(int classRoomId)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var resp = await Http.DeleteAsync($"api/admin/classrooms/{classRoomId}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
+            _newParentName = string.Empty;
+            _newParentUsername = string.Empty;
+            _newParentPassword = string.Empty;
 
             await Reload();
-            _success = "Class deleted successfully.";
+            _success = "Parent account added successfully.";
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
+        finally
+        {
+            _creatingParent = false;
+        }
     }
 
-    private async Task AssignStudent(int classRoomId)
+    private async Task AddTeacherAsync()
     {
+        if (_creatingTeacher) return;
+
+        if (string.IsNullOrWhiteSpace(_newTeacherName)
+            || string.IsNullOrWhiteSpace(_newTeacherUsername)
+            || string.IsNullOrWhiteSpace(_newTeacherPassword)
+            || _newTeacherCourseId <= 0
+            || _newTeacherClassRoomId <= 0)
+        {
+            _error = "Teacher name, username, password, course of study and class are required.";
+            return;
+        }
+
+        _creatingTeacher = true;
         _error = null;
-        _success = null;
+
         try
         {
-            var studentId = _selectedStudentByClass.GetValueOrDefault(classRoomId, 0);
-            if (studentId <= 0)
+            var dto = new AdminCreateUserDto
             {
-                _error = "Please select a student.";
+                Name = _newTeacherName.Trim(),
+                Username = _newTeacherUsername.Trim(),
+                Password = _newTeacherPassword,
+                Role = "Teacher",
+                IsApproved = true,
+                IsActive = true,
+                CourseId = _newTeacherCourseId,
+                ClassRoomId = _newTeacherClassRoomId
+            };
+
+            var response = await Http.PostAsJsonAsync("api/admin/users", dto);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
                 return;
             }
 
-            var resp = await Http.PostAsJsonAsync($"api/admin/classrooms/{classRoomId}/students", new AdminAssignStudentDto { StudentId = studentId });
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
+            _newTeacherName = string.Empty;
+            _newTeacherUsername = string.Empty;
+            _newTeacherPassword = string.Empty;
+            _newTeacherCourseId = 0;
+            _newTeacherClassRoomId = 0;
 
             await Reload();
-            _success = "Student assigned successfully.";
+            _success = "Teacher added successfully.";
         }
         catch (Exception ex)
         {
             _error = ex.Message;
         }
+        finally
+        {
+            _creatingTeacher = false;
+        }
     }
 
-    private async Task RemoveStudent(int classRoomId, int studentId)
+    private void ViewTeacherReport(MouseEventArgs _, string teacherName)
     {
+        _success = $"Viewing report for {teacherName}.";
+    }
+
+    private void SendBroadcast()
+    {
+        if (string.IsNullOrWhiteSpace(_broadcastMessage))
+        {
+            _error = "Broadcast message cannot be empty.";
+            return;
+        }
+
+        _success = "Broadcast sent to all parents.";
+        _broadcastMessage = string.Empty;
+    }
+
+    private int GetNewNotificationCount() => _adminNotificationFeed.Count(n => n.IsNew);
+
+    private int GetNotificationCountBySeverity(string severity)
+        => _adminNotificationFeed.Count(n => string.Equals(n.Severity, severity, StringComparison.OrdinalIgnoreCase));
+
+    private string GetNotificationIcon(string severity) => severity switch
+    {
+        "Blocked" => "bi-slash-circle",
+        "Warning" => "bi-exclamation-triangle",
+        _ => "bi-shield-check"
+    };
+
+    private string GetNotificationIconClass(string severity) => severity switch
+    {
+        "Blocked" => "blocked",
+        "Warning" => "warning",
+        _ => "safe"
+    };
+
+    private void MarkAllNotificationsRead()
+    {
+        foreach (var n in _adminNotificationFeed)
+        {
+            n.IsNew = false;
+        }
+
+        _success = "All notifications marked as read.";
+    }
+
+    private void DismissMessage(ref string? message)
+    {
+        message = null;
+    }
+
+    private void ComposeAdminBroadcast()
+    {
+        _success = "Broadcast composer opened.";
+    }
+
+    private void ToggleHelpItem(int id)
+    {
+        var item = _adminHelpItems.FirstOrDefault(x => x.Id == id);
+        if (item is null) return;
+
+        item.IsExpanded = !item.IsExpanded;
+    }
+
+    private async Task SubmitSupportTicketAsync()
+    {
+        if (_submittingSupport) return;
+
+        if (string.IsNullOrWhiteSpace(_supportSubject) || string.IsNullOrWhiteSpace(_supportMessage))
+        {
+            _error = "Please provide both subject and description for the support ticket.";
+            return;
+        }
+
         _error = null;
-        _success = null;
+        _submittingSupport = true;
+
         try
         {
-            var resp = await Http.DeleteAsync($"api/admin/classrooms/{classRoomId}/students/{studentId}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
+            await Task.Delay(250);
 
-            await Reload();
-            _success = "Student removed from class.";
+            _adminSupportTickets.Insert(0, new AdminSupportTicket
+            {
+                Subject = _supportSubject.Trim(),
+                Category = _supportCategory,
+                Priority = _supportPriority,
+                CreatedAtText = "Just now"
+            });
+
+            _supportSubject = string.Empty;
+            _supportMessage = string.Empty;
+            _supportCategory = "General";
+            _supportPriority = "Medium";
+
+            _success = "Support ticket submitted successfully.";
         }
-        catch (Exception ex)
+        finally
         {
-            _error = ex.Message;
+            _submittingSupport = false;
         }
     }
 
-    private async Task AssignTeacher(int classRoomId)
+    private string GetTicketPriorityPillClass(string priority) => priority switch
     {
-        _error = null;
-        _success = null;
+        "Critical" or "High" => "admin-severity-blocked",
+        "Medium" => "admin-severity-warning",
+        _ => "admin-severity-safe"
+    };
+
+    private string GetSettingsTabTitle() => _adminSettingsTab switch
+    {
+        "security" => "Security",
+        "notifications" => "Notifications",
+        "user-management" => "User Management",
+        "ai-filter" => "AI Filter",
+        "about" => "About",
+        _ => "General Settings"
+    };
+
+    private async Task LoadAdminSettingsAsync()
+    {
         try
         {
-            var teacherId = _selectedTeacherByClass.GetValueOrDefault(classRoomId, 0);
-            if (teacherId <= 0)
+            var dto = await Http.GetFromJsonAsync<UserSettingsDto>("api/settings?role=Admin");
+            if (dto is not null)
             {
-                _error = "Please select a teacher.";
-                return;
+                ApplyAdminSettings(dto);
             }
 
-            var resp = await Http.PutAsJsonAsync($"api/admin/classrooms/{classRoomId}/teacher", new AdminAssignTeacherDto { TeacherId = teacherId });
-            if (!resp.IsSuccessStatusCode)
+            _settingsLanguage = GetLanguageName(_adminSettings.LanguagePreference);
+
+            var localJson = await JsRuntime.InvokeAsync<string?>("getFromStorage", AdminGeneralSettingsStoreKey);
+            if (!string.IsNullOrWhiteSpace(localJson))
             {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = "Teacher assigned to class.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private static async Task<string> ExtractErrorMessageAsync(HttpResponseMessage response)
-    {
-        var raw = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return $"Request failed ({(int)response.StatusCode}).";
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(raw);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var property in errors.EnumerateObject())
+                var localState = JsonSerializer.Deserialize<AdminGeneralLocalState>(localJson);
+                if (localState is not null)
                 {
-                    if (property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0)
-                    {
-                        var first = property.Value[0].GetString();
-                        if (!string.IsNullOrWhiteSpace(first))
-                        {
-                            return first;
-                        }
-                    }
+                    _settingsInstitutionName = localState.InstitutionName;
+                    _settingsAdminEmail = localState.AdminEmail;
+                    _settingsTimezone = localState.Timezone;
+                    _settingsInstitutionAddress = localState.InstitutionAddress;
                 }
             }
-
-            if (root.TryGetProperty("title", out var title))
-            {
-                var value = title.GetString();
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    return value;
-                }
-            }
-
-            if (root.TryGetProperty("message", out var message))
-            {
-                var value = message.GetString();
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    return value;
-                }
-            }
         }
-        catch
+        catch (Exception ex)
         {
+            _error = ex.Message;
         }
+    }
 
-        return raw;
+    private async Task SaveAdminGeneralSettingsAsync()
+    {
+        _adminSettings.LanguagePreference = GetLanguageCode(_settingsLanguage);
+
+        await SaveAdminSettingsAsync("General settings saved.");
+
+        if (string.IsNullOrWhiteSpace(_error))
+        {
+            var localState = new AdminGeneralLocalState
+            {
+                InstitutionName = _settingsInstitutionName,
+                AdminEmail = _settingsAdminEmail,
+                Timezone = _settingsTimezone,
+                InstitutionAddress = _settingsInstitutionAddress
+            };
+
+            await JsRuntime.InvokeVoidAsync("setToStorage", AdminGeneralSettingsStoreKey, JsonSerializer.Serialize(localState));
+        }
+    }
+
+    private Task SaveAdminSecuritySettingsAsync() => SaveAdminSettingsAsync("Security settings saved.");
+
+    private Task SaveAdminNotificationSettingsAsync() => SaveAdminSettingsAsync("Notification settings saved.");
+
+    private Task SaveAdminUserManagementSettingsAsync() => SaveAdminSettingsAsync("User management settings saved.");
+
+    private Task SaveAdminAiFilterSettingsAsync() => SaveAdminSettingsAsync("AI filter settings saved.");
+
+    private async Task SaveAdminSettingsAsync(string successMessage)
+    {
+        _error = null;
+        _savingAdminSettings = true;
+
+        try
+        {
+            if (_adminSettings.ScreenTimeLimit <= 0)
+            {
+                _adminSettings.ScreenTimeLimit = 180;
+            }
+
+            var response = await Http.PutAsJsonAsync("api/settings?role=Admin", _adminSettings);
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<UserSettingsDto>();
+            if (updated is not null)
+            {
+                ApplyAdminSettings(updated);
+            }
+
+            _success = successMessage;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _savingAdminSettings = false;
+        }
+    }
+
+    private void ApplyAdminSettings(UserSettingsDto dto)
+    {
+        _adminSettings.IsProfilePublic = dto.IsProfilePublic;
+        _adminSettings.AllowMessageRequests = dto.AllowMessageRequests;
+        _adminSettings.EmailNotificationsEnabled = dto.EmailNotificationsEnabled;
+        _adminSettings.PushNotificationsEnabled = dto.PushNotificationsEnabled;
+        _adminSettings.AchievementNotifications = dto.AchievementNotifications;
+        _adminSettings.MessageNotifications = dto.MessageNotifications;
+        _adminSettings.CourseReminderNotifications = dto.CourseReminderNotifications;
+        _adminSettings.ThemePreference = string.IsNullOrWhiteSpace(dto.ThemePreference) ? "light" : dto.ThemePreference;
+        _adminSettings.LanguagePreference = string.IsNullOrWhiteSpace(dto.LanguagePreference) ? "en" : dto.LanguagePreference;
+        _adminSettings.CompactMode = dto.CompactMode;
+        _adminSettings.StrictContentFilter = dto.StrictContentFilter;
+        _adminSettings.BlockAdultContent = dto.BlockAdultContent;
+        _adminSettings.ParentEmail = dto.ParentEmail;
+        _adminSettings.RequireParentApprovalForMessages = dto.RequireParentApprovalForMessages;
+        _adminSettings.ScreenTimeLimit = dto.ScreenTimeLimit <= 0 ? 180 : dto.ScreenTimeLimit;
+        _adminSettings.Bio = dto.Bio;
+        _adminSettings.AvatarUrl = dto.AvatarUrl;
+    }
+
+    private static string GetLanguageCode(string language)
+        => language.Trim().ToLowerInvariant() switch
+        {
+            "urdu" => "ur",
+            "arabic" => "ar",
+            _ => "en"
+        };
+
+    private static string GetLanguageName(string code)
+        => code.Trim().ToLowerInvariant() switch
+        {
+            "ur" => "Urdu",
+            "ar" => "Arabic",
+            _ => "English"
+        };
+
+    private void GoToAdminLogin() => Nav.NavigateTo("/admin-login");
+
+    private bool TryGetDemoChildProfile(int childId, out DemoChildChatProfile profile)
+    {
+        profile = _demoChildProfiles.FirstOrDefault(p => p.Id == childId) ?? new DemoChildChatProfile();
+        return UseDemoChildChatData && profile.Id != 0;
+    }
+
+    private int GetChildChatOverviewTotalStudents() => UseDemoChildChatData ? 1284 : ChildChatStudents.Count;
+
+    private int GetChildChatOverviewActiveChats() => UseDemoChildChatData ? 342 : Math.Max(0, ChildChatStudents.Count - 1);
+
+    private int GetChildChatOverviewFlaggedToday() => UseDemoChildChatData
+        ? 24
+        : ChildChatStudents.Count(c => !string.Equals(GetChildRiskLevel(c.Id), "Safe", StringComparison.OrdinalIgnoreCase));
+
+    private int GetChildChatOverviewBlocked() => UseDemoChildChatData
+        ? 7
+        : ChildChatStudents.Count(c => string.Equals(GetChildRiskLevel(c.Id), "Blocked", StringComparison.OrdinalIgnoreCase));
+
+    private async Task HandleLogout()
+    {
+        AdminSession.SignOut();
+        AuthState.UnLoadState();
+        await JsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
+        Nav.NavigateTo("/", replace: true);
     }
 
     public void Dispose()
     {
         Nav.LocationChanged -= OnLocationChanged;
     }
+
+    private sealed class DemoChatLine
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsFromStudent { get; set; }
+        public bool IsAlert { get; set; }
+    }
+
+    private sealed class DemoChildChatProfile
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Grade { get; set; } = "Grade -";
+        public string RiskLevel { get; set; } = "Safe";
+        public string LastSeen { get; set; } = "Now";
+        public int UnreadCount { get; set; }
+        public string Preview { get; set; } = string.Empty;
+    }
+
+    private sealed class DemoParentPortalProfile
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ChildName { get; set; } = string.Empty;
+        public string ChildGrade { get; set; } = "Grade -";
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string LastActive { get; set; } = string.Empty;
+        public int PendingAlerts { get; set; }
+    }
+
+    private sealed class ParentPortalRowItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ChildName { get; set; } = string.Empty;
+        public string ChildGrade { get; set; } = "Grade -";
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string LastActive { get; set; } = string.Empty;
+        public int PendingAlerts { get; set; }
+    }
+
+    private sealed class AdminGeneralLocalState
+    {
+        public string InstitutionName { get; set; } = "Greenfield Academy";
+        public string AdminEmail { get; set; } = "admin@greenfield.edu";
+        public string Timezone { get; set; } = "UTC+5:00 (PKT)";
+        public string InstitutionAddress { get; set; } = "123 Education Street, Karachi, Pakistan";
+    }
+
+    private sealed class AdminHelpItem
+    {
+        public int Id { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string Question { get; set; } = string.Empty;
+        public string Answer { get; set; } = string.Empty;
+        public bool IsExpanded { get; set; }
+    }
+
+    private sealed class AdminSupportTicket
+    {
+        public string Subject { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public string Priority { get; set; } = "Low";
+        public string CreatedAtText { get; set; } = string.Empty;
+    }
+
+    private sealed class AdminNotificationItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Severity { get; set; } = "Safe";
+        public string Description { get; set; } = string.Empty;
+        public string When { get; set; } = string.Empty;
+        public bool IsNew { get; set; }
+    }
+
+    private sealed class AdminAlertItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Severity { get; set; } = "Safe";
+    }
 }
+
+

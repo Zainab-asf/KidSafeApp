@@ -10,20 +10,20 @@ namespace KidSafeApp.Backend.Data
         }
 
         public DbSet<User> Users { get; set; }
-            public DbSet<Message> Messages { get; set; }
-            public DbSet<UserProgress> UserProgress { get; set; }
-            public DbSet<Notification> Notifications { get; set; }
-            public DbSet<UserSettings> UserSettings { get; set; }
-            public DbSet<Lesson> Lessons { get; set; }
-            public DbSet<Course> Courses { get; set; }
-            public DbSet<CourseLesson> CourseLessons { get; set; }
-            public DbSet<LessonProgress> LessonProgresses { get; set; }
-            public DbSet<CourseAssignment> CourseAssignments { get; set; }
-            public DbSet<ClassRoom> ClassRooms { get; set; }
-            public DbSet<ClassRoomStudent> ClassRoomStudents { get; set; }
-            public DbSet<ClassRoomCourseAssignment> ClassRoomCourseAssignments { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        public DbSet<UserProgress> UserProgress { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<UserSettings> UserSettings { get; set; }
+        public DbSet<Lesson> Lessons { get; set; }
+        public DbSet<Course> Courses { get; set; }
+        public DbSet<CourseLesson> CourseLessons { get; set; }
+        public DbSet<LessonProgress> LessonProgresses { get; set; }
+        public DbSet<CourseAssignment> CourseAssignments { get; set; }
+        public DbSet<ClassRoom> ClassRooms { get; set; }
+        public DbSet<ClassRoomStudent> ClassRoomStudents { get; set; }
+        public DbSet<ClassRoomCourseAssignment> ClassRoomCourseAssignments { get; set; }
 
-            protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 

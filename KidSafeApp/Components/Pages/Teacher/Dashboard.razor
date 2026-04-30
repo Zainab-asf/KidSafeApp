@@ -1,10 +1,12 @@
 @namespace KidSafeApp.Components.Pages.Teacher
 @page "/teacher/dashboard"
 
-@inject KidSafeApp.States.RoleState RoleState
+<PageTitle>Teacher Classroom Dashboard</PageTitle>
+
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject HttpClient Client
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -21,82 +23,127 @@ else if (!string.Equals(AuthState.User?.Role, "Teacher", StringComparison.Ordina
 }
 else
 {
-<div class="portal">
-    <header class="portal-header">
-        <div>
-            <h1 class="portal-title">Teacher Portal 👩‍🏫</h1>
-            <div class="portal-subtitle">Simple classroom overview for daily teaching.</div>
-        </div>
+    <TeacherPageShell Title="Teacher Classroom Dashboard">
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
 
-        <div class="portal-actions">
-            <button class="btn btn-outline-secondary" type="button" @onclick="HandleBack">Back</button>
-            <button class="btn btn-outline-danger" type="button" @onclick="HandleLogout">Logout</button>
+        <!-- Hero card matching parent style -->
+        <section class="hero-card">
+            <div class="hero-avatar">👩‍🏫</div>
+        <div class="hero-copy">
+            <div class="hero-greeting">Good morning,</div>
+            <div class="hero-title">@((AuthState.User?.Name) ?? "Teacher")</div>
+            <div class="hero-subtitle">Courses: @_summary.TotalCourses</div>
         </div>
-    </header>
-
-    <section class="portal-grid">
-        <div class="portal-card">
-            <div class="portal-card-title">Courses 📚</div>
-            <div class="portal-stat">@_summary.TotalCourses</div>
-            <div class="portal-muted">@_summary.PublishedCourses published</div>
+        <div class="hero-score">
+            <div class="hero-score-value">@Math.Round(_summary.AverageProgressPercent, 0)%</div>
+            <small>Avg Progress</small>
         </div>
+        </section>
 
-        <div class="portal-card">
-            <div class="portal-card-title">Pending Reviews ⏳</div>
-            <div class="portal-stat">@_summary.PendingLessonSubmissions</div>
-            <div class="portal-muted">Lesson submissions pending completion</div>
-        </div>
+        <!-- Stat grid using parent tokens -->
+        <section class="stats-grid">
+            <article class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-value">@_summary.TotalLessons</div>
+                <div class="stat-label">Total Lessons</div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value">@_summary.PendingLessonSubmissions</div>
+                <div class="stat-label">Pending Reviews</div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">@_summary.CompletedLessonSubmissions</div>
+                <div class="stat-label">Completed</div>
+            </article>
+        </section>
 
-        <div class="portal-card">
-            <div class="portal-card-title">Assignments 📝</div>
-            <div class="portal-stat">@_summary.TotalLessons</div>
-            <div class="portal-muted">@_summary.PublishedLessons published lessons</div>
-        </div>
-
-        <div class="portal-card">
-            <div class="portal-card-title">Student Activity 📈</div>
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <div class="small text-danger">@_error</div>
-            }
-            else if (_loading)
-            {
-                <div class="small text-secondary">Loading...</div>
-            }
-            else if (_courses.Count == 0)
-            {
-                <div class="small text-secondary">No course activity yet.</div>
-            }
-            else
-            {
-                <ul class="portal-list">
-                    @foreach (var c in _courses.Take(3))
-                    {
-                        <li>@c.Title - @(c.IsPublished ? "Published" : "Draft")</li>
-                    }
-                </ul>
-            }
-        </div>
-    </section>
-
-    <section class="portal-wide">
-        <div class="portal-card portal-card-wide">
-            <div class="portal-card-title">Quick Actions ⚡</div>
-            <div class="portal-controls">
-                <button class="btn btn-primary" type="button" @onclick="GoToAssignments">Create Assignment</button>
-                <button class="btn btn-outline-primary" type="button" @onclick="GoToClasses">Open Gradebook</button>
-                <button class="btn btn-outline-primary" type="button" @onclick="GoToReports">View Reports</button>
+        <!-- Progress and weekly chart reuse parent panel-card -->
+        <section class="panel-card">
+            <h3>This Week's Activity</h3>
+            <div class="weekly-chart">
+                @foreach (var day in _weekly)
+                {
+                    <div class="week-col">
+                        <div class="bar-stack">
+                            <div class="bar-block safe" style="height:@day.SafeHeight%"></div>
+                            <div class="bar-block flagged" style="height:@day.FlaggedHeight%"></div>
+                            <div class="bar-block blocked" style="height:@day.BlockedHeight%"></div>
+                        </div>
+                        <small>@day.Day</small>
+                    </div>
+                }
             </div>
-        </div>
-    </section>
-</div>
+        </section>
+
+        <!-- Recent alerts using parent list style -->
+        <section class="panel-card">
+            <h3>Recent Alerts</h3>
+            <div class="parent-recent-list">
+                @if (_courses is null || !_courses.Any())
+                {
+                    <div class="parent-empty-state">No recent alerts.</div>
+                }
+                else
+                {
+                    @foreach (var c in _courses.Take(6))
+                    {
+                        <div class="parent-recent-item">
+                            <div class="parent-recent-meta">
+                                <strong>@c.Title</strong>
+                                <small>@(c.IsPublished ? "Published" : "Draft")</small>
+                            </div>
+                            <span class="parent-alert-badge badge-info">Info</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="quick-grid">
+            <button class="quick-card quick-primary" @onclick="GoToClasses">
+                <div class="quick-title">Manage Students</div>
+                <small>Open class management</small>
+            </button>
+            <button class="quick-card" @onclick="GoToReports">
+                <div class="quick-title">View Flagged</div>
+                <small>Open flagged messages</small>
+            </button>
+            <button class="quick-card" @onclick="GoToNotifications">
+                <div class="quick-title">Notifications</div>
+                <small>Open alerts feed</small>
+            </button>
+            <button class="quick-card" @onclick="GoToSettings">
+                <div class="quick-title">Settings</div>
+                <small>Profile & preferences</small>
+            </button>
+        </section>
+
+    </TeacherPageShell>
 }
 
 @code {
     private TeacherSummaryDto _summary = new();
     private List<CourseDto> _courses = new();
+#pragma warning disable CS0414
     private bool _loading;
+#pragma warning restore CS0414
     private string? _error;
+
+    private readonly List<WeeklyPoint> _weekly = new()
+    {
+        new("Mon", 70, 8, 1),
+        new("Tue", 88, 5, 1),
+        new("Wed", 62, 10, 1),
+        new("Thu", 95, 3, 1),
+        new("Fri", 66, 7, 1),
+        new("Sat", 45, 4, 1),
+        new("Sun", 30, 2, 1)
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,4 +182,10 @@ else
     private void GoToAssignments() => NavigationManager.NavigateTo("/teacher/assignments");
 
     private void GoToReports() => NavigationManager.NavigateTo("/teacher/reports");
+    private void GoToNotifications() => NavigationManager.NavigateTo("/parent/notifications");
+    private void GoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+
+    private sealed record WeeklyPoint(string Day, int SafeHeight, int FlaggedHeight, int BlockedHeight);
 }
+
+

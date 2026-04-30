@@ -1,0 +1,70 @@
+/* Parent pages share layout via ParentPageShell */
+/* Shared tokens (panel-card, filter pills, quick-grid, alert)
+   live in parent shell styles                                 */
+
+/* ── Flagged list ── */
+.flagged-list {
+    display: grid;
+    gap: .75rem;
+    width: 100%;
+    grid-auto-flow: row;
+}
+
+.flagged-card {
+    background: var(--ks-surface);
+    border-radius: .9rem;
+    padding: .95rem 1rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    border-left: 4px solid transparent;
+    cursor: pointer;
+    transition: transform .15s;
+    position: relative;
+    z-index: 0;
+}
+
+.flagged-card:active { transform: scale(.99); }
+.flagged-card.high   { border-left-color: #ef4444; }
+.flagged-card.low    { border-left-color: #f8cc55; }
+
+/* Status badges inside card */
+.flagged-status {
+    display: flex;
+    gap: .45rem;
+    flex-wrap: wrap;
+    font-size: .72rem;
+    font-weight: 700;
+    margin-bottom: .5rem;
+}
+
+.flagged-status span {
+    border-radius: 999px;
+    padding: .15rem .55rem;
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.flagged-status .blocked { background: #fee2e2; color: #dc2626; }
+.flagged-status .masked { background: #fef3c7; color: #b45309; }
+.flagged-status .is-new { background: #fee2e2; color: #dc2626; }
+.flagged-status .is-resolved { background: #dcfce7; color: #15803d; }
+.flagged-status .severity.high { background: #fee2e2; color: #b91c1c; }
+.flagged-status .severity.low { background: #dcfce7; color: #15803d; }
+
+.flagged-content {
+    color: #4b5563;
+    font-style: italic;
+    font-size: .88rem;
+    line-height: 1.45;
+}
+
+.flagged-meta {
+    margin-top: .5rem;
+    color: #9ca3af;
+    font-size: .75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.expand-icon { font-size: .85rem; }

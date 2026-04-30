@@ -14,13 +14,13 @@ namespace KidSafeApp.Backend.Data.Entities
         public int UserId { get; set; }
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
         [Required, Unicode(false), MaxLength(100)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [Required, Unicode(false), MaxLength(500)]
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
 
         [Unicode(false), MaxLength(50)]
         public string Type { get; set; } = "Info"; // Info, Achievement, Warning, Alert

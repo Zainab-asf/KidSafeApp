@@ -1,22 +1,94 @@
-.parent-module {
-    --portal-primary: #C0E1D2;
-    --portal-primary-dark: #C0E1D2;
+/* Parent pages share layout via ParentPageShell */
+/* Shared tokens (stats-grid, panel-card, progress bars, weekly chart,
+   quick-grid, alert) live in parent shell styles                      */
+
+/* ── Summary hero card ── */
+.summary-card {
+    width: 100%;
+    background: linear-gradient(120deg, var(--ks-green), var(--ks-green-dark));
+    border-radius: .9rem;
+    padding: 1rem;
+    color: #fff;
 }
 
-.parent-module {
-    max-width: 1200px;
+.summary-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: .85rem;
+    align-items: center;
 }
 
-.parent-module .card {
-    border: 1px solid rgba(132, 204, 22, 0.22);
-    border-radius: 1rem;
-    background: linear-gradient(180deg, #F6F4E8 0%, #F6F4E8 100%);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+.summary-greeting {
+    font-size: .78rem;
+    opacity: .95;
+    font-weight: 700;
 }
 
-.parent-module .display-6 {
-    background: linear-gradient(135deg, var(--portal-primary), var(--portal-primary-dark));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+.summary-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: .1rem 0;
+    letter-spacing: -0.01em;
+}
+
+.summary-subtitle {
+    font-size: .78rem;
+    opacity: .9;
+}
+
+.summary-rate {
+    text-align: center;
+    min-width: 58px;
+    padding: .35rem .45rem;
+    border-radius: .7rem;
+    background: rgba(255, 255, 255, 0.16);
+    font-size: 1.45rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.summary-rate small {
+    display: block;
+    font-size: .68rem;
+    font-weight: 700;
+    opacity: .9;
+}
+
+/* ── Vertical rhythm ── */
+:where(.summary-card, .stats-grid, .panel-card, .quick-grid) {
+    margin-bottom: .85rem;
+}
+
+:where(.summary-card, .stats-grid, .panel-card, .quick-grid):last-child {
+    margin-bottom: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .summary-header {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-rate {
+        text-align: left;
+        display: flex;
+        align-items: baseline;
+        gap: .4rem;
+        border-top: 1px solid rgba(255,255,255,.2);
+        border-radius: 0;
+        background: transparent;
+        padding: .55rem 0 0;
+        font-size: 1.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-card {
+        padding: .9rem;
+    }
+
+    .summary-title {
+        font-size: 1.1rem;
+    }
 }
