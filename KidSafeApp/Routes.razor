@@ -1,24 +1,29 @@
 @using KidSafeApp.Components.Layout
 @using KidSafeApp.Components.Pages.Shared
+@using KidSafeApp.StateManagement
 
-<ErrorBoundary>
-    <ChildContent>
-        <Router AppAssembly="typeof(MauiProgram).Assembly">
-            <Found Context="routeData">
-                <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
-                <FocusOnNavigate RouteData="routeData" Selector="h1" />
-            </Found>
+@inject AuthenticationState AuthState
 
-            <NotFound>
-                <LayoutView Layout="typeof(MainLayout)">
-                    <ErrorFallback />
-                </LayoutView>
-            </NotFound>
-        </Router>
-    </ChildContent>
-    <ErrorContent Context="error">
-        <LayoutView Layout="typeof(MainLayout)">
-            <ErrorFallback Exception="error" />
-        </LayoutView>
-    </ErrorContent>
-</ErrorBoundary>
+<CascadingValue Name="AuthenticationState" Value="AuthState" IsFixed="true">
+    <ErrorBoundary>
+        <ChildContent>
+            <Router AppAssembly="typeof(MauiProgram).Assembly">
+                <Found Context="routeData">
+                    <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+                    <FocusOnNavigate RouteData="routeData" Selector="h1" />
+                </Found>
+
+                <NotFound>
+                    <LayoutView Layout="typeof(MainLayout)">
+                        <ErrorFallback />
+                    </LayoutView>
+                </NotFound>
+            </Router>
+        </ChildContent>
+        <ErrorContent Context="error">
+            <LayoutView Layout="typeof(MainLayout)">
+                <ErrorFallback Exception="error" />
+            </LayoutView>
+        </ErrorContent>
+    </ErrorBoundary>
+</CascadingValue>

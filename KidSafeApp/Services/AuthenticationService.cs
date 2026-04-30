@@ -53,6 +53,15 @@ public sealed class AuthenticationService
         _adminSessionState.SignOut();
         _authenticationState.UnLoadState();
         _roleState.Reset();
+        try
+        {
+            var jsRuntime = (IJSRuntime?)_navigationManager.ToDynamic().JSRuntime;
+            if (jsRuntime != null)
+            {
+                await jsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
+            }
+        }
+        catch { /* ignore if JSRuntime not available */ }
         _navigationManager.NavigateTo("/", replace: true);
     }
 

@@ -136,7 +136,8 @@
 }
 
 .ks-chat-pane:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease;
 }
 
 @media (max-width: 1199.98px) {
@@ -240,7 +241,7 @@
     }
 }
 
-/* Lists */
+/* ===== List Styling ===== */
 :deep(.list-group) {
     background: transparent !important;
     border: none !important;
@@ -251,19 +252,22 @@
     color: var(--ks-text) !important;
     border: none !important;
     cursor: pointer !important;
-    transition: all 0.15s ease !important;
+    transition: all 0.2s ease !important;
     font-weight: 500 !important;
-    font-size: 0.9375rem !important;
-    padding: 10px 12px !important;
+    font-size: 0.9rem !important;
+    padding: 12px 14px !important;
     margin-bottom: 4px !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     border-left: 3px solid transparent !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
 :deep(.list-group-item:hover) {
     background: var(--ks-surface2) !important;
     border-left-color: var(--ks-primary) !important;
-    padding-left: 14px !important;
+    padding-left: 16px !important;
+    transform: translateX(2px) !important;
 }
 
 :deep(.list-group-item.bg-success) {
@@ -275,12 +279,19 @@
 
 :deep(.list-group-item.bg-success:hover) {
     background: rgba(16, 185, 129, 0.2) !important;
+    transform: translateX(2px) !important;
 }
 
 :deep(.list-group-item.text-muted) {
     color: var(--ks-muted) !important;
     cursor: default !important;
     font-style: italic !important;
+    border-left: none !important;
+}
+
+:deep(.list-group-item.text-muted:hover) {
+    transform: none !important;
+    background: transparent !important;
 }
 
 /* Custom scrollbar */
@@ -322,22 +333,28 @@
     color: var(--ks-muted) !important;
 }
 
-/* Badge styling */
+/* ===== Badge Styling ===== */
 :deep(.badge) {
-    padding: 4px 8px !important;
-    font-size: 0.75rem !important;
-    font-weight: 600 !important;
-    border-radius: 4px !important;
+    padding: 5px 10px !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    letter-spacing: 0.02em !important;
 }
 
 :deep(.badge.bg-light) {
     background: var(--ks-surface2) !important;
-    color: var(--ks-text) !important;
+    color: var(--ks-text-light) !important;
 }
 
 :deep(.badge.bg-success) {
     background: var(--ks-primary-light) !important;
     color: var(--ks-primary2) !important;
+}
+
+:deep(.badge.bg-danger) {
+    background: #FEE2E2 !important;
+    color: #DC2626 !important;
 }
 
 /* Header text styling */
@@ -347,7 +364,11 @@
     font-weight: 400 !important;
 }
 
-/* Gap utility */
+/* ===== Utility Classes ===== */
 :deep(.gap-2) {
     gap: 8px !important;
+}
+
+:deep(.gap-3) {
+    gap: 12px !important;
 }
