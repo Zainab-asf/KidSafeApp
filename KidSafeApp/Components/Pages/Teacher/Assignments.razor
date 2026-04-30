@@ -2,7 +2,7 @@
 @page "/teacher/assignments"
 @using Microsoft.AspNetCore.Components.Forms
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject HttpClient Client
 
@@ -348,3 +348,5 @@ else
         public string? Subject { get; set; }
     }
 }
+
+

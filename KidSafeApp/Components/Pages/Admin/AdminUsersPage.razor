@@ -1,7 +1,7 @@
 @page "/admin/users"
 @using KidSafeApp.Services
 @using KidSafeApp.Shared.DTOs.Admin
-@using KidSafeApp.States
+@using KidSafeApp.StateManagement
 @inject AdminUsersApiClient AdminUsersApi
 @inject NavigationManager Nav
 
@@ -92,7 +92,9 @@
     private string? _success;
     private string? _activeFilter;
     private string? _approvedFilter;
+#pragma warning disable CS0649
     private bool _creating;
+#pragma warning restore CS0649
     private int _totalCount;
     private int _totalPages = 1;
 
@@ -190,3 +192,5 @@
         await LoadUsersAsync();
     }
 }
+
+

@@ -1,4 +1,5 @@
 using KidSafeApp.Models;
+using KidSafeApp.Models.Enums;
 
 namespace KidSafeApp.Services;
 
@@ -8,17 +9,27 @@ namespace KidSafeApp.Services;
 /// </summary>
 public sealed class ErrorService
 {
-    private List<ErrorNotification> _notifications = new();
+    private readonly List<Notification> _notifications = new();
+
+    /// <summary>
+    /// Event raised when the notification collection changes.
+    /// </summary>
     public event Action? OnNotificationChanged;
 
-    public IReadOnlyList<ErrorNotification> Notifications => _notifications.AsReadOnly();
+    /// <summary>
+    /// Gets the current list of notifications (read-only).
+    /// </summary>
+    public IReadOnlyList<Notification> Notifications => _notifications.AsReadOnly();
 
     /// <summary>
     /// Shows an error notification to the user.
     /// </summary>
+    /// <param name="message">The error message to display.</param>
+    /// <param name="title">Optional title for the notification.</param>
+    /// <param name="durationMs">Duration in milliseconds before auto-dismiss.</param>
     public void ShowError(string message, string? title = null, int durationMs = 5000)
     {
-        AddNotification(new ErrorNotification
+        AddNotification(new Notification
         {
             Id = Guid.NewGuid(),
             Type = NotificationType.Error,
@@ -31,9 +42,12 @@ public sealed class ErrorService
     /// <summary>
     /// Shows a success notification to the user.
     /// </summary>
+    /// <param name="message">The success message to display.</param>
+    /// <param name="title">Optional title for the notification.</param>
+    /// <param name="durationMs">Duration in milliseconds before auto-dismiss.</param>
     public void ShowSuccess(string message, string? title = null, int durationMs = 3000)
     {
-        AddNotification(new ErrorNotification
+        AddNotification(new Notification
         {
             Id = Guid.NewGuid(),
             Type = NotificationType.Success,
@@ -46,9 +60,12 @@ public sealed class ErrorService
     /// <summary>
     /// Shows a warning notification to the user.
     /// </summary>
+    /// <param name="message">The warning message to display.</param>
+    /// <param name="title">Optional title for the notification.</param>
+    /// <param name="durationMs">Duration in milliseconds before auto-dismiss.</param>
     public void ShowWarning(string message, string? title = null, int durationMs = 5000)
     {
-        AddNotification(new ErrorNotification
+        AddNotification(new Notification
         {
             Id = Guid.NewGuid(),
             Type = NotificationType.Warning,
@@ -61,9 +78,12 @@ public sealed class ErrorService
     /// <summary>
     /// Shows an info notification to the user.
     /// </summary>
+    /// <param name="message">The info message to display.</param>
+    /// <param name="title">Optional title for the notification.</param>
+    /// <param name="durationMs">Duration in milliseconds before auto-dismiss.</param>
     public void ShowInfo(string message, string? title = null, int durationMs = 4000)
     {
-        AddNotification(new ErrorNotification
+        AddNotification(new Notification
         {
             Id = Guid.NewGuid(),
             Type = NotificationType.Info,
@@ -76,6 +96,7 @@ public sealed class ErrorService
     /// <summary>
     /// Removes a notification by ID.
     /// </summary>
+    /// <param name="notificationId">The ID of the notification to remove.</param>
     public void RemoveNotification(Guid notificationId)
     {
         _notifications.RemoveAll(n => n.Id == notificationId);
@@ -91,9 +112,9 @@ public sealed class ErrorService
         OnNotificationChanged?.Invoke();
     }
 
-    private void AddNotification(ErrorNotification notification)
+    private void AddNotification(Notification notification)
     {
-        // Limit to 5 notifications at a time
+        // Limit to 5 notifications at a time to prevent memory buildup
         if (_notifications.Count >= 5)
         {
             _notifications.RemoveAt(0);
@@ -102,12 +123,4 @@ public sealed class ErrorService
         _notifications.Add(notification);
         OnNotificationChanged?.Invoke();
     }
-}
-
-public enum NotificationType
-{
-    Error,
-    Success,
-    Warning,
-    Info
 }

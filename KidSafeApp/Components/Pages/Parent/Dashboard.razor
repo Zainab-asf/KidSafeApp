@@ -1,12 +1,13 @@
 @namespace KidSafeApp.Components.Pages.Parent
 @page "/parent/dashboard"
+@using KidSafeApp.Services
 
 <PageTitle>Parent Safety Dashboard</PageTitle>
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject ParentDashboardApiClient ParentApiClient
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -270,3 +271,5 @@ else
 
     private sealed record WeeklyPoint(string Day, int SafeHeight, int FlaggedHeight, int BlockedHeight);
 }
+
+

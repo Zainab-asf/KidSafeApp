@@ -14,8 +14,6 @@
 
         @ChildContent
     </main>
-
-    <Components.Shared.BottomNavbar />
 </div>
 
 @code {
@@ -23,3 +21,5 @@
     [Parameter] public RenderFragment? HeaderContent { get; set; }
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = default!;
 }
+
+

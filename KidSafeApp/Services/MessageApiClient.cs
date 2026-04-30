@@ -41,7 +41,7 @@ public sealed class MessageApiClient
             var response = await _httpClient.PostAsJsonAsync(
                 "api/messages",
                 messageDto,
-                JsonConverter.JsonSerializerOptions,
+                JsonHelper.DefaultOptions,
                 cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -53,7 +53,7 @@ public sealed class MessageApiClient
             }
 
             var result = await response.Content.ReadFromJsonAsync<MessageDto>(
-                JsonConverter.JsonSerializerOptions, cancellationToken);
+                JsonHelper.DefaultOptions, cancellationToken);
             
             return result;
         }
@@ -91,7 +91,7 @@ public sealed class MessageApiClient
             var url = $"api/messages/{otherUserId}?pageNumber={pageNumber}&pageSize={pageSize}";
             var result = await _httpClient.GetFromJsonAsync<IEnumerable<MessageDto>>(
                 url,
-                JsonConverter.JsonSerializerOptions,
+                JsonHelper.DefaultOptions,
                 cancellationToken);
 
             return result ?? Enumerable.Empty<MessageDto>();
@@ -156,7 +156,7 @@ public sealed class MessageApiClient
 
             var result = await _httpClient.GetFromJsonAsync<IEnumerable<ChatPreviewDto>>(
                 "api/messages/chats/preview",
-                JsonConverter.JsonSerializerOptions,
+                JsonHelper.DefaultOptions,
                 cancellationToken);
 
             return result ?? Enumerable.Empty<ChatPreviewDto>();

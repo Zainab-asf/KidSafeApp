@@ -3,10 +3,10 @@
 
 <PageTitle>Teacher Classroom Dashboard</PageTitle>
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject HttpClient Client
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -129,7 +129,9 @@ else
 @code {
     private TeacherSummaryDto _summary = new();
     private List<CourseDto> _courses = new();
+#pragma warning disable CS0414
     private bool _loading;
+#pragma warning restore CS0414
     private string? _error;
 
     private readonly List<WeeklyPoint> _weekly = new()
@@ -185,3 +187,5 @@ else
 
     private sealed record WeeklyPoint(string Day, int SafeHeight, int FlaggedHeight, int BlockedHeight);
 }
+
+

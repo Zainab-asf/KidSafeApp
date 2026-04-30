@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace KidSafeApp.States;
+namespace KidSafeApp.StateManagement;
 
 public sealed class AdminSessionState : INotifyPropertyChanged
 {

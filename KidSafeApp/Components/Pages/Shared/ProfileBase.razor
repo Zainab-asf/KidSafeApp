@@ -1,7 +1,7 @@
 @namespace KidSafeApp.Components.Pages.Shared
 
-@inject KidSafeApp.States.AuthenticationState AuthState
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 
 <section class="panel-card">
     <h3>Profile</h3>
@@ -23,3 +23,5 @@
     private void Edit() { /* placeholder, does not change existing behaviour */ }
     private void ChangeAvatar() { }
 }
+
+

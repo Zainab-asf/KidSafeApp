@@ -3,8 +3,8 @@
 @inject NavigationManager Nav
 @inject HttpClient HttpClient
 @inject IJSRuntime JsRuntime
-@inject KidSafeApp.States.AdminSessionState AdminSession
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.AdminSessionState AdminSession
+@inject KidSafeApp.StateManagement.RoleState RoleState
 
 <PageTitle>Admin Login</PageTitle>
 
@@ -79,7 +79,7 @@
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
+            var authResult = JsonHelper.Deserialize<AuthResponseDto>(content);
             if (authResult is null)
             {
                 _error = "Unable to parse login response.";
@@ -98,7 +98,7 @@
                 return;
             }
 
-            var serialized = JsonConverter.Serialize(authResult);
+            var serialized = JsonHelper.Serialize(authResult);
             await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
             AuthenticationState.LoadState(authResult);
 
@@ -118,3 +118,5 @@
 
     private void GoBack() => Nav.NavigateTo("/");
 }
+
+

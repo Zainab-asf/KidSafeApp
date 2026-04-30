@@ -2,7 +2,7 @@ using KidSafeApp.Helpers;
 using System.Text.Json;
 using Microsoft.JSInterop;
 
-namespace KidSafeApp.States;
+namespace KidSafeApp.StateManagement;
 
 /// <summary>
 /// Manages multiple user accounts for account switching within the same app instance
@@ -35,7 +35,7 @@ public class AccountManager
             if (!string.IsNullOrEmpty(accountsJson))
             {
                 StoredAccounts = JsonSerializer.Deserialize<Dictionary<string, AuthenticationState>>(
-                    accountsJson, JsonConverter.JsonSerializerOptions) ?? new();
+                    accountsJson, JsonHelper.DefaultOptions) ?? new();
             }
 
             CurrentAccountId = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", CURRENT_ACCOUNT_KEY);
@@ -54,9 +54,9 @@ public class AccountManager
         var accountId = Guid.NewGuid().ToString();
         StoredAccounts[accountId] = authState;
 
-        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", 
-            ACCOUNTS_STORAGE_KEY, 
-            JsonSerializer.Serialize(StoredAccounts, JsonConverter.JsonSerializerOptions));
+            await _jsRuntime.InvokeVoidAsync("localStorage.setItem", 
+                ACCOUNTS_STORAGE_KEY, 
+                JsonSerializer.Serialize(StoredAccounts, JsonHelper.DefaultOptions));
 
         OnAccountsChanged?.Invoke();
     }
@@ -72,7 +72,7 @@ public class AccountManager
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", CURRENT_ACCOUNT_KEY, accountId);
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", 
                 "auth", 
-                JsonSerializer.Serialize(authState, JsonConverter.JsonSerializerOptions));
+                JsonSerializer.Serialize(authState, JsonHelper.DefaultOptions));
 
             OnAccountSwitched?.Invoke();
         }
@@ -98,7 +98,7 @@ public class AccountManager
         StoredAccounts.Remove(accountId);
         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", 
             ACCOUNTS_STORAGE_KEY, 
-            JsonSerializer.Serialize(StoredAccounts, JsonConverter.JsonSerializerOptions));
+            JsonSerializer.Serialize(StoredAccounts, JsonHelper.DefaultOptions));
 
         if (CurrentAccountId == accountId)
         {

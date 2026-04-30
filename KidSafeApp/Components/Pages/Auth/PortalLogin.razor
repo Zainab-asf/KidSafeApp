@@ -3,8 +3,8 @@
 @inject HttpClient HttpClient
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
-@inject KidSafeApp.States.RoleState RoleState
-@inject KidSafeApp.States.AdminSessionState AdminSession
+@inject KidSafeApp.StateManagement.RoleState RoleState
+@inject KidSafeApp.StateManagement.AdminSessionState AdminSession
 
 <PageTitle>Portal Login</PageTitle>
 
@@ -87,7 +87,7 @@
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
+            var authResult = JsonHelper.Deserialize<AuthResponseDto>(content);
             if (authResult is null)
             {
                 _errorMessage = "Unable to parse login response.";
@@ -106,20 +106,20 @@
                 return;
             }
 
-            var serialized = JsonConverter.Serialize(authResult);
+            var serialized = JsonHelper.Serialize(authResult);
             await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
             AuthenticationState.LoadState(authResult);
             AdminSession.SignOut();
 
             var appRole = authResult.User.Role switch
             {
-                "Child" => KidSafeApp.States.AppRole.Child,
-                "Parent" => KidSafeApp.States.AppRole.Parent,
-                "Teacher" => KidSafeApp.States.AppRole.Teacher,
-                _ => KidSafeApp.States.AppRole.None
+                "Child" => AppRole.Child,
+                "Parent" => AppRole.Parent,
+                "Teacher" => AppRole.Teacher,
+                _ => AppRole.None
             };
 
-            if (appRole == KidSafeApp.States.AppRole.None)
+            if (appRole == AppRole.None)
             {
                 _errorMessage = "Unsupported role.";
                 return;
@@ -150,3 +150,5 @@
 
     private void GoHome() => NavigationManager.NavigateTo("/", replace: true);
 }
+
+

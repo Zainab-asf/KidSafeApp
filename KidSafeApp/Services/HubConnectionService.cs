@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using KidSafeApp.Shared.Chat;
 using KidSafeApp.Shared.DTOs.Auth;
 using KidSafeApp.Shared.DTOs.Chat;
-using KidSafeApp.States;
+using KidSafeApp.StateManagement;
 
 namespace KidSafeApp.Services;
 

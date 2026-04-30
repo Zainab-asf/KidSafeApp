@@ -1,6 +1,7 @@
 @namespace KidSafeApp.Components.Shared
 @using KidSafeApp.Services
 @using KidSafeApp.Models
+@using KidSafeApp.Models.Enums
 @implements IAsyncDisposable
 @inject ErrorService ErrorService
 
@@ -70,3 +71,5 @@
         await Task.CompletedTask;
     }
 }
+
+

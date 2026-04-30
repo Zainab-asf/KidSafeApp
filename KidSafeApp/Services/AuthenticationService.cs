@@ -1,5 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using KidSafeApp.States;
+using KidSafeApp.StateManagement;
 using KidSafeApp.Shared.DTOs.Auth;
 using Microsoft.AspNetCore.Components;
 

@@ -1,7 +1,7 @@
 @namespace KidSafeApp.Components.Pages.Teacher
 @page "/teacher/reports"
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject HttpClient Client
 
@@ -106,3 +106,5 @@ else
         NavigationManager.NavigateTo("/", replace: true);
     }
 }
+
+

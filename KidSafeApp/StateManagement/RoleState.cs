@@ -1,13 +1,14 @@
 using System.ComponentModel;
 
-namespace KidSafeApp.States;
+namespace KidSafeApp.StateManagement;
 
 public enum AppRole
 {
     None = 0,
     Child = 1,
     Parent = 2,
-    Teacher = 3
+    Teacher = 3,
+    Admin = 4
 }
 
 public sealed class RoleState : INotifyPropertyChanged

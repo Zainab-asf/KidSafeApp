@@ -4,11 +4,11 @@
 @using KidSafeApp.Helpers
 @using KidSafeApp.Constants
 @inject HttpClient Client
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
-@inject KidSafeApp.States.AuthenticationState AuthState
-@inject KidSafeApp.States.AdminSessionState AdminSession
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AdminSessionState AdminSession
 @inject KidSafeApp.Services.HubConnectionService HubService
 @inject KidSafeApp.Services.AuthenticationService AuthService
 
@@ -73,9 +73,9 @@
 
             // Load users and chats in parallel
             var userListTask = GetClient().GetFromJsonAsync<ICollection<UserDto>>(
-                ChatPageConstants.GetUsersEndpoint, JsonConverter.JsonSerializerOptions);
+                ChatPageConstants.GetUsersEndpoint, JsonHelper.DefaultOptions);
             var chatListTask = GetClient().GetFromJsonAsync<IList<UserDto>>(
-                ChatPageConstants.GetChatsEndpoint, JsonConverter.JsonSerializerOptions);
+                ChatPageConstants.GetChatsEndpoint, JsonHelper.DefaultOptions);
 
             // Connect to hub and await data loading
             await HubService.ConnectAsync();
@@ -202,9 +202,9 @@
         try
         {
             var refreshedUsers = await GetClient().GetFromJsonAsync<ICollection<UserDto>>(
-                ChatPageConstants.GetUsersEndpoint, JsonConverter.JsonSerializerOptions);
+                ChatPageConstants.GetUsersEndpoint, JsonHelper.DefaultOptions);
             var refreshedChats = await GetClient().GetFromJsonAsync<IList<UserDto>>(
-                ChatPageConstants.GetChatsEndpoint, JsonConverter.JsonSerializerOptions);
+                ChatPageConstants.GetChatsEndpoint, JsonHelper.DefaultOptions);
 
             await InvokeAsync(() =>
             {
@@ -255,7 +255,7 @@
         await HubService.DisconnectAsync();
         try
         {
-            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.States.AuthenticationState.AuthStoreKey);
+            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
         }
         catch
         {
@@ -268,9 +268,9 @@
     {
         NavigationManager.NavigateTo(RoleState.CurrentRole switch
         {
-            KidSafeApp.States.AppRole.Child => "/child/dashboard",
-            KidSafeApp.States.AppRole.Parent => "/parent/dashboard",
-            KidSafeApp.States.AppRole.Teacher => "/teacher/dashboard",
+            AppRole.Child => "/child/dashboard",
+            AppRole.Parent => "/parent/dashboard",
+            AppRole.Teacher => "/teacher/dashboard",
             _ => "/"
         });
     }
@@ -280,3 +280,5 @@
         await HubService.DisposeAsync();
     }
 }
+
+

@@ -1,7 +1,8 @@
 @namespace KidSafeApp.Components.Pages.Parent
 @page "/parent/progress"
+@using KidSafeApp.Services
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject ParentDashboardApiClient ParentApiClient
 
@@ -155,3 +156,5 @@ else
 
     private sealed record WeeklyPoint(string Day, int SafeHeight, int FlaggedHeight, int BlockedHeight);
 }
+
+

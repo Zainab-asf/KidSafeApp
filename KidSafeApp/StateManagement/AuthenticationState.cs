@@ -1,7 +1,7 @@
 ﻿using KidSafeApp.Shared.DTOs.Auth;
 using System.ComponentModel;
 
-namespace KidSafeApp.States
+namespace KidSafeApp.StateManagement
 {
     public class AuthenticationState : INotifyPropertyChanged
     {

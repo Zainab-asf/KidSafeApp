@@ -73,9 +73,9 @@
             @foreach (var notification in FilteredNotifications)
             {
               <div class="ks-notification-item @(notification.IsRead ? "ks-read" : "ks-unread")">
-                <div class="ks-notification-icon ks-notif-icon-@(notification.Type?.ToLowerInvariant() ?? "info")">
-                  @GetTypeIcon(notification.Type)
-                </div>
+                    <div class="ks-notification-icon ks-notif-icon-@(notification.Type?.ToLowerInvariant() ?? "info")">
+                      @GetTypeIcon(notification.Type ?? "Info")
+                    </div>
 
                 <div class="ks-notification-content flex-grow-1">
                   <div class="ks-notification-header d-flex align-items-center justify-content-between gap-2">
@@ -233,3 +233,5 @@
         return createdAt.ToString("MMM d, yyyy");
     }
 }
+
+

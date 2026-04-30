@@ -1,10 +1,10 @@
-@using KidSafeApp.States
+@using KidSafeApp.StateManagement
 @implements IAsyncDisposable
 @inject NavigationManager NavigationManager
 @inject RoleState RoleState
 @inject IJSRuntime JsRuntime
-@inject KidSafeApp.States.AuthenticationState AuthState
-@inject KidSafeApp.States.AdminSessionState AdminSession
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AdminSessionState AdminSession
 
 <div class="sidebar-wrapper @(isOpen ? "open" : "")">
     <div class="sidebar-header">
@@ -219,7 +219,7 @@
         {
             AdminSession.SignOut();
             AuthState.UnLoadState();
-            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.States.AuthenticationState.AuthStoreKey);
+            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.StateManagement.AuthenticationState.AuthStoreKey);
             RoleState.Reset();
             CloseSidebar();
             NavigationManager.NavigateTo("/", forceLoad: true);
@@ -235,3 +235,5 @@
         await ValueTask.CompletedTask;
     }
 }
+
+

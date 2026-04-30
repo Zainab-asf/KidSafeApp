@@ -5,7 +5,7 @@
 @using KidSafeApp.Services
 @inject HttpClient Client
 @inject IJSRuntime JsRuntime
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 @inject ChatService ChatService
 @inject ErrorService ErrorService
 
@@ -21,11 +21,23 @@ else
 {
     <div class="flex-grow-1 d-flex flex-column">
         <div class="header">
-            <div class="fw-semibold">@SelectedUser.Name</div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar-circle">
+                    @if (!string.IsNullOrWhiteSpace(SelectedUser.AvatarUrl))
+                    {
+                        <img src="@SelectedUser.AvatarUrl" alt="avatar" class="avatar-img" />
+                    }
+                    else
+                    {
+                        <span class="avatar-initials">@GetInitials(SelectedUser.Name)</span>
+                    }
+                </div>
+                <div class="fw-semibold">@SelectedUser.Name</div>
+            </div>
             <button class="btn btn-sm btn-outline-secondary" @onclick="HandleCancelClick">Close</button>
         </div>
 
-        <div class="messages-list">
+        <div class="messages-list" @ref="_messagesListDiv">
             @if (_loadingInitial)
             {
                 <div class="d-flex justify-content-center align-items-center p-5" style="min-height: 200px;">
@@ -51,9 +63,19 @@ else
                 @foreach (var message in Messages)
                 {
                     <div class="message-item @(message.FromUserId == AuthenticationState?.User?.Id ? "sent" : "received")">
+                        <div class="avatar-circle message-avatar">
+                            @if (message.FromUserAvatarUrl != null)
+                            {
+                                <img src="@message.FromUserAvatarUrl" alt="avatar" class="avatar-img" />
+                            }
+                            else
+                            {
+                                <span class="avatar-initials">@GetInitials(message.FromUserName)</span>
+                            }
+                        </div>
                         <div class="message-content">
                             <div class="message-text">@message.Message</div>
-                            <div class="message-time">@message.SentAt.ToString("g")</div>
+                            <div class="message-time">@message.SentAt.ToString("MMM d, h:mm tt")</div>
                         </div>
                     </div>
                 }
@@ -66,7 +88,7 @@ else
                 @bind="NewMessage" 
                 @bind:event="oninput"
                 @onkeydown="OnKeyDown"
-                disabled="@_sendingMessage"
+                disabled="_sendingMessage"
                 autocomplete="off"
                 aria-label="Message input" />
             <button class="btn btn-primary" 
@@ -108,6 +130,7 @@ else
     private bool _sendingMessage = false;
     private readonly List<MessageDto> Messages = new();
     private string NewMessage = string.Empty;
+    private ElementReference _messagesListDiv;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -127,6 +150,7 @@ else
             Messages.Add(NewIncomingMessage);
             await OnIncomingMessageRecieved.InvokeAsync();
         }
+        await ScrollToBottomAsync();
     }
 
     private async Task LoadMessagesAsync()
@@ -172,15 +196,8 @@ else
             if (sentMessage is not null)
             {
                 Messages.Add(sentMessage);
-                // Show warning if flagged
-                if (sentMessage.IsFlagged)
-                {
-                    ErrorService.ShowWarning(sentMessage.FlagReason ?? "Message flagged for review.");
-                }
-                else
-                {
-                    ErrorService.ShowSuccess("Message sent!");
-                }
+                ErrorService.ShowSuccess("Message sent!");
+                await ScrollToBottomAsync();
             }
         }
         catch
@@ -206,4 +223,23 @@ else
             await SendMessageAsync();
         }
     }
+
+    private async Task ScrollToBottomAsync()
+    {
+        await Task.Delay(50); // Wait for render
+        if (_messagesListDiv.Context is not null)
+        {
+            await JsRuntime.InvokeVoidAsync("scrollToBottom", _messagesListDiv);
+        }
+    }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return string.Concat(parts[0][0], parts[^1][0]).ToUpper();
+    }
 }
+
+
