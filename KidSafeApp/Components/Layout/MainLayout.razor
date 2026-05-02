@@ -10,7 +10,7 @@
 
 <CascadingValue Name="AuthenticationState" Value="AuthState">
 
-    <div class="page">
+    <div class="page @(ShouldShowDrawer() && !IsLandingPage() && !IsAuthRoute() ? "has-drawer" : "")">
         <main>
             @if (!IsLandingPage() && !IsAuthRoute())
             {

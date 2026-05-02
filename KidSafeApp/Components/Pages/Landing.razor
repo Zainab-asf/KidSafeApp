@@ -17,7 +17,7 @@
                         <div class="col-12 col-md-6 col-xl-3">
                             <div class="ks-tile ks-tile-yellow">
                                 <div class="ks-tile-head">Child 🧒</div>
-                                <div class="ks-tile-main">Play, Learn & Chat</div>
+                                <div class="ks-tile-main">Learn & Chat</div>
                                 <div class="ks-tile-stage">Safe learning space</div>
                                 <button class="btn btn-sm ks-tile-btn" type="button" @onclick="GoToChild">Enter</button>
                             </div>
@@ -74,5 +74,5 @@
         NavigationManager.NavigateTo("/login/teacher", replace: true);
         return Task.CompletedTask;
     }
-    private void GoToAdmin() => NavigationManager.NavigateTo("/admin-login");
+    private void GoToAdmin() => NavigationManager.NavigateTo("/login", replace: true);
 }
