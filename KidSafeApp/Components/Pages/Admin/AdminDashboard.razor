@@ -1,1190 +1,308 @@
 @page "/admin"
 @page "/admin/dashboard"
-@page "/admin/users"
-@page "/admin/roles"
-@page "/admin/approvals"
-@page "/admin/classes"
-@page "/admin/students"
-@page "/admin/teachers"
-@page "/admin/courses"
-@page "/admin/activity-logs"
 @inject HttpClient Http
 @inject NavigationManager Nav
 @inject IJSRuntime JsRuntime
 @inject KidSafeApp.States.AdminSessionState AdminSession
 @inject KidSafeApp.States.AuthenticationState AuthState
-@using System.Text.Json
+@using System.Net.Http.Headers
+@using KidSafeApp.Shared.DTOs.Admin
 
-<PageTitle>Admin Dashboard</PageTitle>
+<PageTitle>Dashboard — KidSafe Admin</PageTitle>
 
-@if (!AuthState.IsAuthenticated || !string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase) || !AdminSession.IsAdmin)
+@if (!AuthState.IsAuthenticated || !string.Equals(AuthState.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase))
 {
-    <div class="container py-5" style="max-width: 720px;">
-        <div class="alert alert-warning mb-3">
-            Admin access required.
+    <div class="ado-guard">
+        <div class="ado-guard-box">
+            <i class="bi bi-shield-lock"></i>
+            <h3>Admin access required</h3>
+            <button class="ado-btn-primary" @onclick='() => Nav.NavigateTo("/admin-login")'>Sign In</button>
         </div>
-        <button class="btn btn-primary" @onclick="GoToAdminLogin">Go to Admin Login</button>
     </div>
     return;
 }
-<div class="admin-shell">
 
-    <!-- Main Content -->
-    <div class="admin-main">
-        <!-- Main Dashboard Content -->
-        <div class="admin-content">
-            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-4">
-                <div>
-                    <h2 class="h4 mb-1">Admin Dashboard</h2>
-                    <small class="text-muted">Manage users, classes and approvals.</small>
-                </div>
-                <button class="btn btn-outline-primary" @onclick="ReloadAndNotify">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-                </button>
-            </div>
+<div class="ado-shell">
 
-            <!-- Dashboard Cards -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Total Users</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@_users.Count</h4>
-                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 12.5% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-a" style="font-size: 2.5rem;">
-                                    <i class="bi bi-people"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Pending Approvals</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@PendingApprovalsCount</h4>
-                                    <small class="text-danger"><i class="bi bi-arrow-down"></i> 8.3% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-b" style="font-size: 2.5rem;">
-                                    <i class="bi bi-inbox"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Total Classes</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@_classRoomDetails.Count</h4>
-                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 5.6% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-c" style="font-size: 2.5rem;">
-                                    <i class="bi bi-book"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 shadow-sm admin-metric-card">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div>
-                                    <small class="text-muted">Active Students</small>
-                                    <h4 class="mb-0 mt-2 admin-metric-value">@_students.Count</h4>
-                                    <small class="text-success"><i class="bi bi-arrow-up"></i> 10.2% from last month</small>
-                                </div>
-                                <div class="admin-metric-icon admin-metric-icon-d" style="font-size: 2.5rem;">
-                                    <i class="bi bi-mortarboard"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabs for Management -->
-            <ul class="nav nav-tabs mb-4 admin-tabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link @(_activeTab == "users" ? "active" : string.Empty)" id="users-tab" type="button" role="tab" @onclick='() => SetActiveTab("users")'>
-                        <i class="bi bi-people me-2"></i>User Management
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link @(_activeTab == "classes" ? "active" : string.Empty)" id="classes-tab" type="button" role="tab" @onclick='() => SetActiveTab("classes")'>
-                        <i class="bi bi-book me-2"></i>Classes
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link @(_activeTab == "approvals" ? "active" : string.Empty)" id="approvals-tab" type="button" role="tab" @onclick='() => SetActiveTab("approvals")'>
-                        <i class="bi bi-check-circle me-2"></i>Approvals
-                    </button>
-                </li>
-            </ul>
-
-            <!-- Tab Content -->
-            <div class="tab-content">
-                <!-- User Management Tab -->
-                <div class="tab-pane fade @(_activeTab == "users" ? "show active" : string.Empty)" id="users-content" role="tabpanel">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom">
-                            <div class="row g-3 align-items-end">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">Search Users</label>
-                                    <input class="form-control" placeholder="Search by name or username" @bind="_search" @bind:event="oninput" />
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Status</label>
-                                    <select class="form-select" @bind="_filter">
-                                        <option value="all">Active users</option>
-                                        <option value="pending">Pending approvals</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="disabled">Disabled</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Role</label>
-                                    <select class="form-select" @bind="_roleFilter">
-                                        <option value="all">All roles</option>
-                                        <option value="Child">Children</option>
-                                        <option value="Parent">Parents</option>
-                                        <option value="Teacher">Teachers</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Class</label>
-                                    <select class="form-select" @bind="_selectedClassFilterId">
-                                        <option value="0">All classes</option>
-                                        @foreach (var c in _classRoomDetails.OrderBy(x => x.Name))
-                                        {
-                                            <option value="@c.Id">@c.Name</option>
-                                        }
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-1 d-grid">
-                                    <button class="btn btn-outline-success w-100" @onclick="ClearFilters">Clear</button>
-                                </div>
-                                <div class="col-12 col-md-1 d-grid">
-                                    <button class="btn btn-outline-primary w-100" @onclick="ReloadAndNotify">↻</button>
-                                </div>
-                                <div class="col-12 col-md-12 col-lg-2">
-                                    <button class="btn btn-success w-100" @onclick="@(() => _showCreateUserForm = !_showCreateUserForm)">
-                                        <i class="bi bi-plus-circle me-2"></i>New User
-                                    </button>
-                                </div>
-                            </div>
-
-                            @if (_showCreateUserForm)
-                            {
-                                <hr class="my-3" />
-                                <div class="row g-3 align-items-end admin-create-user-row">
-                                    <div class="col-12 col-md-4 col-lg-3">
-                                        <label class="form-label">Name</label>
-                                        <input class="form-control" @bind="_newUser.Name" placeholder="Full name" />
-                                    </div>
-                                    <div class="col-12 col-md-3 col-lg-2">
-                                        <label class="form-label">Username</label>
-                                        <input class="form-control" @bind="_newUser.Username" placeholder="Username" />
-                                    </div>
-                                    <div class="col-12 col-md-3 col-lg-2">
-                                        <label class="form-label">Password</label>
-                                        <input class="form-control" type="password" @bind="_newUser.Password" placeholder="Password" />
-                                    </div>
-                                    <div class="col-12 col-md-2 col-lg-2">
-                                        <label class="form-label">Role</label>
-                                        <select class="form-select" @bind="_newUser.Role">
-                                            <option value="Child">Child</option>
-                                            <option value="Parent">Parent</option>
-                                            <option value="Teacher">Teacher</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12 col-md-12 col-lg-3 d-grid">
-                                        <button class="btn btn-success" @onclick="CreateUser">Create User</button>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                        <div class="card-body admin-table-wrap" style="max-height: 600px; overflow-y: auto;">
-                            @if (_loading)
-                            {
-                                <div class="text-center py-5">
-                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                                    <span class="text-muted">Loading users...</span>
-                                </div>
-                            }
-                            else if (FilteredUsers.Count() == 0)
-                            {
-                                <div class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                    <p class="mt-2">No users to display</p>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0 admin-data-table">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Name</th>
-                                                <th>Username</th>
-                                                <th>Role</th>
-                                                <th>Approved</th>
-                                                <th>Active</th>
-                                                <th>Added</th>
-                                                <th style="width: 220px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var u in FilteredUsers)
-                                            {
-                                                <tr>
-                                                    <td>@u.Id</td>
-                                                    <td>@u.Name</td>
-                                                    <td>@u.Username</td>
-                                                    <td>
-                                                        <select class="form-select form-select-sm" style="min-width:140px" disabled="@(string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))" @onchange="@((ChangeEventArgs e) => SetRole(u, e.Value?.ToString()))">
-                                                            @if (string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-                                                            {
-                                                                <option value="Admin" selected>Admin</option>
-                                                            }
-                                                            <option value="Child" selected="@(u.Role == "Child")">Child</option>
-                                                            <option value="Parent" selected="@(u.Role == "Parent")">Parent</option>
-                                                            <option value="Teacher" selected="@(u.Role == "Teacher")">Teacher</option>
-                                                        </select>
-                                                    </td>
-                                                    <td>
-                                                        <input type="checkbox" class="form-check-input" checked="@u.IsApproved" @onchange="@((ChangeEventArgs e) => SetApproved(u, (bool)(e.Value ?? false)))" />
-                                                    </td>
-                                                    <td>
-                                                        <input type="checkbox" class="form-check-input" checked="@u.IsActive" @onchange="@((ChangeEventArgs e) => SetActive(u, (bool)(e.Value ?? false)))" />
-                                                    </td>
-                                                    <td class="text-muted small">@u.AddedOn.ToString("yyyy-MM-dd")</td>
-                                                    <td>
-                                                        <div class="d-flex gap-2">
-                                                            <button class="btn btn-sm btn-success admin-btn-compact" @onclick="@(() => Save(u))">Save</button>
-                                                            @if (!string.Equals(u.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-                                                            {
-                                                                <button class="btn btn-sm btn-outline-danger admin-btn-compact" @onclick="@(() => ConfirmDeleteUser(u))">Delete</button>
-                                                            }
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Classes Tab -->
-                <div class="tab-pane fade @(_activeTab == "classes" ? "show active" : string.Empty)" id="classes-content" role="tabpanel">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label">Class Name</label>
-                                    <input class="form-control" @bind="_newClassRoom.Name" placeholder="e.g., Grade 5A" />
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Grade</label>
-                                    <input class="form-control" @bind="_newClassRoom.Grade" placeholder="e.g., 5" />
-                                </div>
-                                <div class="col-12 col-md-2">
-                                    <label class="form-label">Section</label>
-                                    <input class="form-control" @bind="_newClassRoom.Section" placeholder="e.g., A" />
-                                </div>
-                                <div class="col-12 col-md-4 d-grid">
-                                    <button class="btn btn-success" @onclick="CreateClassRoom">
-                                        <i class="bi bi-plus-circle me-2"></i>Create Class
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            @if (_classRoomDetails.Count == 0)
-                            {
-                                <div class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-                                    <p class="mt-2">No classrooms created yet</p>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="row g-3">
-                                    @foreach (var room in _classRoomDetails)
-                                    {
-                                        <div class="col-md-6">
-                                            <div class="card h-100">
-                                                <div class="card-header bg-light">
-                                                    <h6 class="mb-0">@room.Name <span class="badge bg-secondary">@room.Grade-@room.Section</span></h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="mb-2"><small class="text-muted">Students: <strong>@room.Students.Count</strong></small></p>
-                                                    <p class="mb-2"><small class="text-muted">Teacher: <strong>@(string.IsNullOrWhiteSpace(room.TeacherName) ? "Not assigned" : room.TeacherName)</strong></small></p>
-
-                                                    @if (room.Students.Count > 0)
-                                                    {
-                                                        <details class="mb-3">
-                                                            <summary class="small fw-bold">View students (@room.Students.Count)</summary>
-                                                            <ul class="mt-2 mb-0">
-                                                                @foreach (var student in room.Students)
-                                                                {
-                                                                    <li class="d-flex justify-content-between align-items-center py-1">
-                                                                        <span>@student.Name</span>
-                                                                        <button class="btn btn-xs btn-outline-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @onclick="@(() => RemoveStudent(room.Id, student.Id))">Remove</button>
-                                                                    </li>
-                                                                }
-                                                            </ul>
-                                                        </details>
-                                                    }
-
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Assign Student</small>
-                                                        <div class="d-flex gap-2">
-                                                            <select class="form-select form-select-sm" @bind="_selectedStudentByClass[room.Id]">
-                                                                <option value="0">Select student</option>
-                                                                @foreach (var s in _users.Where(u => u.Role == "Child"))
-                                                                {
-                                                                    <option value="@s.Id">@s.Name</option>
-                                                                }
-                                                            </select>
-                                                            <button class="btn btn-sm btn-outline-success" @onclick="@(() => AssignStudent(room.Id))">Assign</button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="mb-2">
-                                                        <small class="text-muted">Assign Teacher</small>
-                                                        <div class="d-flex gap-2">
-                                                            <select class="form-select form-select-sm" @bind="_selectedTeacherByClass[room.Id]">
-                                                                <option value="0">Select teacher</option>
-                                                                @foreach (var t in _teachers)
-                                                                {
-                                                                    <option value="@t.Id">@t.Name</option>
-                                                                }
-                                                            </select>
-                                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => AssignTeacher(room.Id))">Assign</button>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="mt-3 d-grid">
-                                                        <button class="btn btn-sm btn-outline-danger" @onclick="@(() => ConfirmDeleteClassRoom(room.Id))">
-                                                            <i class="bi bi-trash me-1"></i>Delete Class
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Approvals Tab -->
-                <div class="tab-pane fade @(_activeTab == "approvals" ? "show active" : string.Empty)" id="approvals-content" role="tabpanel">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-body">
-                            @if (PendingApprovalsCount == 0)
-                            {
-                                <div class="text-center py-5 text-muted">
-                                    <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
-                                    <p class="mt-2">All pending requests approved!</p>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle admin-data-table">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Name</th>
-                                                <th>Username</th>
-                                                <th>Role</th>
-                                                <th>Requested On</th>
-                                                <th style="width: 120px;">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var u in FilteredUsers.Where(u => !u.IsApproved && u.IsActive))
-                                            {
-                                                <tr>
-                                                    <td>#@u.Id</td>
-                                                    <td>@u.Name</td>
-                                                    <td>@u.Username</td>
-                                                    <td>
-                                                        <span class="badge" style="background-color: @GetRoleColor(u.Role)">@u.Role</span>
-                                                    </td>
-                                                    <td>@u.AddedOn.ToString("MMM dd, yyyy")</td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-success me-1 admin-btn-icon" @onclick="@(async () => { await ApproveUser(u); })">✓</button>
-                                                        <button class="btn btn-sm btn-danger admin-btn-icon" @onclick="@(async () => { await DenyUser(u); })">✕</button>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Toast Messages -->
-            <div class="admin-toast-stack" aria-live="polite" aria-atomic="true">
-                @if (!string.IsNullOrWhiteSpace(_error))
-                {
-                    <div class="admin-toast admin-toast-error" role="alert">
-                        <div class="admin-toast-body">
-                            <strong>Error:</strong> @_error
-                        </div>
-                        <button type="button" class="btn-close" @onclick="@(() => _error = null)"></button>
-                    </div>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(_success))
-                {
-                    <div class="admin-toast admin-toast-success" role="status">
-                        <div class="admin-toast-body">@_success</div>
-                        <button type="button" class="btn-close" @onclick="@(() => _success = null)"></button>
-                    </div>
-                }
-            </div>
+    @* ── Topbar ── *@
+    <div class="ado-topbar">
+        <div>
+            <h2 class="ado-page-title">Admin Dashboard</h2>
+            <small class="ado-page-sub">Overview of platform safety and activity — @_todayLabel</small>
+        </div>
+        <div class="ado-topbar-right">
+            <button class="ado-icon-btn" @onclick="ReloadAsync" title="Refresh">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <div class="ado-avatar">@_adminInitial</div>
+            <button class="ado-logout-btn" @onclick="HandleLogout" title="Sign out">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
         </div>
     </div>
+
+    @* ── Toast ── *@
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="ado-toast ado-toast-err"><i class="bi bi-exclamation-circle"></i> @_error <button @onclick='() => _error=null'><i class="bi bi-x"></i></button></div>
+    }
+
+    @if (_loading)
+    {
+        <div class="ado-loader"><div class="ado-spinner"></div><span>Loading…</span></div>
+    }
+    else
+    {
+        @* ── KPI Cards ── *@
+        <div class="ado-kpi-grid">
+            <div class="ado-kpi-card">
+                <div class="ado-kpi-icon ado-kpi-green"><i class="bi bi-people"></i></div>
+                <div>
+                    <div class="ado-kpi-value">@(_summary?.ActiveStudents ?? 0)</div>
+                    <div class="ado-kpi-label">Active Students</div>
+                </div>
+            </div>
+            <div class="ado-kpi-card">
+                <div class="ado-kpi-icon ado-kpi-blue"><i class="bi bi-chat-dots"></i></div>
+                <div>
+                    <div class="ado-kpi-value">@(_summary?.ChatsMonitored ?? 0)</div>
+                    <div class="ado-kpi-label">Chats Monitored</div>
+                </div>
+            </div>
+            <div class="ado-kpi-card">
+                <div class="ado-kpi-icon ado-kpi-yellow"><i class="bi bi-flag"></i></div>
+                <div>
+                    <div class="ado-kpi-value">@(_summary?.FlaggedMessages ?? 0)</div>
+                    <div class="ado-kpi-label">Flagged Messages</div>
+                </div>
+            </div>
+            <div class="ado-kpi-card">
+                <div class="ado-kpi-icon ado-kpi-red"><i class="bi bi-shield-x"></i></div>
+                <div>
+                    <div class="ado-kpi-value">@(_summary?.BlockedUsers ?? 0)</div>
+                    <div class="ado-kpi-label">Blocked Users</div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Main Row ── *@
+        <div class="ado-main-row">
+
+            @* Weekly Chart *@
+            <div class="ado-card ado-card-chart">
+                <div class="ado-card-head">
+                    <div>
+                        <h3 class="ado-card-title">Weekly Activity</h3>
+                        <small class="ado-card-sub">Messages monitored this week</small>
+                    </div>
+                    <div class="ado-legend">
+                        <span class="ado-dot ado-dot-safe"></span>Safe
+                        <span class="ado-dot ado-dot-warn"></span>Warning
+                        <span class="ado-dot ado-dot-block"></span>Blocked
+                    </div>
+                </div>
+                @if (_summary?.Weekly?.Count > 0)
+                {
+                    <div class="ado-chart">
+                        @foreach (var day in _summary.Weekly)
+                        {
+                            var total = day.Safe + day.Flagged + day.Blocked;
+                            var max = _summary.Weekly.Max(d => d.Safe + d.Flagged + d.Blocked);
+                            var scale = max > 0 ? (double)total / max : 0;
+                            <div class="ado-chart-col">
+                                <div class="ado-bar-stack" style="height:100px;">
+                                    @if (day.Blocked > 0)
+                                    {
+                                        <div class="ado-bar ado-bar-block" style="flex:@day.Blocked"></div>
+                                    }
+                                    @if (day.Flagged > 0)
+                                    {
+                                        <div class="ado-bar ado-bar-warn" style="flex:@day.Flagged"></div>
+                                    }
+                                    @if (day.Safe > 0)
+                                    {
+                                        <div class="ado-bar ado-bar-safe" style="flex:@day.Safe"></div>
+                                    }
+                                </div>
+                                <small class="ado-chart-day">@day.Day[..2]</small>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="ado-empty-state">No activity data yet</div>
+                }
+            </div>
+
+            @* Quick Access *@
+            <div class="ado-card ado-card-quick">
+                <h3 class="ado-card-title">Quick Access</h3>
+                <div class="ado-quick-grid">
+                    <button class="ado-quick-btn" @onclick='() => Nav.NavigateTo("/admin/child-chat")'>
+                        <span class="ado-quick-icon ado-qi-green"><i class="bi bi-chat-square-text"></i></span>
+                        <strong>Child Chat</strong>
+                        <small>Monitor chats</small>
+                    </button>
+                    <button class="ado-quick-btn" @onclick='() => Nav.NavigateTo("/admin/parent-portal")'>
+                        <span class="ado-quick-icon ado-qi-blue"><i class="bi bi-people"></i></span>
+                        <strong>Parent Portal</strong>
+                        <small>Parent links</small>
+                    </button>
+                    <button class="ado-quick-btn" @onclick='() => Nav.NavigateTo("/admin/teacher-module")'>
+                        <span class="ado-quick-icon ado-qi-yellow"><i class="bi bi-mortarboard"></i></span>
+                        <strong>Teachers</strong>
+                        <small>Class reports</small>
+                    </button>
+                    <button class="ado-quick-btn" @onclick='() => Nav.NavigateTo("/admin/users")'>
+                        <span class="ado-quick-icon ado-qi-purple"><i class="bi bi-person-gear"></i></span>
+                        <strong>Users</strong>
+                        <small>Manage accounts</small>
+                    </button>
+                    <button class="ado-quick-btn" @onclick='() => Nav.NavigateTo("/admin/notifications")'>
+                        <span class="ado-quick-icon ado-qi-red"><i class="bi bi-bell"></i></span>
+                        <strong>Alerts</strong>
+                        <small>@GetNewNotifCount() new</small>
+                    </button>
+                    <button class="ado-quick-btn" @onclick='() => Nav.NavigateTo("/admin/settings")'>
+                        <span class="ado-quick-icon ado-qi-gray"><i class="bi bi-gear"></i></span>
+                        <strong>Settings</strong>
+                        <small>Preferences</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* ── Bottom Row ── *@
+        <div class="ado-bottom-row">
+
+            @* Recent Alerts *@
+            <div class="ado-card ado-card-alerts">
+                <div class="ado-card-head">
+                    <h3 class="ado-card-title">Recent Alerts</h3>
+                    <button class="ado-link-btn" @onclick='() => Nav.NavigateTo("/admin/notifications")'>View all</button>
+                </div>
+                <div class="ado-alert-list">
+                    @foreach (var alert in _summary?.RecentAlerts ?? new List<AdminAlertDto>())
+                    {
+                        <div class="ado-alert-row">
+                            <div class='ado-alert-dot @GetSeverityClass(alert.Severity)'></div>
+                            <div class="ado-alert-body">
+                                <div class="ado-alert-title">@alert.Title</div>
+                                <small class="ado-alert-desc">@alert.Description</small>
+                            </div>
+                            <div class="ado-alert-right">
+                                <span class='ado-severity-pill @GetSeverityClass(alert.Severity)'>@alert.Severity</span>
+                                <small class="ado-muted">@FormatTime(alert.CreatedAt)</small>
+                            </div>
+                        </div>
+                    }
+                    @if (!(_summary?.RecentAlerts?.Any() ?? false))
+                    {
+                        <div class="ado-empty-state"><i class="bi bi-shield-check text-success"></i> All clear</div>
+                    }
+                </div>
+            </div>
+
+            @* Safety + System *@
+            <div class="ado-side-col">
+                <div class="ado-card ado-card-safety">
+                    <h3 class="ado-card-title">Safety Score</h3>
+                    <div class="ado-safety-score">@(_summary?.SafetyScore ?? 0)<span>%</span></div>
+                    <div class="ado-progress-track">
+                        <div class="ado-progress-fill" style="width:@(_summary?.SafetyScore ?? 0)%"></div>
+                    </div>
+                    <div class="ado-teacher-list">
+                        @foreach (var t in _summary?.TopTeachers ?? new List<AdminTeacherStatDto>())
+                        {
+                            <div class="ado-teacher-row">
+                                <div class="ado-t-avatar">@Initials(t.Name)</div>
+                                <div>
+                                    <div class="ado-teacher-name">@t.Name</div>
+                                    <small class="ado-muted">@t.Username</small>
+                                </div>
+                                <span class="ado-teacher-count">@t.ClassCount</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="ado-card ado-card-status">
+                    <h3 class="ado-card-title">System</h3>
+                    <div class="ado-status-row"><span>Last Refresh</span><small>@FormatTime(_lastReload)</small></div>
+                    <div class="ado-status-row"><span>Students</span><strong>@(_summary?.ActiveStudents ?? 0)</strong></div>
+                    <div class="ado-status-row"><span>Open Alerts</span><strong>@(_summary?.RecentAlerts?.Count ?? 0)</strong></div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
-<style>
-    .admin-shell {
-        min-height: 100vh;
-        background-color: var(--ks-bg);
-    }
-
-    .admin-content {
-        padding: 1.6rem !important;
-        max-width: 1320px;
-        margin: 0 auto;
-        width: 100%;
-    }
-
-    .admin-create-user-row .form-label {
-        margin-bottom: .45rem;
-        font-weight: 600;
-    }
-
-    .admin-create-user-row .form-control,
-    .admin-create-user-row .form-select {
-        min-height: 44px;
-    }
-
-    .admin-topbar h2 {
-        font-size: 1.8rem;
-        font-weight: 700;
-    }
-
-    .admin-metric-card .card-body {
-        padding: 1.05rem 1.05rem 0.95rem;
-    }
-
-    .admin-metric-icon {
-        opacity: 0.95;
-    }
-
-    .admin-metric-icon-a {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-icon-b {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-icon-c {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-icon-d {
-        color: #C0E1D2;
-    }
-
-    .admin-metric-value {
-        font-size: 2rem;
-        line-height: 1.05;
-        font-weight: 700;
-        letter-spacing: -0.01em;
-    }
-
-    .admin-main {
-        overflow-y: auto;
-        min-width: 0;
-    }
-
-    .admin-search-group {
-        width: 320px;
-        max-width: 100%;
-    }
-
-    .admin-tabs .nav-link {
-        color: var(--ks-text) !important;
-        background: transparent;
-        border: 1px solid transparent;
-    }
-
-    .admin-tabs .nav-link.active {
-        color: var(--ks-green-dark) !important;
-        background: var(--ks-surface);
-        border-color: rgba(192, 225, 210, 0.65) rgba(192, 225, 210, 0.65) var(--ks-surface);
-    }
-
-    .admin-table-wrap {
-        padding-top: 0.85rem;
-    }
-
-    .admin-content .card {
-        border-radius: 14px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-    }
-
-    .admin-toast-stack {
-        position: fixed;
-        right: 1rem;
-        bottom: 1rem;
-        z-index: 1200;
-        display: grid;
-        gap: .6rem;
-        width: min(420px, calc(100vw - 2rem));
-    }
-
-    .admin-toast {
-        display: flex;
-        align-items: start;
-        justify-content: space-between;
-        gap: .75rem;
-        border-radius: .75rem;
-        padding: .85rem 1rem;
-        border: 1px solid rgba(15, 23, 42, 0.12);
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
-        background: var(--ks-surface);
-    }
-
-    .admin-toast-success {
-        border-color: rgba(192, 225, 210, 0.9);
-        background: #eef9f3;
-    }
-
-    .admin-toast-error {
-        border-color: rgba(220, 155, 155, 0.9);
-        background: #fff3f3;
-    }
-
-    .admin-toast-body {
-        font-size: .95rem;
-        color: var(--ks-text);
-        line-height: 1.35;
-    }
-
-    .admin-data-table {
-        font-size: 0.95rem;
-    }
-
-    .admin-data-table > :not(caption) > * > * {
-        padding-top: 0.55rem;
-        padding-bottom: 0.55rem;
-        vertical-align: middle;
-    }
-
-    .admin-data-table thead th {
-        font-size: 0.84rem;
-        letter-spacing: 0.01em;
-        text-transform: uppercase;
-        font-weight: 700;
-        color: var(--ks-text);
-        white-space: nowrap;
-    }
-
-    .admin-btn-compact {
-        min-width: 3.6rem;
-        padding: 0.3rem 0.55rem;
-        font-weight: 600;
-    }
-
-    .admin-btn-icon {
-        min-width: 2.2rem;
-        padding: 0.2rem 0.45rem;
-        font-weight: 700;
-    }
-
-    .card {
-        transition: box-shadow 0.2s ease;
-    }
-
-    .card:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
-    }
-
-    .btn-link {
-        border: none;
-        padding: 0;
-    }
-
-    @@media (max-width: 991.98px) {
-        .admin-shell {
-            flex-direction: column;
-        }
-
-        .admin-main {
-            width: 100%;
-        }
-
-        .admin-search-group {
-            width: 100%;
-        }
-
-        .admin-content {
-            padding: 1rem !important;
-        }
-
-        .admin-topbar h2 {
-            font-size: 1.3rem;
-        }
-
-        .admin-metric-value {
-            font-size: 1.55rem;
-        }
-
-    }
-
-</style>
-
 @code {
+    private AdminDashboardSummaryDto? _summary;
     private bool _loading = true;
     private string? _error;
-    private string? _success;
-    private string _activeTab = "users";
-    private bool _showCreateUserForm = false;
-    private List<AdminUserDto> _users = new();
-    private List<AdminStudentOverviewDto> _students = new();
-    private List<AdminClassRoomDetailDto> _classRoomDetails = new();
-    private List<AdminUserDto> _teachers = new();
-    private readonly Dictionary<int, int> _selectedStudentByClass = new();
-    private readonly Dictionary<int, int> _selectedTeacherByClass = new();
-    private AdminCreateUserDto _newUser = new() { Role = "Child", IsApproved = true, IsActive = true };
-    private AdminCreateClassRoomDto _newClassRoom = new();
-    private string _search = string.Empty;
-    private string _filter = "all";
-    private string _roleFilter = "all";
-    private int _selectedClassFilterId = 0;
-
-    private int PendingApprovalsCount => _users.Count(u => !u.IsApproved && u.IsActive);
-
-    private IEnumerable<AdminUserDto> FilteredUsers
-    {
-        get
-        {
-            IEnumerable<AdminUserDto> query = _users;
-
-            query = _filter switch
-            {
-                "pending" => query.Where(u => !u.IsApproved && u.IsActive),
-                "approved" => query.Where(u => u.IsApproved && u.IsActive),
-                "disabled" => query.Where(u => !u.IsActive),
-                _ => query.Where(u => u.IsActive)
-            };
-
-            if (!string.Equals(_roleFilter, "all", StringComparison.OrdinalIgnoreCase))
-            {
-                query = query.Where(u => string.Equals(u.Role, _roleFilter, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (_selectedClassFilterId > 0)
-            {
-                var selectedClass = _classRoomDetails.FirstOrDefault(c => c.Id == _selectedClassFilterId);
-                var selectedStudentIds = selectedClass?.Students.Select(s => s.Id).ToHashSet() ?? new HashSet<int>();
-
-                query = query.Where(u =>
-                    !string.Equals(u.Role, "Child", StringComparison.OrdinalIgnoreCase)
-                    || selectedStudentIds.Contains(u.Id));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_search))
-            {
-                var s = _search.Trim();
-                query = query.Where(u =>
-                    u.Name.Contains(s, StringComparison.OrdinalIgnoreCase) ||
-                    u.Username.Contains(s, StringComparison.OrdinalIgnoreCase));
-            }
-
-            return query;
-        }
-    }
-
-    private async Task ConfirmDeleteUser(AdminUserDto user)
-    {
-        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete user '{user.Username}'? This cannot be undone.");
-        if (!confirmed)
-        {
-            return;
-        }
-
-        await DeleteUser(user);
-    }
-
-    private string GetRoleColor(string role) => role switch
-    {
-        "Child" => "#C0E1D2",
-        "Parent" => "#E5EEE4",
-        "Teacher" => "#C0E1D2",
-        "Admin" => "#C0E1D2",
-        _ => "#DC9B9B"
-    };
+    private string _todayLabel = DateTime.Now.ToString("MMM dd, yyyy");
+    private string _adminInitial = "A";
+    private DateTime _lastReload;
 
     protected override async Task OnInitializedAsync()
     {
-        InitializeActiveSectionFromRoute();
-        Nav.LocationChanged += OnLocationChanged;
-        await Reload();
+        if (!string.IsNullOrWhiteSpace(AuthState.Token))
+            Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthState.Token);
+
+        _adminInitial = AuthState.User?.Name?[..1].ToUpperInvariant() ?? "A";
+        await LoadAsync();
     }
 
-    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    private async Task LoadAsync()
     {
-        InitializeActiveSectionFromRoute();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    protected override void OnParametersSet()
-    {
-        InitializeActiveSectionFromRoute();
-    }
-
-    private void SetActiveTab(string tab)
-    {
-        var route = tab switch
+        _loading = true;
+        _error = null;
+        try
         {
-            "users" => "/admin/users",
-            "classes" => "/admin/classes",
-            "approvals" => "/admin/approvals",
-            _ => "/admin/dashboard"
-        };
-
-        Nav.NavigateTo(route);
-    }
-
-    private void InitializeActiveSectionFromRoute()
-    {
-        var relativePath = Nav.ToBaseRelativePath(Nav.Uri).Trim('/').ToLowerInvariant();
-        var segment = relativePath.StartsWith("admin/")
-            ? relativePath["admin/".Length..]
-            : relativePath == "admin" ? "dashboard" : relativePath;
-
-        if (string.IsNullOrWhiteSpace(segment))
-        {
-            segment = "dashboard";
+            _summary = await Http.GetFromJsonAsync<AdminDashboardSummaryDto>("api/admin/dashboard/summary") ?? new();
+            _lastReload = DateTime.UtcNow;
         }
-
-        _activeTab = segment switch
-        {
-            "classes" or "students" or "teachers" or "courses" => "classes",
-            "approvals" or "activity" or "activity-logs" => "approvals",
-            _ => "users"
-        };
+        catch (Exception ex) { _error = ex.Message; }
+        finally { _loading = false; }
     }
 
-    private void ClearFilters()
-    {
-        _search = string.Empty;
-        _filter = "all";
-        _roleFilter = "all";
-        _selectedClassFilterId = 0;
-    }
-
-    private void GoToAdminLogin() => Nav.NavigateTo("/admin-login");
+    private async Task ReloadAsync() => await LoadAsync();
 
     private async Task HandleLogout()
     {
         AdminSession.SignOut();
         AuthState.UnLoadState();
-        await JsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
+        await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.States.AuthenticationState.AuthStoreKey);
         Nav.NavigateTo("/", replace: true);
     }
 
-    private async Task Reload()
-    {
-        _loading = true;
-        _error = null;
-        _success = null;
-        try
-        {
-            var users = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/users");
-            _users = users ?? new();
-            _students = await Http.GetFromJsonAsync<List<AdminStudentOverviewDto>>("api/admin/students") ?? new();
-            _classRoomDetails = await Http.GetFromJsonAsync<List<AdminClassRoomDetailDto>>("api/admin/classrooms/details") ?? new();
-            _teachers = await Http.GetFromJsonAsync<List<AdminUserDto>>("api/admin/teachers") ?? new();
+    private int GetNewNotifCount() => 0; // wire to notification feed if available
 
-            foreach (var room in _classRoomDetails)
-            {
-                if (!_selectedStudentByClass.ContainsKey(room.Id)) _selectedStudentByClass[room.Id] = 0;
-                if (!_selectedTeacherByClass.ContainsKey(room.Id)) _selectedTeacherByClass[room.Id] = 0;
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-        finally
-        {
-            _loading = false;
-        }
+    private static string GetSeverityClass(string s) => s switch
+    {
+        "Blocked" => "sev-blocked",
+        "Warning" => "sev-warning",
+        _ => "sev-safe"
+    };
+
+    private static string FormatTime(DateTime? dt)
+    {
+        if (!dt.HasValue) return "—";
+        var span = DateTime.UtcNow - dt.Value;
+        if (span.TotalMinutes < 1) return "Just now";
+        if (span.TotalHours < 1)  return $"{(int)span.TotalMinutes}m ago";
+        if (span.TotalDays < 1)   return $"{(int)span.TotalHours}h ago";
+        return dt.Value.ToString("MMM dd");
     }
 
-    private async Task ReloadAndNotify()
+    private static string Initials(string name)
     {
-        await Reload();
-        if (string.IsNullOrWhiteSpace(_error))
-        {
-            _success = "Data refreshed.";
-        }
-    }
-
-    private async Task ConfirmDeleteClassRoom(int classRoomId)
-    {
-        var room = _classRoomDetails.FirstOrDefault(x => x.Id == classRoomId);
-        var roomName = room?.Name ?? $"ID {classRoomId}";
-        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", $"Delete class '{roomName}'? This cannot be undone.");
-        if (!confirmed)
-        {
-            return;
-        }
-
-        await DeleteClassRoom(classRoomId);
-    }
-
-    private void SetRole(AdminUserDto user, string? role)
-    {
-        if (string.IsNullOrWhiteSpace(role)) return;
-        if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase)) return;
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { Role = role };
-        }
-    }
-
-    private void SetApproved(AdminUserDto user, bool isApproved)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsApproved = isApproved };
-        }
-    }
-
-    private void SetActive(AdminUserDto user, bool isActive)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsActive = isActive };
-        }
-    }
-
-    private async Task ApproveUser(AdminUserDto user)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsApproved = true };
-            await Save(_users[idx]);
-        }
-    }
-
-    private async Task DenyUser(AdminUserDto user)
-    {
-        var idx = _users.FindIndex(x => x.Id == user.Id);
-        if (idx >= 0)
-        {
-            _users[idx] = user with { IsActive = false };
-            await Save(_users[idx]);
-        }
-    }
-
-    private async Task Save(AdminUserDto user)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var dto = new AdminUpdateUserDto
-            {
-                Role = user.Role,
-                IsApproved = user.IsApproved,
-                IsActive = user.IsActive
-            };
-
-            var resp = await Http.PutAsJsonAsync($"api/admin/users/{user.Id}", dto);
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            _success = $"User '{user.Username}' updated successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task DeleteUser(AdminUserDto user)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            if (string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                _error = "Admin user cannot be deleted from this list.";
-                return;
-            }
-
-            var resp = await Http.DeleteAsync($"api/admin/users/{user.Id}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = $"User '{user.Username}' deleted successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task CreateUser()
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            if (string.IsNullOrWhiteSpace(_newUser.Name) || string.IsNullOrWhiteSpace(_newUser.Username) || string.IsNullOrWhiteSpace(_newUser.Password))
-            {
-                _error = "Name, Username and Password are required.";
-                return;
-            }
-
-            var resp = await Http.PostAsJsonAsync("api/admin/users", _newUser);
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            _newUser = new AdminCreateUserDto { Role = "Child", IsApproved = true, IsActive = true };
-            _showCreateUserForm = false;
-            await Reload();
-            _success = "User created successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task CreateClassRoom()
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var resp = await Http.PostAsJsonAsync("api/admin/classrooms", _newClassRoom);
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            _newClassRoom = new AdminCreateClassRoomDto();
-            await Reload();
-            _success = "Class created successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task DeleteClassRoom(int classRoomId)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var resp = await Http.DeleteAsync($"api/admin/classrooms/{classRoomId}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = "Class deleted successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task AssignStudent(int classRoomId)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var studentId = _selectedStudentByClass.GetValueOrDefault(classRoomId, 0);
-            if (studentId <= 0)
-            {
-                _error = "Please select a student.";
-                return;
-            }
-
-            var resp = await Http.PostAsJsonAsync($"api/admin/classrooms/{classRoomId}/students", new AdminAssignStudentDto { StudentId = studentId });
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = "Student assigned successfully.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task RemoveStudent(int classRoomId, int studentId)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var resp = await Http.DeleteAsync($"api/admin/classrooms/{classRoomId}/students/{studentId}");
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = "Student removed from class.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private async Task AssignTeacher(int classRoomId)
-    {
-        _error = null;
-        _success = null;
-        try
-        {
-            var teacherId = _selectedTeacherByClass.GetValueOrDefault(classRoomId, 0);
-            if (teacherId <= 0)
-            {
-                _error = "Please select a teacher.";
-                return;
-            }
-
-            var resp = await Http.PutAsJsonAsync($"api/admin/classrooms/{classRoomId}/teacher", new AdminAssignTeacherDto { TeacherId = teacherId });
-            if (!resp.IsSuccessStatusCode)
-            {
-                _error = await ExtractErrorMessageAsync(resp);
-                return;
-            }
-
-            await Reload();
-            _success = "Teacher assigned to class.";
-        }
-        catch (Exception ex)
-        {
-            _error = ex.Message;
-        }
-    }
-
-    private static async Task<string> ExtractErrorMessageAsync(HttpResponseMessage response)
-    {
-        var raw = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return $"Request failed ({(int)response.StatusCode}).";
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(raw);
-            var root = doc.RootElement;
-
-            if (root.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var property in errors.EnumerateObject())
-                {
-                    if (property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0)
-                    {
-                        var first = property.Value[0].GetString();
-                        if (!string.IsNullOrWhiteSpace(first))
-                        {
-                            return first;
-                        }
-                    }
-                }
-            }
-
-            if (root.TryGetProperty("title", out var title))
-            {
-                var value = title.GetString();
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    return value;
-                }
-            }
-
-            if (root.TryGetProperty("message", out var message))
-            {
-                var value = message.GetString();
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    return value;
-                }
-            }
-        }
-        catch
-        {
-        }
-
-        return raw;
-    }
-
-    public void Dispose()
-    {
-        Nav.LocationChanged -= OnLocationChanged;
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
+            : name[..Math.Min(2, name.Length)].ToUpperInvariant();
     }
 }

@@ -206,10 +206,10 @@ namespace KidSafeApp.Backend.Controllers.Notifications
 
     public class CreateNotificationRequest
     {
-        public string Title { get; set; }
-        public string Message { get; set; }
-        public string Type { get; set; }
-        public string ActionUrl { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string ActionUrl { get; set; } = string.Empty;
         public DateTime? ExpiresAt { get; set; }
     }
 }
