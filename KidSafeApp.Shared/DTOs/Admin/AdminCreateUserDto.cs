@@ -19,4 +19,8 @@ public sealed class AdminCreateUserDto
     public bool IsApproved { get; set; } = true;
 
     public bool IsActive { get; set; } = true;
+
+    public int? ClassRoomId { get; set; }
+
+    public int? CourseId { get; set; }
 }
