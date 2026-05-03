@@ -1,72 +1,98 @@
 @page "/login"
+@using KidSafeApp.Helpers
+@using KidSafeApp.StateManagement
 @inject HttpClient HttpClient
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavigationManager
-@inject KidSafeApp.States.RoleState RoleState
-@inject KidSafeApp.States.AdminSessionState AdminSession
+@inject RoleState RoleState
+@inject AdminSessionState AdminSession
 
-<PageTitle>KidSafeApp</PageTitle>
+<PageTitle>Login - KidSafeApp</PageTitle>
 
-<div class="ks-auth-shell auth-page-clean">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-4 col-md-3 col-sm-2"></div>
-            <div class="col-lg-4 col-md-6 col-sm-8">
-                <EditForm Model="LoginModel" OnValidSubmit="LoginAsync">
-                    <div class="card ks-auth-card br-0 mt-5">
-                        <div class="card-header bg-main br-0 ks-auth-header">
-                            <h2 class="mb-0">KidSafe Login 👋</h2>
+<div class="auth-page-wrapper">
+    <div class="auth-container">
+        <div class="auth-card-wrapper">
+            <EditForm Model="LoginModel" OnValidSubmit="LoginAsync">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="auth-logo">
+                            <span class="logo-icon">🛡️</span>
+                            <h1 class="auth-title">Welcome Back</h1>
                         </div>
-                        <div class="card-body">
-                            <DataAnnotationsValidator />
-                            @if (!string.IsNullOrWhiteSpace(errorMessage))
-                            {
-                                <p class="text-danger">@errorMessage</p>
-                            }
-                            <div class="mb-3">
-                                <label class="form-label">Username</label>
-                                <InputText @bind-Value="LoginModel.Username" DisplayName="Username" class="form-control" placeholder="Enter username" />
-                                <ValidationMessage For="() => LoginModel.Username" />
+                        <p class="auth-subtitle">Sign in to continue to KidSafe</p>
+                    </div>
+
+                    <div class="auth-body">
+                        <DataAnnotationsValidator />
+                        
+                        @if (!string.IsNullOrWhiteSpace(errorMessage))
+                        {
+                            <div class="error-message">
+                                <span class="error-icon">⚠️</span>
+                                <span>@errorMessage</span>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <InputText type="password" @bind-Value="LoginModel.Password" DisplayName="Password" class="form-control" placeholder="Enter password" />
-                                <ValidationMessage For="() => LoginModel.Password" />
+                        }
+
+                        <div class="form-group">
+                            <label class="form-label" for="username">
+                                <span class="label-icon">👤</span>
+                                Username
+                            </label>
+                            <div class="input-wrapper">
+                                <InputText id="username" @bind-Value="LoginModel.Username" 
+                                    class="form-control" placeholder="Enter your username" />
                             </div>
+                            <ValidationMessage For="() => LoginModel.Username" class="validation-message" />
                         </div>
-                        <div class="card-footer">
-                            <NavLink href="/" class="btn btn-outline-primary float-start">Back</NavLink>
 
-                            @if (_isBusy)
-                            {
-                                <button class="btn btn-success float-end" type="button" disabled>
-                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    Loading...
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="submit" class="btn btn-success float-end">Login ✅</button>
-                            }
-
-                            <div class="clearfix"></div>
+                        <div class="form-group">
+                            <label class="form-label" for="password">
+                                <span class="label-icon">🔒</span>
+                                Password
+                            </label>
+                            <div class="input-wrapper">
+                                <InputText id="password" type="password" @bind-Value="LoginModel.Password" 
+                                    class="form-control" placeholder="Enter your password" />
+                            </div>
+                            <ValidationMessage For="() => LoginModel.Password" class="validation-message" />
                         </div>
                     </div>
-                </EditForm>
-            </div>
-            <div class="col-lg-4 col-md-3 col-sm-2"></div>
+
+                    <div class="auth-footer">
+                        <NavLink href="/" class="btn btn-secondary">
+                            <span class="btn-icon">←</span>
+                            Back
+                        </NavLink>
+
+                        @if (_isBusy)
+                        {
+                            <button class="btn btn-primary btn-loading" type="button" disabled>
+                                <span class="spinner"></span>
+                                Signing in...
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-primary">
+                                Sign In
+                                <span class="btn-icon">→</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </EditForm>
         </div>
     </div>
 </div>
 
 @code {
-
     [CascadingParameter(Name = "AuthenticationState")]
     public AuthenticationState? AuthenticationState { get; set; }
 
     private LoginDto LoginModel { get; set; } = new();
     private bool _isBusy = false;
     private string? errorMessage = null;
+
     private async Task LoginAsync()
     {
         try
@@ -78,7 +104,13 @@
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                var authResult = JsonConverter.Deserialize<AuthResponseDto>(content);
+                var authResult = JsonHelper.Deserialize<AuthResponseDto>(content);
+                if (authResult is null)
+                {
+                    _isBusy = false;
+                    errorMessage = "Invalid login response.";
+                    return;
+                }
 
                 if (AuthenticationState is null)
                 {
@@ -87,7 +119,7 @@
                     return;
                 }
 
-                var serialized = JsonConverter.Serialize(authResult);
+                var serialized = JsonHelper.Serialize(authResult);
                 await JsRuntime.InvokeVoidAsync("window.setToStorage", AuthenticationState.AuthStoreKey, serialized);
 
                 AuthenticationState.LoadState(authResult);
@@ -96,16 +128,17 @@
                     "Child" => "/child/dashboard",
                     "Parent" => "/parent/dashboard",
                     "Teacher" => "/teacher/dashboard",
-                    "Admin" => "/admin",
+                    "Admin" => "/admin/dashboard",
                     _ => "/login"
                 };
 
                 var selectedRole = authResult.User.Role switch
                 {
-                    "Child" => KidSafeApp.States.AppRole.Child,
-                    "Parent" => KidSafeApp.States.AppRole.Parent,
-                    "Teacher" => KidSafeApp.States.AppRole.Teacher,
-                    _ => KidSafeApp.States.AppRole.None
+                    "Child" => AppRole.Child,
+                    "Parent" => AppRole.Parent,
+                    "Teacher" => AppRole.Teacher,
+                    "Admin" => AppRole.Admin,
+                    _ => AppRole.None
                 };
 
                 if (string.Equals(authResult.User.Role, "Admin", StringComparison.OrdinalIgnoreCase))
@@ -117,7 +150,7 @@
                     AdminSession.SignOut();
                 }
 
-                if (selectedRole != KidSafeApp.States.AppRole.None)
+                if (selectedRole != AppRole.None)
                 {
                     RoleState.SelectRole(selectedRole);
                     await RoleState.InitializeAsync(selectedRole);
@@ -127,7 +160,6 @@
             }
             else
             {
-                // Login wasnt successfull
                 string? errorContent = null;
                 try
                 {
@@ -139,7 +171,7 @@
 
                 if (string.IsNullOrWhiteSpace(errorContent))
                 {
-                    errorContent = $"Error {response.StatusCode} - ${response.ReasonPhrase}";
+                    errorContent = $"Error {response.StatusCode} - {response.ReasonPhrase}";
                 }
 
                 _isBusy = false;
@@ -153,3 +185,5 @@
         }
     }
 }
+
+

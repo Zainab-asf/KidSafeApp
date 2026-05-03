@@ -1,179 +1,81 @@
 @page "/admin/users"
 @using KidSafeApp.Services
 @using KidSafeApp.Shared.DTOs.Admin
-@using KidSafeApp.Shared.DTOs.Common
-@using KidSafeApp.States
+@using KidSafeApp.StateManagement
 @inject AdminUsersApiClient AdminUsersApi
 @inject NavigationManager Nav
-@inject IJSRuntime JsRuntime
 
-<PageTitle>Users — KidSafe Admin</PageTitle>
+<PageTitle>Admin Users</PageTitle>
 
-<div class="aus-shell">
+<div class="container py-4">
+    <h3>User Management</h3>
 
-    @* ── Topbar ── *@
-    <div class="aus-topbar">
-        <div>
-            <h2 class="aus-page-title">User Management</h2>
-            <small class="aus-page-sub">Manage students, parents, teachers and their links.</small>
-        </div>
-        <button class="aus-btn-primary" @onclick='() => Nav.NavigateTo("/admin/add-user")'>
-            <i class="bi bi-person-plus"></i> Add User
-        </button>
-    </div>
-
-    @* ── Toasts ── *@
     @if (!string.IsNullOrWhiteSpace(_error))
     {
-        <div class="aus-toast aus-toast-err">
-            <i class="bi bi-exclamation-circle"></i> @_error
-            <button class="aus-toast-close" @onclick='() => _error = null'><i class="bi bi-x"></i></button>
-        </div>
+        <div class="alert alert-danger">@_error</div>
     }
     @if (!string.IsNullOrWhiteSpace(_success))
     {
-        <div class="aus-toast aus-toast-ok">
-            <i class="bi bi-check-circle"></i> @_success
-            <button class="aus-toast-close" @onclick='() => _success = null'><i class="bi bi-x"></i></button>
-        </div>
+        <div class="alert alert-success">@_success</div>
     }
 
-    @* ── Role Tabs ── *@
-    <div class="aus-role-tabs">
-        @foreach (var role in new[] { "All", "Child", "Parent", "Teacher" })
-        {
-            <button class='aus-role-tab @(_roleTab == role ? "active" : "")' @onclick='() => SetRoleTab(role)'>
-                <i class='bi @RoleIcon(role)'></i> @role
-                <span class="aus-role-tab-count">@RoleCount(role)</span>
-            </button>
-        }
-    </div>
-
-    @* ── Search + Filters ── *@
-    <div class="aus-filter-bar">
-        <div class="aus-search-box">
-            <i class="bi bi-search"></i>
-            <input placeholder="Search name or username…" value="@_query.Search" @oninput="OnSearchInput" />
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <input class="form-control" placeholder="Search name or username" @bind="_query.Search" @bind:event="oninput" />
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" @bind="_query.Role">
+                        <option value="">All roles</option>
+                        <option>Admin</option><option>Parent</option><option>Teacher</option><option>Child</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" @bind="_activeFilter">
+                        <option value="">All status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" @bind="_approvedFilter">
+                        <option value="">All approvals</option>
+                        <option value="true">Approved</option>
+                        <option value="false">Pending</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-primary w-100" @onclick="LoadUsersAsync">Go</button>
+                </div>
+            </div>
         </div>
-        <select class="aus-select" @bind="_activeFilter" @bind:after="LoadUsersAsync">
-            <option value="">All status</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-        </select>
-        <select class="aus-select" @bind="_approvedFilter" @bind:after="LoadUsersAsync">
-            <option value="">All approvals</option>
-            <option value="true">Approved</option>
-            <option value="false">Pending</option>
-        </select>
-        <span class="aus-count-badge">@_totalCount users</span>
     </div>
 
-    @* ── Table ── *@
-    <div class="aus-card">
-        @if (_loading)
-        {
-            <div class="aus-loader"><div class="aus-spinner"></div></div>
-        }
-        else if (_users.Count == 0)
-        {
-            <div class="aus-empty">
-                <i class="bi bi-people"></i>
-                <p>No users found.</p>
-            </div>
-        }
-        else
-        {
-            <div class="aus-table-wrap">
-                <table class="aus-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Class</th>
-                            <th>Linked To</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var u in _users)
-                        {
-                            <tr>
-                                <td>
-                                    <div class="aus-user-cell">
-                                        <div class='aus-avatar aus-avatar-@u.Role.ToLower()'>@Initials(u.Name)</div>
-                                        <div>
-                                            <div class="aus-user-name">@u.Name</div>
-                                            <small class="aus-user-sub">@u.Username</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class='aus-role-pill aus-role-@u.Role.ToLower()'>@u.Role</span></td>
-                                <td>
-                                    @if (!string.IsNullOrWhiteSpace(u.ClassName))
-                                    {
-                                        <span class="aus-class-pill"><i class="bi bi-bookmark"></i> @u.ClassName</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="aus-muted">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    @{
-                                        var link = GetLinkedLabel(u);
-                                    }
-                                    @if (!string.IsNullOrWhiteSpace(link))
-                                    {
-                                        <div class="aus-link-cell"><i class='bi @GetLinkIcon(u.Role)'></i> @link</div>
-                                    }
-                                    else
-                                    {
-                                        <span class="aus-muted">—</span>
-                                    }
-                                </td>
-                                <td>
-                                    <span class='aus-status-pill @(u.IsActive ? "active" : "inactive")'>
-                                        @(u.IsActive ? "Active" : "Inactive")
-                                    </span>
-                                    @if (!u.IsApproved)
-                                    {
-                                        <span class="aus-status-pill pending">Pending</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="aus-actions">
-                                        <button class="aus-btn-icon aus-btn-danger" title="Delete user"
-                                                @onclick='() => DeleteUserAsync(u)'
-                                                disabled='@IsUserDeleting(u.Id)'>
-                                            @if (IsUserDeleting(u.Id))
-                                            {
-                                                <span class="aus-mini-spinner"></span>
-                                            }
-                                            else
-                                            {
-                                                <i class="bi bi-trash3"></i>
-                                            }
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+    <div class="card mb-3">
+        <div class="card-header">Create User</div>
+        <div class="card-body">
+            <AdminUserForm Model="_newUser"
+                           IsSubmitting="_creating"
+                           OnSubmit="CreateUserAsync"
+                           ClassRooms="_classRooms"
+                           Courses="_courses" />
+        </div>
+    </div>
 
-            @* ── Pagination ── *@
-            <div class="aus-pagination">
-                <button class="aus-page-btn" disabled="@(_query.PageNumber <= 1)" @onclick="PrevPageAsync">
-                    <i class="bi bi-chevron-left"></i> Prev
-                </button>
-                <span class="aus-page-info">Page @_query.PageNumber of @_totalPages</span>
-                <button class="aus-page-btn" disabled="@(_query.PageNumber >= _totalPages)" @onclick="NextPageAsync">
-                    Next <i class="bi bi-chevron-right"></i>
-                </button>
+    <div class="card">
+        <div class="card-header d-flex justify-content-between">
+            <span>Users</span>
+            <span class="text-muted">Total: @_totalCount</span>
+        </div>
+        <div class="card-body">
+            <AdminUserTable Users="_users" />
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <button class="btn btn-outline-secondary" disabled="@(_query.PageNumber <= 1)" @onclick="PrevPageAsync">Previous</button>
+                <span>Page @_query.PageNumber of @_totalPages</span>
+                <button class="btn btn-outline-secondary" disabled="@(_query.PageNumber >= _totalPages)" @onclick="NextPageAsync">Next</button>
             </div>
-        }
+        </div>
     </div>
 </div>
 
@@ -181,7 +83,8 @@
     [CascadingParameter(Name = "AuthenticationState")]
     public AuthenticationState? AuthenticationState { get; set; }
 
-    private readonly AdminUsersQueryDto _query = new() { PageNumber = 1, PageSize = 50 };
+    private readonly AdminUsersQueryDto _query = new() { PageNumber = 1, PageSize = 10 };
+    private AdminCreateUserDto _newUser = new() { Role = "Parent", IsActive = true, IsApproved = true };
     private List<AdminUserDto> _users = new();
     private IReadOnlyList<AdminClassRoomDto> _classRooms = Array.Empty<AdminClassRoomDto>();
     private IReadOnlyList<AdminCourseLiteDto> _courses = Array.Empty<AdminCourseLiteDto>();
@@ -189,13 +92,11 @@
     private string? _success;
     private string? _activeFilter;
     private string? _approvedFilter;
-    private string _roleTab = "All";
-    private readonly HashSet<int> _deletingUserIds = new();
-    private bool _loading;
+#pragma warning disable CS0649
     private bool _creating;
+#pragma warning restore CS0649
     private int _totalCount;
     private int _totalPages = 1;
-    private System.Threading.Timer? _debounce;
 
     protected override async Task OnInitializedAsync()
     {
@@ -204,22 +105,9 @@
             Nav.NavigateTo("/admin-login", replace: true);
             return;
         }
-        await Task.WhenAll(LoadUsersAsync(), LoadReferenceDataAsync());
-    }
 
-    private void SetRoleTab(string role)
-    {
-        _roleTab = role;
-        _query.Role = role == "All" ? "" : role;
-        _query.PageNumber = 1;
-        _ = LoadUsersAsync();
-    }
-
-    private void OnSearchInput(ChangeEventArgs e)
-    {
-        _query.Search = e.Value?.ToString() ?? "";
-        _debounce?.Dispose();
-        _debounce = new System.Threading.Timer(_ => InvokeAsync(LoadUsersAsync), null, 350, -1);
+        await LoadUsersAsync();
+        await LoadReferenceDataAsync();
     }
 
     private async Task LoadReferenceDataAsync()
@@ -229,89 +117,80 @@
             _classRooms = await AdminUsersApi.GetClassRoomsAsync();
             _courses = await AdminUsersApi.GetCoursesAsync();
         }
-        catch (Exception ex) { _error = ex.Message; }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
     }
 
     private async Task LoadUsersAsync()
     {
-        _loading = true;
-        _error = null;
         try
         {
-            _query.IsActive = TryParseBool(_activeFilter);
-            _query.IsApproved = TryParseBool(_approvedFilter);
+            _error = null;
+            ApplyFiltersToQuery();
             var page = await AdminUsersApi.GetUsersAsync(_query);
             _users = page.Items.ToList();
             _totalCount = page.TotalCount;
             _totalPages = Math.Max(1, page.TotalPages);
             _query.PageNumber = Math.Min(_query.PageNumber, _totalPages);
         }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _loading = false; StateHasChanged(); }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
     }
 
-    private bool IsUserDeleting(int id) => _deletingUserIds.Contains(id);
-
-    private async Task DeleteUserAsync(AdminUserDto user)
+    private void ApplyFiltersToQuery()
     {
-        if (!await JsRuntime.InvokeAsync<bool>("confirm", $"Delete {user.Name}? This cannot be undone."))
-            return;
+        _query.IsActive = TryParseNullableBool(_activeFilter);
+        _query.IsApproved = TryParseNullableBool(_approvedFilter);
+    }
 
-        _deletingUserIds.Add(user.Id);
-        _error = null;
-        _success = null;
-        StateHasChanged();
+    private static bool? TryParseNullableBool(string? value)
+        => bool.TryParse(value, out var parsed) ? parsed : null;
+
+    private void ResetNewUser()
+    {
+        _newUser = new AdminCreateUserDto { Role = "Parent", IsActive = true, IsApproved = true };
+    }
+
+    private async Task CreateUserAsync()
+    {
         try
         {
-            await AdminUsersApi.DeleteUserAsync(user.Id);
-            _users.Remove(user);
-            _totalCount--;
-            _success = $"{user.Name} deleted.";
+            _creating = true;
+            _error = null;
+            _success = null;
+            await AdminUsersApi.CreateUserAsync(_newUser);
+            _success = "User created successfully.";
+            ResetNewUser();
+            _query.PageNumber = 1;
+            await LoadUsersAsync();
         }
-        catch (Exception ex) { _error = ex.Message; }
-        finally { _deletingUserIds.Remove(user.Id); StateHasChanged(); }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
     }
 
-    private async Task PrevPageAsync() { _query.PageNumber--; await LoadUsersAsync(); }
-    private async Task NextPageAsync() { _query.PageNumber++; await LoadUsersAsync(); }
-
-    // ── Helpers ──────────────────────────────────────────────
-    private string GetLinkedLabel(AdminUserDto u) => u.Role switch
+    private async Task PrevPageAsync()
     {
-        "Child"  => u.ParentName ?? "",        // child → parent
-        "Parent" => u.LinkedChildName ?? "",   // parent → child
-        "Teacher" => u.ClassName ?? "",        // teacher → class
-        _ => ""
-    };
-
-    private string GetLinkIcon(string role) => role switch
-    {
-        "Child"  => "bi-person-heart",
-        "Parent" => "bi-person-standing-dress",
-        "Teacher" => "bi-mortarboard",
-        _ => "bi-link"
-    };
-
-    private int RoleCount(string role) => role == "All"
-        ? _totalCount
-        : _users.Count(u => string.Equals(u.Role, role, StringComparison.OrdinalIgnoreCase));
-
-    private static string RoleIcon(string role) => role switch
-    {
-        "Child"   => "bi-person",
-        "Parent"  => "bi-people",
-        "Teacher" => "bi-mortarboard",
-        _ => "bi-grid"
-    };
-
-    private static string Initials(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return "?";
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length >= 2
-            ? $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
-            : name[..Math.Min(2, name.Length)].ToUpperInvariant();
+        if (_query.PageNumber <= 1) return;
+        _query.PageNumber--;
+        await LoadUsersAsync();
     }
 
-    private static bool? TryParseBool(string? v) => bool.TryParse(v, out var b) ? b : null;
+    private async Task NextPageAsync()
+    {
+        if (_query.PageNumber >= _totalPages) return;
+        _query.PageNumber++;
+        await LoadUsersAsync();
+    }
 }
+
+

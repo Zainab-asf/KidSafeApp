@@ -1,58 +1,135 @@
 @namespace KidSafeApp.Components.Pages.Child.Chat
-@using System.Net.Http.Headers;
+@using System.Net.Http.Headers
+@using KidSafeApp.Shared.DTOs.Chat
+@using KidSafeApp.Helpers
+@using KidSafeApp.Services
 @inject HttpClient Client
 @inject IJSRuntime JsRuntime
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject ChatService ChatService
+@inject ErrorService ErrorService
 
 @if (SelectedUser is null)
 {
     <div class="p-3 w-100">
-        <div class="alert alert-info mb-0">
-            Select a user to start a conversation.
+        <div class="alert alert-info mb-0" role="alert">
+            <i class="bi bi-chat-dots me-2"></i>
+            Select a user from the right panel to start a conversation.
         </div>
     </div>
 }
 else
 {
-    <div class="flex-grow-1 d-flex flex-column">
-        <div class="header d-flex justify-content-between">
-            <div class="fw-semibold">@SelectedUser.Name</div>
-            <button class="btn btn-sm btn-outline-secondary" @onclick="HandleCancelClick">Close</button>
-        </div>
-        
-        <div class="messages-list">
-            
-            @if (!string.IsNullOrWhiteSpace(_errorMessage))
-            {
-                <p class="text-danger">@_errorMessage</p>
-            }
+    <div class="flex-grow-1 d-flex flex-column" role="main" aria-label="Chat conversation">
+        <!-- Chat Header -->
+        <header class="header" role="banner">
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar-circle" aria-hidden="true">
+                    @if (!string.IsNullOrWhiteSpace(SelectedUser.AvatarUrl))
+                    {
+                        <img src="@SelectedUser.AvatarUrl" alt="" class="avatar-img" />
+                    }
+                    else
+                    {
+                        <span class="avatar-initials">@GetInitials(SelectedUser.Name)</span>
+                    }
+                </div>
+                <div>
+                    <div class="fw-semibold" title="@SelectedUser.Name">@SelectedUser.Name</div>
+                    <small class="@(SelectedUser.IsOnline ? "text-success" : "text-muted")">
+                        @(SelectedUser.IsOnline ? "● Online" : "○ Offline")
+                    </small>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="HandleCancelClick" aria-label="Close chat">
+                <i class="bi bi-x-lg me-1"></i>Close
+            </button>
+        </header>
 
-            @if (Loading)
+        <!-- Messages List -->
+        <div class="messages-list" @ref="_messagesListDiv" role="log" aria-label="Messages" aria-live="polite">
+            @if (_loadingInitial)
             {
-                <p>
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    Loading...
-                </p>
+                <div class="d-flex justify-content-center align-items-center p-5" style="min-height: 200px;">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary mb-2" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mb-0 small text-muted">Loading messages...</p>
+                    </div>
+                </div>
+            }
+            else if (_messages.Count == 0)
+            {
+                <div class="d-flex align-items-center justify-content-center" style="min-height: 200px; flex-direction: column;">
+                    <div class="text-center">
+                        <div class="mb-3" style="font-size: 3rem; opacity: 0.5;">💬</div>
+                        <p class="text-muted small mb-1">No messages yet.</p>
+                        <p class="text-primary small fw-semibold">Start the conversation!</p>
+                    </div>
+                </div>
             }
             else
             {
-                <div class="d-flex flex-column">
-                    @foreach (var message in Messages)
-                    {
-                        <div class="message-item @(message.FromUserId == AuthenticationState?.User?.Id ? "sent" : "received")">
-                            <div class="message-content">
-                                <div class="message-text">@message.Message</div>
-                                <div class="message-time">@message.SentOn.ToString("t")</div>
+                @foreach (var message in _messages)
+                {
+                    var isSent = message.FromUserId == AuthenticationState?.User?.Id;
+                    <div class="message-item @(isSent ? "sent" : "received")"
+                         role="article"
+                         aria-label="@(isSent ? "Sent message" : "Received message")">
+                        @if (!isSent)
+                        {
+                            <div class="avatar-circle message-avatar" aria-hidden="true">
+                                @if (message.FromUserAvatarUrl != null)
+                                {
+                                    <img src="@message.FromUserAvatarUrl" alt="" class="avatar-img" />
+                                }
+                                else
+                                {
+                                    <span class="avatar-initials">@GetInitials(message.FromUserName)</span>
+                                }
+                            </div>
+                        }
+                        <div class="message-content">
+                            <div class="message-text">@message.Message</div>
+                            <div class="message-time">
+                                <span>@message.SentAt.ToLocalTime().ToString("MMM d, h:mm tt")</span>
                             </div>
                         </div>
-                    }
-                </div>
+                    </div>
+                }
             }
         </div>
 
-        <div class="message-input d-flex">
-            <input class="form-control" placeholder="Type a message..." @bind="NewMessage" @bind:event="oninput" />
-            <button class="btn btn-primary" @onclick="SendMessageAsync">Send</button>
-        </div>
+        <!-- Message Input -->
+        <footer class="message-input" role="contentinfo">
+            <input class="form-control"
+                placeholder="Type your message..."
+                @bind="_newMessage"
+                @bind:event="oninput"
+                @onkeydown="OnKeyDown"
+                disabled="@_sendingMessage"
+                autocomplete="off"
+                aria-label="Message input"
+                aria-describedby="send-hint" />
+            <span id="send-hint" class="visually-hidden">Press Enter to send message</span>
+            <button class="btn btn-primary"
+                @onclick="SendMessageAsync"
+                disabled="@(_sendingMessage || string.IsNullOrWhiteSpace(_newMessage))"
+                type="button"
+                aria-label="Send message">
+                @if (_sendingMessage)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Sending...</span>
+                }
+                else
+                {
+                    <i class="bi bi-send-fill me-1"></i>
+                    <span>Send</span>
+                }
+            </button>
+        </footer>
     </div>
 }
 
@@ -72,10 +149,14 @@ else
     [Parameter]
     public EventCallback<bool> OnCancel { get; set; }
 
-    private string? _errorMessage;
-    private bool Loading;
-    private readonly List<MessageDto> Messages = new();
-    private string NewMessage = string.Empty;
+    private bool _loadingInitial = false;
+    private bool _sendingMessage = false;
+    private readonly List<MessageDto> _messages = new();
+    private string _newMessage = string.Empty;
+    private ElementReference _messagesListDiv;
+
+    // Track which user we last loaded messages for to avoid redundant reloads
+    private int _lastLoadedUserId = 0;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -83,14 +164,53 @@ else
 
         if (SelectedUser is null)
         {
-            Messages.Clear();
+            _messages.Clear();
+            _lastLoadedUserId = 0;
             return;
         }
 
+        // Only reload messages when the selected user changes
+        if (SelectedUser.Id != _lastLoadedUserId)
+        {
+            _lastLoadedUserId = SelectedUser.Id;
+            await LoadMessagesAsync();
+            await ScrollToBottomAsync();
+        }
+
+        // Append an incoming real-time message if one arrived
         if (NewIncomingMessage is not null)
         {
-            Messages.Add(NewIncomingMessage);
+            _messages.Add(NewIncomingMessage);
             await OnIncomingMessageRecieved.InvokeAsync();
+            await ScrollToBottomAsync();
+        }
+    }
+
+    private async Task LoadMessagesAsync()
+    {
+        if (SelectedUser is null || AuthenticationState is null)
+            return;
+
+        try
+        {
+            _loadingInitial = true;
+            StateHasChanged();
+
+            var messages = await ChatService.GetMessagesAsync(SelectedUser.Id);
+            _messages.Clear();
+            if (messages is not null)
+            {
+                _messages.AddRange(messages);
+            }
+        }
+        catch
+        {
+            // Error already shown by ErrorService
+        }
+        finally
+        {
+            _loadingInitial = false;
+            StateHasChanged();
         }
     }
 
@@ -99,35 +219,68 @@ else
         if (SelectedUser is null || AuthenticationState is null)
             return;
 
-        if (string.IsNullOrWhiteSpace(NewMessage))
+        if (string.IsNullOrWhiteSpace(_newMessage))
             return;
+
+        _sendingMessage = true;
+        var messageContent = _newMessage;
+        _newMessage = string.Empty;
 
         try
         {
-            Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthenticationState.Token);
-
-            var dto = new MessageSendDto(SelectedUser.Id, NewMessage);
-
-            var response = await Client.PostAsJsonAsync("api/messages", dto, JsonConverter.JsonSerializerOptions);
-            if (!response.IsSuccessStatusCode)
+            var sentMessage = await ChatService.SendAsync(SelectedUser.Id, messageContent);
+            if (sentMessage is not null)
             {
-                _errorMessage = await response.Content.ReadAsStringAsync();
-                return;
+                _messages.Add(sentMessage);
+                await ScrollToBottomAsync();
             }
-
-            // Backend currently returns no body; keep optimistic UI consistent with prior behavior.
-            Messages.Add(new MessageDto(SelectedUser.Id, AuthenticationState.User!.Id, NewMessage, DateTime.Now));
-
-            NewMessage = string.Empty;
         }
-        catch (Exception ex)
+        catch
         {
-            _errorMessage = ex.Message;
+            // Restore message on failure so user can retry
+            _newMessage = messageContent;
+        }
+        finally
+        {
+            _sendingMessage = false;
+            StateHasChanged();
         }
     }
 
     private async Task HandleCancelClick()
     {
         await OnCancel.InvokeAsync(true);
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_sendingMessage && !string.IsNullOrWhiteSpace(_newMessage))
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        await Task.Delay(60); // Allow render cycle
+        try
+        {
+            if (_messagesListDiv.Context is not null)
+            {
+                await JsRuntime.InvokeVoidAsync("scrollToBottom", _messagesListDiv);
+            }
+        }
+        catch
+        {
+            // Ignore JS interop errors
+        }
+    }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return string.Concat(parts[0][0], parts[^1][0]).ToUpper();
     }
 }

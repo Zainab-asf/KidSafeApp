@@ -1,0 +1,278 @@
+.ks-teacher-shell { 
+    min-height: 0; 
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.ks-teacher-content {
+    display: grid;
+    gap: .85rem;
+    align-content: start;
+    box-sizing: border-box;
+    width: 100%;
+    flex: 1;
+}
+
+.ks-teacher-content > * {
+    margin: 0;
+    min-width: 0;
+}
+
+.ks-page-title {
+    font-size: clamp(1.2rem, 1.6vw, 1.5rem);
+    font-weight: 800;
+    color: var(--ks-green-dark);
+    margin: 0 0 .85rem;
+    padding-top: .15rem;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+/* Hero card styles (direct children of teacher content) */
+.hero-card,
+::deep .hero-card {
+    width: 100%;
+    background: linear-gradient(120deg, var(--ks-green), var(--ks-green-dark));
+    border-radius: .9rem;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    gap: .7rem;
+    align-items: center;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    position: relative;
+}
+
+.hero-avatar,
+::deep .hero-avatar {
+    font-size: 1.8rem;
+    line-height: 1;
+    text-align: center;
+}
+
+.hero-copy,
+::deep .hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: .15rem;
+}
+
+.hero-greeting,
+::deep .hero-greeting {
+    font-size: .82rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.hero-title,
+::deep .hero-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.hero-subtitle,
+::deep .hero-subtitle {
+    font-size: .78rem;
+    opacity: 0.85;
+}
+
+.hero-score,
+::deep .hero-score {
+    text-align: center;
+}
+
+.hero-score-value,
+::deep .hero-score-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    display: block;
+}
+
+.hero-score small,
+::deep .hero-score small {
+    font-size: .7rem;
+    opacity: 0.85;
+    display: block;
+    margin-top: .25rem;
+}
+
+/* Shared panel / stat / quick card styles - apply to direct and nested children */
+.panel-card,
+::deep .panel-card {
+    width: 100%;
+    background: var(--ks-surface);
+    border-radius: .9rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    position: relative;
+}
+
+.panel-card h3,
+::deep .panel-card h3 {
+    font-size: .97rem;
+    font-weight: 800;
+    color: var(--ks-green-dark);
+    margin: 0 0 .85rem;
+}
+
+.stats-grid,
+::deep .stats-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.stat-card,
+::deep .stat-card {
+    background: var(--ks-surface);
+    border-radius: .9rem;
+    padding: .95rem .6rem;
+    text-align: center;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    position: relative;
+}
+
+.stat-icon,
+::deep .stat-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: .65rem;
+    display: grid;
+    place-items: center;
+    margin: 0 auto .35rem;
+    font-size: 1.1rem;
+    background: rgba(68, 161, 148, 0.14);
+    color: var(--ks-green);
+}
+
+.stat-value,
+::deep .stat-value {
+    font-size: 1.65rem;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--ks-green);
+}
+
+.stat-label,
+::deep .stat-label {
+    margin-top: .2rem;
+    font-size: .7rem;
+    color: #7c8795;
+}
+
+.weekly-chart,
+::deep .weekly-chart { 
+    display: grid; 
+    grid-template-columns: repeat(7, minmax(0, 1fr)); 
+    gap: .35rem; 
+    align-items: end; 
+    height: 130px; 
+    margin-top: .25rem; 
+}
+
+.week-col,
+::deep .week-col { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: .3rem; 
+    height: 100%; 
+    justify-content: flex-end; 
+}
+
+.week-col small,
+::deep .week-col small {
+    font-size: .7rem;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+.bar-stack,
+::deep .bar-stack { 
+    width: 100%; 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column-reverse; 
+    justify-content: flex-start; 
+    gap: 2px; 
+}
+
+.bar-block.safe,
+::deep .bar-block.safe { 
+    background: var(--ks-green); 
+}
+
+.bar-block.flagged,
+::deep .bar-block.flagged { 
+    background: var(--ks-green-dark); 
+}
+
+.bar-block.blocked,
+::deep .bar-block.blocked { 
+    background: var(--ks-peach); 
+}
+
+.quick-grid,
+::deep .quick-grid { 
+    width: 100%; 
+    display: grid; 
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+    gap: .75rem; 
+}
+
+.quick-card,
+::deep .quick-card { 
+    border-radius: .9rem; 
+    background: var(--ks-surface); 
+    padding: 1rem 1.05rem; 
+    text-align: left; 
+    border: 1px solid rgba(15, 23, 42, 0.06); 
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06); 
+    color: #1f2937; 
+    cursor: pointer; 
+    transition: transform .15s; 
+    position: relative; 
+}
+
+.quick-card:active,
+::deep .quick-card:active {
+    transform: scale(.98);
+}
+
+.quick-card.quick-primary,
+::deep .quick-card.quick-primary {
+    background: var(--ks-green);
+    color: #fff;
+}
+
+.quick-title,
+::deep .quick-title {
+    font-weight: 800;
+    font-size: .92rem;
+}
+
+.quick-card small,
+::deep .quick-card small {
+    display: block;
+    opacity: .75;
+    margin-top: .2rem;
+    font-size: .78rem;
+}
+
+/* Bottom navbar styles (shared) */
+.ks-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; padding: 8px max(var(--ks-page-gutter), env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.95); border-top: 1px solid rgba(83,125,150,0.08); box-shadow: 0 -6px 18px rgba(83,125,150,0.06); }
+.ks-bottom-link { display: grid; justify-items: center; gap: 4px; padding: 6px 6px; text-decoration: none; color: rgba(31,41,55,0.75); border-radius: 10px; font-weight: 700; font-size: .78rem; }
+.ks-bottom-link .ks-bottom-icon { font-size: 18px; line-height: 1; }
+.ks-bottom-link.active { color: var(--ks-green); background: rgba(68,161,148,0.06); }
+
+@media (min-width: 901px) { .ks-bottom-nav { display: none; } }
+
+@media (max-width: 480px) { .ks-page-title { font-size: 1.05rem; margin-bottom: 0.75rem; } ::deep .panel-card { padding: .85rem .85rem; } ::deep .stat-value { font-size: 1.35rem; } }

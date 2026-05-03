@@ -1,6 +1,6 @@
 @namespace KidSafeApp.Components.Pages.Shared
 
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 
 <header class="ks-header">
   <div>
@@ -39,3 +39,5 @@
   private string AvatarLetter => string.IsNullOrWhiteSpace(DisplayName) ? "U" : DisplayName.Trim()[0].ToString().ToUpperInvariant();
   private string RoleLabel => AuthState?.User?.Role ?? string.Empty;
 }
+
+

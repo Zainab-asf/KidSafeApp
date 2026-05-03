@@ -1,160 +1,288 @@
-.portal {
-  --portal-primary: #C0E1D2;
-  --portal-primary-dark: #C0E1D2;
-  padding: 1rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  background: #F6F4E8;
+/* Parent pages share layout via ParentPageShell */
+/* Shared tokens (panel-card, stats-grid, quick-grid, progress bars,
+   weekly chart, filter pills, alert) live in parent-shared.css        */
+
+/* ── Hero Card (aligned to child dashboard) ── */
+.hero-card {
+    width: 100%;
+    background: linear-gradient(120deg, var(--ks-green), var(--ks-green-dark));
+    border-radius: .9rem;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    gap: .7rem;
+    align-items: center;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
-.portal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+.hero-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: .8rem;
+    background: rgba(255, 255, 255, 0.22);
+    display: grid;
+    place-items: center;
+    font-size: 1.3rem;
 }
 
-.portal-title {
-  margin: 0;
-  font-size: 1.45rem;
-  font-weight: 800;
-  color: #DC9B9B;
+.hero-greeting {
+    font-size: .78rem;
+    opacity: .95;
+    font-weight: 700;
 }
 
-.portal-subtitle {
-  margin: .15rem 0 0 0;
-  color: #DC9B9B;
-  font-size: .92rem;
+.hero-title {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -0.01em;
 }
 
-.portal-actions {
-  display: flex;
-  gap: .5rem;
+.hero-subtitle {
+    font-size: .78rem;
+    opacity: .9;
+    margin-top: .1rem;
+    line-height: 1.35;
 }
 
-.portal-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: .85rem;
+.hero-score {
+    text-align: center;
+    min-width: 58px;
+    padding: .35rem .45rem;
+    border-radius: .7rem;
+    background: rgba(255, 255, 255, 0.16);
 }
 
-@media (min-width: 700px) {
-  .portal-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.hero-score-value {
+    font-size: 1.45rem;
+    line-height: 1;
+    font-weight: 900;
 }
 
-@media (min-width: 1024px) {
-  .portal-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+.hero-score small {
+    font-size: .68rem;
+    opacity: .9;
 }
 
-.portal-card {
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  border-radius: 14px;
-  background: #F6F4E8;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-  padding: 0.95rem;
-  min-height: 120px;
+/* ── Child-dashboard style cards on parent dashboard ── */
+.stats-grid .stat-card,
+.panel-card,
+.quick-grid .quick-card {
+    border-radius: .9rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
-.portal-stat {
-  font-size: 1.9rem;
-  font-weight: 900;
-  line-height: 1.1;
-  margin-top: .35rem;
-  background: linear-gradient(135deg, var(--portal-primary), var(--portal-primary-dark));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.stats-grid .stat-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: .65rem;
+    margin: 0 auto .35rem;
 }
 
-.portal-muted {
-  color: #DC9B9B;
-  font-size: .92rem;
+.stats-grid .stat-value {
+    font-size: 1.45rem;
 }
 
-.portal-list {
-  margin: .5rem 0 0 0;
-  padding-left: 1rem;
-  color: #DC9B9B;
+.stats-grid .stat-label {
+    font-size: .7rem;
 }
 
-.portal-list li { margin-bottom: .25rem; }
-
-.portal-card-title {
-  margin: 0 0 .4rem 0;
-  font-weight: 700;
-  color: #C0E1D2;
-  font-size: 1.05rem;
+.panel-card h3 {
+    margin-bottom: .75rem;
 }
 
-.portal-card p {
-  margin: 0;
-  color: #DC9B9B;
+.quick-grid .quick-card {
+    padding: .95rem .9rem;
 }
 
-.portal-card .portal-card-meta {
-  margin-top: .65rem;
-  color: #DC9B9B;
-  font-size: .9rem;
+.quick-grid .quick-title {
+    font-size: .9rem;
 }
 
-.portal-controls {
-  margin-top: 1rem;
-  display: grid;
-  gap: .6rem;
-  grid-template-columns: 1fr;
-  align-items: stretch;
+.quick-grid .quick-card small {
+    font-size: .77rem;
+    line-height: 1.35;
 }
 
-@media (min-width: 700px) {
-  .portal-controls {
-    grid-template-columns: 1fr 1fr;
-  }
+/* ── Vertical rhythm — consistent gap between sections ── */
+:where(.hero-card, .stats-grid, .panel-card, .quick-grid) {
+    margin-bottom: .85rem;
 }
 
-.portal-control {
-  border: 1px solid rgba(15, 23, 42, .10);
-  border-radius: 14px;
-  background: #F6F4E8;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
-  padding: 1rem;
+:where(.hero-card, .stats-grid, .panel-card, .quick-grid):last-child {
+    margin-bottom: 0;
 }
 
-.portal-control-title {
-  margin: 0 0 .75rem 0;
-  font-weight: 700;
-  color: #DC9B9B;
-  font-size: 1.05rem;
+.parent-enhanced-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: .75rem;
 }
 
-.portal-control-row {
-  display: flex;
-  gap: .5rem;
-  flex-wrap: wrap;
+.parent-insight-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .45rem 0;
+    border-bottom: 1px dashed rgba(83, 125, 150, 0.2);
+    color: #4b5563;
+    font-size: .86rem;
 }
 
-.portal-control-row :deep(button),
-.portal-actions :deep(button) {
-  border-radius: 10px;
+.parent-insight-row:last-of-type {
+    border-bottom: 0;
+    margin-bottom: .5rem;
 }
 
-.portal :deep(.btn-primary) {
-  background: linear-gradient(135deg, var(--portal-primary), var(--portal-primary-dark));
-  border: none;
+.parent-insight-row strong {
+    color: var(--ks-green-dark);
+    font-weight: 800;
 }
 
-.portal :deep(.btn-outline-primary) {
-  color: #C0E1D2;
-  border-color: rgba(21, 128, 61, 0.45);
+.parent-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    border-radius: .7rem;
+    padding: .45rem .75rem;
+    background: rgba(68, 161, 148, 0.12);
+    color: var(--ks-green-dark);
+    text-decoration: none;
+    font-size: .8rem;
+    font-weight: 700;
 }
 
-.portal :deep(.btn-outline-primary:hover) {
-  background: rgba(34, 197, 94, 0.12);
-  color: #C0E1D2;
-  border-color: rgba(22, 163, 74, 0.65);
+.parent-link-inline {
+    color: var(--ks-green-dark);
+    text-decoration: none;
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.parent-recent-list {
+    display: grid;
+    gap: .55rem;
+}
+
+.parent-recent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    padding: .55rem .65rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: .65rem;
+    background: #f9fafb;
+}
+
+.parent-recent-meta {
+    display: grid;
+    min-width: 0;
+}
+
+.parent-recent-meta strong {
+    font-size: .84rem;
+    color: #1f2937;
+    line-height: 1.2;
+}
+
+.parent-recent-meta small {
+    color: #6b7280;
+    font-size: .72rem;
+}
+
+.parent-alert-badge {
+    border-radius: 999px;
+    font-size: .66rem;
+    font-weight: 800;
+    padding: .2rem .5rem;
+    white-space: nowrap;
+}
+
+.parent-alert-badge.badge-flagged {
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
+.parent-alert-badge.badge-achievement {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.parent-alert-badge.badge-info {
+    color: #1d4ed8;
+    background: #dbeafe;
+}
+
+.parent-empty-state {
+    padding: .7rem;
+    border-radius: .65rem;
+    background: #f9fafb;
+    color: #6b7280;
+    font-size: .82rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid,
+    .quick-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .parent-enhanced-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-card {
+        grid-template-columns: 42px 1fr;
+    }
+
+    .hero-score {
+        grid-column: 1 / -1;
+        text-align: left;
+        border-top: 1px solid rgba(255, 255, 255, .2);
+        border-radius: 0;
+        background: transparent;
+        padding: .55rem 0 0;
+        display: flex;
+        align-items: baseline;
+        gap: .4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-card {
+        gap: .65rem;
+        padding: .9rem;
+    }
+
+    .hero-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 1.15rem;
+    }
+
+    .hero-title {
+        font-size: 1.1rem;
+    }
+
+    .hero-score-value {
+        font-size: 1.35rem;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 720px) {
+    .hero-card {
+        grid-template-columns: 42px 1fr auto;
+    }
 }

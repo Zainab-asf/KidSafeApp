@@ -1,9 +1,6 @@
-﻿using KidSafeApp.Backend.Data;
-using KidSafeApp.Backend.Data.Entities;
-using KidSafeApp.Backend.Services;
+﻿using KidSafeApp.Backend.Services;
+using KidSafeApp.Backend.Services.Users;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace KidSafeApp.Backend.Controllers.Auth
 {
@@ -11,12 +8,11 @@ namespace KidSafeApp.Backend.Controllers.Auth
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly DataContext _dataContext;
-        private readonly TokenService _tokenService;
-        public AccountController(DataContext dataContext, TokenService tokenService)
+        private readonly IUserService _userService;
+
+        public AccountController(IUserService userService)
         {
-            _dataContext = dataContext;
-            _tokenService = tokenService;
+            _userService = userService;
         }
 
         [HttpPost("register")]
@@ -28,35 +24,15 @@ namespace KidSafeApp.Backend.Controllers.Auth
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto, CancellationToken cancellationToken)
         {
-            var username = (dto.Username ?? string.Empty).Trim();
-            var password = (dto.Password ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            try
             {
-                return BadRequest("Username and password are required.");
+                var response = await _userService.LoginAsync(dto, cancellationToken);
+                return Ok(response);
             }
-
-            var user = await _dataContext.Users
-                .FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
-
-            if (user is null || !string.Equals(user.Password?.Trim(), password, StringComparison.Ordinal))
+            catch (ServiceException ex)
             {
-                return BadRequest("Incorrect credentials");
+                return StatusCode(ex.StatusCode, ex.Message);
             }
-
-            if (!user.IsActive)
-            {
-                return BadRequest("Account is disabled. Contact an administrator.");
-            }
-
-            if (!user.IsApproved)
-            {
-                return BadRequest("Account is pending approval. Contact an administrator.");
-            }
-
-            var token = _tokenService.GenerateJWT(user);
-            var response = new AuthResponseDto(new UserDto(user.Id, user.Name, false, user.Role), token);
-            return Ok(response);
         }
     }
 }

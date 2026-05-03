@@ -1,58 +1,75 @@
-using KidSafeApp.States;
-using Microsoft.AspNetCore.Components;
 using System.IdentityModel.Tokens.Jwt;
+using KidSafeApp.StateManagement;
+using KidSafeApp.Shared.DTOs.Auth;
+using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace KidSafeApp.Services;
-
 public sealed class AuthenticationService
 {
-    private readonly AuthenticationState _authState;
+    private readonly AuthenticationState _authenticationState;
     private readonly RoleState _roleState;
-    private readonly NavigationManager _nav;
+    private readonly AdminSessionState _adminSessionState;
+    private readonly NavigationManager _navigationManager;
+    private readonly IJSRuntime _jsRuntime;
 
-    public AuthenticationService(AuthenticationState authState, RoleState roleState, NavigationManager nav)
+    public AuthenticationService(
+        AuthenticationState authenticationState,
+        RoleState roleState,
+        AdminSessionState adminSessionState,
+        NavigationManager navigationManager,
+        IJSRuntime jsRuntime)
     {
-        _authState = authState;
+        _authenticationState = authenticationState;
         _roleState = roleState;
-        _nav = nav;
+        _adminSessionState = adminSessionState;
+        _navigationManager = navigationManager;
+        _jsRuntime = jsRuntime;
     }
 
-    public bool IsAuthenticated => _authState.IsAuthenticated && !string.IsNullOrWhiteSpace(_authState.Token);
-
-    public string? CurrentToken => _authState.Token;
-
-    public Task<bool> IsTokenValidAsync()
+    public async Task<bool> IsTokenValidAsync()
     {
-        var token = _authState.Token;
-        if (string.IsNullOrWhiteSpace(token))
+        if (_authenticationState is null || string.IsNullOrWhiteSpace(_authenticationState.Token))
         {
-            return Task.FromResult(false);
+            return false;
         }
 
         try
         {
-            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
-            var exp = jwt.Payload.Exp;
-            if (exp is null)
+            var jwt = new JwtSecurityToken(_authenticationState.Token);
+            if (jwt.ValidTo <= DateTime.UtcNow)
             {
-                return Task.FromResult(true);
+                await LogoutAsync();
+                return false;
             }
-
-            var expUtc = DateTimeOffset.FromUnixTimeSeconds(exp.Value).UtcDateTime;
-            return Task.FromResult(expUtc > DateTime.UtcNow.AddMinutes(1));
+            return true;
         }
         catch
         {
-            return Task.FromResult(false);
+            await LogoutAsync();
+            return false;
         }
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
+        _adminSessionState.SignOut();
+        _authenticationState.UnLoadState();
         _roleState.Reset();
-        _authState.UnLoadState();
-        _nav.NavigateTo("/", replace: true);
-        return Task.CompletedTask;
+        try
+        {
+            await _jsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
+        }
+        catch { /* ignore if JSRuntime not available */ }
+        _navigationManager.NavigateTo("/", replace: true);
     }
-}
 
+    public bool IsAuthenticated => 
+        _authenticationState?.IsAuthenticated ?? false;
+
+    public UserDto? CurrentUser => 
+        _authenticationState?.User;
+
+    public string? CurrentToken => 
+        _authenticationState?.Token;
+}

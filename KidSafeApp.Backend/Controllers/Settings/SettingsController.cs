@@ -300,14 +300,14 @@ namespace KidSafeApp.Backend.Controllers.Settings
 
     public class DisplaySettingsRequest
     {
-        public string ThemePreference { get; set; }
-        public string LanguagePreference { get; set; }
+        public string ThemePreference { get; set; } = string.Empty;
+        public string LanguagePreference { get; set; } = string.Empty;
         public bool CompactMode { get; set; }
     }
 
     public class ProfileSettingsRequest
     {
-        public string Bio { get; set; }
-        public string AvatarUrl { get; set; }
+        public string Bio { get; set; } = string.Empty;
+        public string AvatarUrl { get; set; } = string.Empty;
     }
 }

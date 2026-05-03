@@ -1,130 +1,258 @@
-using KidSafeApp.Backend.Data;
 using KidSafeApp.Backend.Data.Entities;
+using KidSafeApp.Backend.Domain.Admin;
 using KidSafeApp.Backend.Domain.Auth;
-using KidSafeApp.Shared.DTOs.Admin;
+using KidSafeApp.Backend.Repositories.Users;
 using KidSafeApp.Shared.DTOs.Common;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace KidSafeApp.Backend.Services.Users;
 
 public sealed class UserService : IUserService
 {
-    private readonly DataContext _db;
+    private readonly IUserRepository _users;
+    private readonly TokenService _tokenService;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
-    public UserService(DataContext db)
+    public UserService(
+        IUserRepository users,
+        TokenService tokenService,
+        IPasswordHasher<User> passwordHasher)
     {
-        _db = db;
+        _users = users;
+        _tokenService = tokenService;
+        _passwordHasher = passwordHasher;
     }
 
-    public async Task<PagedResultDto<AdminUserDto>> GetUsersAsync(AdminUsersQueryDto query, CancellationToken cancellationToken)
+    // ===================== GET USERS =====================
+    public async Task<PagedResultDto<AdminUserDto>> GetUsersAsync(
+        AdminUsersQueryDto query,
+        CancellationToken cancellationToken)
     {
-        var pageNumber = Math.Max(1, query.PageNumber);
-        var pageSize = Math.Clamp(query.PageSize <= 0 ? 50 : query.PageSize, 1, 500);
+        var pageNumber = query.PageNumber <= 0 ? 1 : query.PageNumber;
+        var pageSize = query.PageSize switch
+        {
+            <= 0 => 10,
+            > 100 => 100,
+            _ => query.PageSize
+        };
 
-        IQueryable<User> users = _db.Users.AsNoTracking();
+        var usersQuery = _users.Query().AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
-            var s = query.Search.Trim();
-            users = users.Where(u => u.Name.Contains(s) || u.Username.Contains(s));
+            var search = query.Search.Trim();
+            usersQuery = usersQuery.Where(u =>
+                u.Name.Contains(search) || u.Username.Contains(search));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Role))
         {
             var role = query.Role.Trim();
-            users = users.Where(u => u.Role == role);
+            usersQuery = usersQuery.Where(u => u.Role == role);
         }
 
         if (query.IsActive.HasValue)
-        {
-            users = users.Where(u => u.IsActive == query.IsActive.Value);
-        }
+            usersQuery = usersQuery.Where(u => u.IsActive == query.IsActive.Value);
 
         if (query.IsApproved.HasValue)
-        {
-            users = users.Where(u => u.IsApproved == query.IsApproved.Value);
-        }
+            usersQuery = usersQuery.Where(u => u.IsApproved == query.IsApproved.Value);
 
-        var total = await users.CountAsync(cancellationToken);
+        var totalCount = await usersQuery.CountAsync(cancellationToken);
 
-        var items = await users
+        var entities = await usersQuery
             .OrderByDescending(u => u.AddedOn)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(u => new AdminUserDto(u.Id, u.Name, u.Username, u.Role, u.IsApproved, u.IsActive, u.AddedOn))
             .ToListAsync(cancellationToken);
 
         return new PagedResultDto<AdminUserDto>
         {
-            Items = items,
-            TotalCount = total,
+            Items = entities.Select(AdminUserMapper.ToDto).ToList(),
             PageNumber = pageNumber,
-            PageSize = pageSize
+            PageSize = pageSize,
+            TotalCount = totalCount
         };
     }
 
-    public async Task<AdminUserDto> CreateUserAsync(AdminCreateUserDto dto, CancellationToken cancellationToken)
+    // ===================== CREATE USER =====================
+    public async Task<AdminUserDto> CreateUserAsync(
+        AdminCreateUserDto dto,
+        CancellationToken cancellationToken)
     {
-        var role = string.IsNullOrWhiteSpace(dto.Role) ? Roles.Child : dto.Role.Trim();
-        if (role is not (Roles.Admin or Roles.Child or Roles.Parent or Roles.Teacher))
+        if (string.IsNullOrWhiteSpace(dto.Name) ||
+            string.IsNullOrWhiteSpace(dto.Password))
         {
-            throw new ServiceException("Invalid role.", StatusCodes.Status400BadRequest);
+            throw new ServiceException("Name and password are required.");
+        }
+
+        var role = (dto.Role ?? string.Empty).Trim();
+        if (!Roles.All.Contains(role))
+        {
+            throw new ServiceException("Invalid role. Allowed: Child, Parent, Teacher, Admin.");
         }
 
         var username = (dto.Username ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(username))
+
+        // Child username override
+        if (string.Equals(role, Roles.Child, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(dto.RegistrationNo))
         {
-            throw new ServiceException("Username is required.", StatusCodes.Status400BadRequest);
+            username = dto.RegistrationNo.Trim();
         }
 
-        var exists = await _db.Users.AsNoTracking().AnyAsync(u => u.Username == username, cancellationToken);
-        if (exists)
-        {
-            throw new ServiceException("Username already exists.", StatusCodes.Status400BadRequest);
-        }
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ServiceException("Username is required.");
+
+        // Username length validation (matches DB column varchar(50))
+        if (username.Length > 50)
+            throw new ServiceException("Username must not exceed 50 characters.");
+
+        if (await _users.UsernameExistsAsync(username, null, cancellationToken))
+            throw new ServiceException("Username already exists.");
 
         var user = new User
         {
-            Name = (dto.Name ?? string.Empty).Trim(),
+            Name = dto.Name.Trim(),
             Username = username,
-            Password = (dto.Password ?? string.Empty).Trim(),
             Role = role,
             IsApproved = dto.IsApproved,
             IsActive = dto.IsActive,
-            AddedOn = DateTime.UtcNow
+            AddedOn = DateTime.UtcNow,
+            Password = dto.Password.Trim()   // stored as plain-text (hashing disabled)
         };
 
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync(cancellationToken);
-
-        return new AdminUserDto(user.Id, user.Name, user.Username, user.Role, user.IsApproved, user.IsActive, user.AddedOn);
-    }
-
-    public async Task UpdateUserAsync(int id, AdminUpdateUserDto dto, CancellationToken cancellationToken)
-    {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
-        if (user is null)
+        try
         {
-            throw new ServiceException("User not found.", StatusCodes.Status404NotFound);
+            await _users.AddAsync(user, cancellationToken);
+            await _users.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new ServiceException($"Database insert failed: {message}");
         }
 
-        user.Role = string.IsNullOrWhiteSpace(dto.Role) ? user.Role : dto.Role.Trim();
-        user.IsActive = dto.IsActive;
-        user.IsApproved = dto.IsApproved;
-
-        await _db.SaveChangesAsync(cancellationToken);
+        return AdminUserMapper.ToDto(user);
     }
 
+    // ===================== UPDATE USER =====================
+    public async Task UpdateUserAsync(
+        int id,
+        AdminUpdateUserDto dto,
+        CancellationToken cancellationToken)
+    {
+        var user = await _users.GetByIdAsync(id, cancellationToken);
+
+        if (user is null)
+            throw new ServiceException("User not found.", StatusCodes.Status404NotFound);
+
+        // ✅ Only update role if provided
+        if (!string.IsNullOrWhiteSpace(dto.Role))
+        {
+            var role = dto.Role.Trim();
+
+            if (!Roles.All.Contains(role))
+                throw new ServiceException("Invalid role.");
+
+            user.Role = role;
+        }
+
+        user.IsApproved = dto.IsApproved;
+        user.IsActive = dto.IsActive;
+
+        try
+        {
+            await _users.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new ServiceException($"Database update failed: {message}");
+        }
+    }
+
+    // ===================== DELETE USER (SOFT DELETE) =====================
     public async Task DeleteUserAsync(int id, CancellationToken cancellationToken)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+        var user = await _users.GetByIdAsync(id, cancellationToken);
+
         if (user is null)
+            throw new ServiceException("User not found.", StatusCodes.Status404NotFound);
+
+        // Prevent deleting last admin
+        if (string.Equals(user.Role, Roles.Admin, StringComparison.OrdinalIgnoreCase))
         {
-            return;
+            var otherAdmins = await _users.Query().AsNoTracking()
+                .CountAsync(u =>
+                    u.Id != id &&
+                    u.IsActive &&
+                    u.Role == Roles.Admin,
+                    cancellationToken);
+
+            if (otherAdmins == 0)
+                throw new ServiceException("Cannot delete the last active admin.");
         }
 
-        _db.Users.Remove(user);
-        await _db.SaveChangesAsync(cancellationToken);
+        user.IsActive = false;
+        user.IsApproved = false;
+
+        await _users.SaveChangesAsync(cancellationToken);
+    }
+
+    // ===================== LOGIN =====================
+    public async Task<AuthResponseDto> LoginAsync(
+        LoginDto dto,
+        CancellationToken cancellationToken)
+    {
+        var username = (dto.Username ?? string.Empty).Trim();
+        var password = (dto.Password ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(username) ||
+            string.IsNullOrWhiteSpace(password))
+        {
+            throw new ServiceException("Username and password are required.");
+        }
+
+        var user = await _users.GetByUsernameAsync(username, cancellationToken);
+
+        if (user is null)
+            throw new ServiceException("Incorrect credentials");
+
+        PasswordVerificationResult verifyResult;
+
+        try
+        {
+            verifyResult = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
+        }
+        catch
+        {
+            verifyResult = PasswordVerificationResult.Failed;
+        }
+
+        if (verifyResult == PasswordVerificationResult.Failed)
+        {
+            // fallback for plain-text passwords
+            if (!string.Equals(user.Password?.Trim(), password, StringComparison.Ordinal))
+                throw new ServiceException("Incorrect credentials");
+
+            // plain-text match succeeded — no rehash
+        }
+        else if (verifyResult == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            // rehash skipped (plain-text mode)
+        }
+
+        if (!user.IsActive)
+            throw new ServiceException("Account is disabled.");
+
+        if (!user.IsApproved)
+            throw new ServiceException("Account is pending approval.");
+
+        var token = _tokenService.GenerateJWT(user);
+
+        return new AuthResponseDto(
+            new UserDto(user.Id, user.Name, false, user.Role),
+            token);
     }
 }
-

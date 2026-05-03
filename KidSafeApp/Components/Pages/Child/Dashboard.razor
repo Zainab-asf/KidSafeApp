@@ -1,9 +1,13 @@
 @namespace KidSafeApp.Components.Pages.Child
 @page "/child/dashboard"
+@page "/child-dashboard"
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject ChildDashboardApiClient DashboardApi
+
+<PageTitle>Child Home Portal</PageTitle>
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -11,7 +15,7 @@
 }
 else if (!string.Equals(AuthState.User?.Role, "Child", StringComparison.OrdinalIgnoreCase))
 {
-  <NavigateTo href="/unauthorized" replace="true" />
+  <NavigateTo href="/login/child" replace="true" />
 }
 
 @if (!RoleState.IsRoleLoaded)
@@ -20,12 +24,155 @@ else if (!string.Equals(AuthState.User?.Role, "Child", StringComparison.OrdinalI
 }
 else
 {
-  <ChildLayout>
-    <section class="ks-content">
-      <DashboardView />
-    </section>
-  </ChildLayout>
+  <ChildPageShell>
+    @if (_loading)
+    {
+      <div class="text-center py-5">
+        <div class="spinner-border" style="color: var(--ks-green);" role="status"></div>
+      </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+      <div class="alert alert-danger">@_error</div>
+    }
+    else
+    {
+    <div class="ks-child-dashboard">
+      <div class="ks-child-dashboard-body">
+        <section class="ks-child-hero-card">
+          <div class="ks-child-hero-avatar">👦🏻</div>
+          <div class="flex-grow-1">
+            <small>@(_dashboard?.Greeting ?? "Hello")</small>
+            <h2>Hi, @(_dashboard?.DisplayName ?? "")!</h2>
+            <div class="ks-child-hero-meta">@(_dashboard?.ClassLabel ?? string.Empty) &nbsp;•&nbsp; 🔥 @(_dashboard?.SafeStreakDays ?? 0)-day safe streak</div>
+          </div>
+          <div class="ks-child-hero-shield">
+            <i class="bi bi-shield-check"></i>
+          </div>
+        </section>
+
+        <section class="ks-child-stat-grid">
+          <article class="ks-child-stat-card">
+            <span class="ks-child-stat-icon"><i class="bi bi-chat"></i></span>
+            <h3>@(_dashboard?.TotalChats ?? 0)</h3>
+            <small>Total Chats</small>
+          </article>
+          <article class="ks-child-stat-card">
+            <span class="ks-child-stat-icon icon-blue"><i class="bi bi-shield-check"></i></span>
+            <h3>@(_dashboard?.SafeMessagePercent ?? 0)%</h3>
+            <small>Safe Messages</small>
+          </article>
+          <article class="ks-child-stat-card">
+            <span class="ks-child-stat-icon icon-gold"><i class="bi bi-lightbulb"></i></span>
+            <h3>@(_dashboard?.BadgesEarned ?? 0)</h3>
+            <small>Badges Earned</small>
+          </article>
+        </section>
+
+        <section class="ks-child-progress-card">
+          <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+            <strong>⭐ Stars Progress</strong>
+            <strong class="text-success">@(_dashboard?.PointsEarned ?? 0) / @(_dashboard?.PointsGoal ?? 0)</strong>
+          </div>
+          <div class="progress ks-child-stars-progress" role="progressbar" aria-label="Stars progress" aria-valuenow="@ProgressPercent" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" style="width:@ProgressPercent%"></div>
+          </div>
+          <small>@(_dashboard?.PointsRemaining ?? 0) more stars to reach the next milestone.</small>
+        </section>
+
+        <a href="/child/chat" class="ks-child-chat-cta">
+          <span class="ks-child-chat-cta-icon"><i class="bi bi-chat"></i></span>
+          <span>
+            <strong>Start Chatting!</strong>
+            <small>Safe & fun with AI protection</small>
+          </span>
+          <i class="bi bi-arrow-right"></i>
+        </a>
+
+        <section class="ks-child-badges-card">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <strong>My Badges</strong>
+            <a href="/child/achievements">View All</a>
+          </div>
+          <div class="ks-child-badges-row">
+            @if (_dashboard?.RecentBadges is null || _dashboard.RecentBadges.Count == 0)
+            {
+              <div class="ks-child-mini-badge"><small>No badges yet</small></div>
+            }
+            else
+            {
+              @foreach (var badge in _dashboard.RecentBadges)
+              {
+                <div class="ks-child-mini-badge"><small>@badge.Title</small></div>
+              }
+            }
+          </div>
+        </section>
+
+        @if (!string.IsNullOrWhiteSpace(_dashboard?.TipMessage))
+        {
+          <section class="ks-child-tip-card">
+            <div class="d-flex gap-2 align-items-start">
+              <span class="ks-child-tip-bulb">💡</span>
+              <div>
+                <strong>@(_dashboard?.TipTitle ?? "Tip")</strong>
+                <p>@_dashboard?.TipMessage</p>
+              </div>
+            </div>
+          </section>
+        }
+
+        <section class="ks-child-support-grid">
+          <article class="ks-child-support-card">
+            <h3 class="ks-child-support-title">Daily Check-in</h3>
+            <p class="ks-child-support-text">How are you feeling today? Share with your parent safely.</p>
+            <a href="/child/settings" class="ks-child-support-link">Open Profile</a>
+          </article>
+
+          <article class="ks-child-support-card">
+            <h3 class="ks-child-support-title">Need Help?</h3>
+            <p class="ks-child-support-text">If something feels wrong, quickly open support resources.</p>
+            <a href="/child/support" class="ks-child-support-link">Open Support</a>
+          </article>
+        </section>
+      </div>
+    </div>
+      }
+  </ChildPageShell>
 }
 
 @code {
+      private ChildDashboardDto? _dashboard;
+      private bool _loading = true;
+      private string? _error;
+
+      private int ProgressPercent
+        => _dashboard is null || _dashboard.PointsGoal <= 0
+          ? 0
+          : (int)Math.Round(_dashboard.PointsEarned * 100d / _dashboard.PointsGoal);
+
+      protected override async Task OnInitializedAsync()
+      {
+        await LoadAsync();
+      }
+
+      private async Task LoadAsync()
+      {
+        try
+        {
+          _loading = true;
+          _error = null;
+          _dashboard = await DashboardApi.GetDashboardAsync();
+        }
+        catch (Exception ex)
+        {
+          _error = ex.Message;
+        }
+        finally
+        {
+          _loading = false;
+        }
+      }
 }
+
+

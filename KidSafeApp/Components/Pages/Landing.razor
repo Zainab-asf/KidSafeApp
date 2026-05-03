@@ -1,78 +1,67 @@
-@inject NavigationManager NavigationManager
-@inject KidSafeApp.States.RoleState RoleState
+@inject NavigationManager Navigation
+@inject KidSafeApp.StateManagement.RoleState RoleState
 
-<PageTitle>KidSafe</PageTitle>
+<PageTitle>KidSafe App - Welcome</PageTitle>
 
-<div class="ks-hero">
-    <div class="container py-4 py-md-5">
-        <div class="row justify-content-center">
-            <div class="col-12 col-lg-10 col-xl-9">
-                <div class="ks-surface">
-                    <div class="ks-top">
-                        <div class="ks-brand">KidSafe English</div>
-                        <div class="ks-brand-sub">Learning portal</div>
-                    </div>
+<div class="splash-container">
+    <div class="splash-content">
+        <!-- Logo/Brand Section -->
+        <div class="splash-logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 100 100" class="logo-svg">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="3" />
+                    <path d="M30 50 L45 65 L70 35" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <h1 class="brand-name">KidSafe App</h1>
+            <p class="brand-tagline">Learning Portal</p>
+        </div>
 
-                    <div class="ks-cards row g-3 g-md-4 mt-2">
-                        <div class="col-12 col-md-6 col-xl-3">
-                            <div class="ks-tile ks-tile-yellow">
-                                <div class="ks-tile-head">Child 🧒</div>
-                                <div class="ks-tile-main">Learn & Chat</div>
-                                <div class="ks-tile-stage">Safe learning space</div>
-                                <button class="btn btn-sm ks-tile-btn" type="button" @onclick="GoToChild">Enter</button>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6 col-xl-3">
-                            <div class="ks-tile ks-tile-green">
-                                <div class="ks-tile-head">Parent 👨‍👩‍👧</div>
-                                <div class="ks-tile-main">Track Child Progress</div>
-                                <div class="ks-tile-stage">Reports & updates</div>
-                                <button class="btn btn-sm ks-tile-btn ks-tile-btn-light" type="button" @onclick="GoToParent">Enter</button>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6 col-xl-3">
-                            <div class="ks-tile ks-tile-yellow">
-                                <div class="ks-tile-head">Teacher 👩‍🏫</div>
-                                <div class="ks-tile-main">Manage Class & Lessons</div>
-                                <div class="ks-tile-stage">Students & assignments</div>
-                                <button class="btn btn-sm ks-tile-btn" type="button" @onclick="GoToTeacher">Enter</button>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6 col-xl-3">
-                            <div class="ks-tile ks-tile-green">
-                                <div class="ks-tile-head">Admin 🛡️</div>
-                                <div class="ks-tile-main">Manage Users & Roles</div>
-                                <div class="ks-tile-stage">System administration</div>
-                                <button class="btn btn-sm ks-tile-btn ks-tile-btn-outline" type="button" @onclick="GoToAdmin">Admin Login</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Animated Tagline -->
+        <div class="splash-features">
+            <div class="feature-item">
+                <span class="feature-icon">🛡️</span>
+                <span>Safe Learning Environment</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📚</span>
+                <span>Interactive Lessons</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">💬</span>
+                <span>Protected Chat</span>
             </div>
         </div>
+
+        <!-- Loading Indicator -->
+        <div class="splash-loader">
+            <div class="loader-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <p class="loader-text">Loading your experience...</p>
+        </div>
+
+        <!-- Skip Button -->
+        <button class="skip-btn" @onclick="SkipSplash">
+            Continue to Get Started →
+        </button>
     </div>
 </div>
 
 @code {
-    private Task GoToChild()
+    protected override async Task OnInitializedAsync()
     {
-        NavigationManager.NavigateTo("/login/child", replace: true);
-        return Task.CompletedTask;
+        // Auto-navigate to role selection after 5 seconds
+        await Task.Delay(5000);
+        Navigation.NavigateTo("/auth", replace: true);
     }
 
-    private Task GoToParent()
+    private void SkipSplash()
     {
-        NavigationManager.NavigateTo("/login/parent", replace: true);
-        return Task.CompletedTask;
+        Navigation.NavigateTo("/auth", replace: true);
     }
-
-    private Task GoToTeacher()
-    {
-        NavigationManager.NavigateTo("/login/teacher", replace: true);
-        return Task.CompletedTask;
-    }
-    private void GoToAdmin() => NavigationManager.NavigateTo("/login", replace: true);
 }
+
+

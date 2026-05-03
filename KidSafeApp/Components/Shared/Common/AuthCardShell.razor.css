@@ -1,0 +1,94 @@
+﻿/* =============================================
+   AuthCardShell.razor.css
+   Place alongside AuthCardShell.razor
+   Styles: .ks-auth-shell, .ks-auth-container,
+           .ks-auth-card, .ks-auth-header
+   ============================================= */
+
+/* ── Page wrapper ── */
+.ks-auth-shell {
+    min-height: calc(100vh - 3.5rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 15% 65%, rgba(68, 161, 148, 0.10) 0%, transparent 55%), radial-gradient(ellipse at 85% 20%, rgba(132, 204, 22, 0.07) 0%, transparent 50%), var(--ks-bg, #f6f4e8);
+}
+
+/* ── Inner container ── */
+.ks-auth-container {
+    width: 100%;
+    max-width: 460px !important;
+    padding: 2rem 1rem !important;
+    animation: ksAuthUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes ksAuthUp {
+    from {
+        opacity: 0;
+        transform: translateY(22px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Card ── */
+.ks-auth-card {
+    border-radius: 1.5rem !important;
+    border: 1px solid rgba(83, 125, 150, 0.1) !important;
+    box-shadow: 0 4px 6px rgba(15, 23, 42, 0.04), 0 20px 48px rgba(83, 125, 150, 0.10) !important;
+    overflow: hidden;
+}
+
+/* ── Header ── */
+.ks-auth-header {
+    background: linear-gradient(135deg, var(--ks-green, #44a194) 0%, var(--ks-green-dark, #2d6e66) 100%) !important;
+    border-bottom: none !important;
+    padding: 1.65rem 1.75rem !important;
+    position: relative;
+    overflow: hidden;
+}
+
+    /* Decorative circle */
+    .ks-auth-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -8%;
+        width: 160px;
+        height: 160px;
+        background: rgba(255, 255, 255, 0.07);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    /* Header title — the h2 rendered by HeaderContent slot */
+    .ks-auth-header h2,
+    .ks-auth-header .h5 {
+        color: #fff !important;
+        font-size: 1.2rem !important;
+        font-weight: 800 !important;
+        margin: 0 !important;
+        letter-spacing: -0.2px;
+        position: relative;
+        z-index: 1;
+    }
+
+/* Footer note */
+.ks-auth-shell .text-muted.small {
+    text-align: center;
+    font-size: 0.78rem !important;
+    color: #6b7280 !important;
+    margin-top: 0.75rem !important;
+    line-height: 1.5;
+    padding: 0 0.5rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .ks-auth-container {
+        padding: 1rem 0.75rem !important;
+    }
+}

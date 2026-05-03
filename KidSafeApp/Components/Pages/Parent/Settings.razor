@@ -1,7 +1,8 @@
 @namespace KidSafeApp.Components.Pages.Parent
 @page "/parent/settings"
+@using KidSafeApp.Services
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject ParentDashboardApiClient ParentApiClient
 
@@ -18,7 +19,7 @@ else
             <div class="alert alert-danger mt-3">@_error</div>
         }
 
-        <section class="panel-card mt-3">
+        <section class="panel-card">
             <h3>Notification Preferences</h3>
             <div class="setting-list">
                 <div class="setting-row">
@@ -194,10 +195,4 @@ else
     }
 
     private void HandleBack() => NavigationManager.NavigateTo("/parent/dashboard");
-
-    private void HandleLogout()
-    {
-        RoleState.Reset();
-        NavigationManager.NavigateTo("/", replace: true);
-    }
 }

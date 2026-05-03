@@ -348,6 +348,9 @@ namespace KidSafeApp.Backend.Data.Migrations
                     b.Property<int>("FromId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("SentOn")
                         .HasColumnType("datetime2");
 
@@ -441,8 +444,7 @@ namespace KidSafeApp.Backend.Data.Migrations
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -457,6 +459,9 @@ namespace KidSafeApp.Backend.Data.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("User");
                 });

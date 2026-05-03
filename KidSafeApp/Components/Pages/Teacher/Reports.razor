@@ -1,7 +1,7 @@
 @namespace KidSafeApp.Components.Pages.Teacher
 @page "/teacher/reports"
 
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject HttpClient Client
 
@@ -11,17 +11,7 @@
 }
 else
 {
-<div class="container py-3 teacher-module">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
-            <h1 class="h4 mb-1">Teacher Reports</h1>
-            <div class="text-secondary">Performance and activity reports</div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
-            <button class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
-        </div>
-    </div>
+<TeacherPageShell Title="Teacher Reports">
 
     <div class="row g-3">
         <div class="col-12 col-md-4">
@@ -75,7 +65,7 @@ else
             }
         </div>
     </div>
-</div>
+</TeacherPageShell>
 }
 
 @code {
@@ -116,3 +106,5 @@ else
         NavigationManager.NavigateTo("/", replace: true);
     }
 }
+
+

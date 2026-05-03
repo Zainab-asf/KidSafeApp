@@ -1,51 +1,99 @@
 using KidSafeApp.Shared.DTOs.Notifications;
 using KidSafeApp.Shared.DTOs.Settings;
+using KidSafeApp.Shared.DTOs.Dashboard;
+using KidSafeApp.StateManagement;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace KidSafeApp.Services;
 
 public sealed class ParentDashboardApiClient
 {
-    private readonly HttpClient _http;
+    private readonly HttpClient _client;
+    private readonly AuthenticationState _authState;
 
-    public ParentDashboardApiClient(HttpClient http)
+    public ParentDashboardApiClient(HttpClient client, AuthenticationState authState)
     {
-        _http = http;
+        _client = client;
+        _authState = authState;
     }
 
-    public async Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(CancellationToken cancellationToken = default)
-        => await _http.GetFromJsonAsync<List<NotificationDto>>("api/notifications?role=Parent", cancellationToken) ?? new List<NotificationDto>();
+    public async Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(
+        bool unreadOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        ApplyBearerToken();
+        var url = unreadOnly
+            ? "api/notifications?role=Parent&unreadOnly=true"
+            : "api/notifications?role=Parent";
+
+        var data = await _client.GetFromJsonAsync<List<NotificationDto>>(url, cancellationToken);
+        return (data ?? new List<NotificationDto>())
+            .OrderByDescending(x => x.CreatedAt)
+            .ToList();
+    }
+
+    public async Task<ParentDashboardDto?> GetDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyBearerToken();
+        return await _client.GetFromJsonAsync<ParentDashboardDto>("api/dashboard/parent", cancellationToken);
+    }
 
     public async Task<IReadOnlyList<NotificationDto>> GetFlaggedNotificationsAsync(CancellationToken cancellationToken = default)
     {
-        var all = await GetNotificationsAsync(cancellationToken);
-        return all.Where(IsFlaggedSignal).ToList();
+        var notifications = await GetNotificationsAsync(unreadOnly: false, cancellationToken);
+        return notifications.Where(IsFlaggedSignal).ToList();
     }
 
-    public Task MarkNotificationAsReadAsync(int notificationId, CancellationToken cancellationToken = default)
-        => _http.PutAsync($"api/notifications/{notificationId}/mark-as-read?role=Parent", content: null, cancellationToken);
-
-    public Task MarkAllNotificationsAsReadAsync(CancellationToken cancellationToken = default)
-        => _http.PutAsync("api/notifications/mark-all-as-read?role=Parent", content: null, cancellationToken);
-
-    public Task<UserSettingsDto?> GetSettingsAsync(CancellationToken cancellationToken = default)
-        => _http.GetFromJsonAsync<UserSettingsDto>("api/settings?role=Parent", cancellationToken);
-
-    public async Task<UserSettingsDto?> SaveSettingsAsync(UserSettingsDto dto, CancellationToken cancellationToken = default)
+    public async Task MarkNotificationAsReadAsync(int id, CancellationToken cancellationToken = default)
     {
-        var resp = await _http.PutAsJsonAsync("api/settings?role=Parent", dto, cancellationToken);
-        if (!resp.IsSuccessStatusCode) return null;
-        return await resp.Content.ReadFromJsonAsync<UserSettingsDto>(cancellationToken: cancellationToken);
+        ApplyBearerToken();
+        var response = await _client.PutAsync($"api/notifications/{id}/mark-as-read?role=Parent", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
-    public static bool IsFlaggedSignal(NotificationDto n)
+    public async Task MarkAllNotificationsAsReadAsync(CancellationToken cancellationToken = default)
     {
-        var title = n.Title ?? string.Empty;
-        var type = n.Type ?? string.Empty;
-        return title.Contains("flag", StringComparison.OrdinalIgnoreCase)
+        ApplyBearerToken();
+        var response = await _client.PutAsync("api/notifications/mark-all-as-read?role=Parent", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<UserSettingsDto?> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyBearerToken();
+        return await _client.GetFromJsonAsync<UserSettingsDto>("api/settings?role=Parent", cancellationToken);
+    }
+
+    public async Task<UserSettingsDto?> SaveSettingsAsync(UserSettingsDto settings, CancellationToken cancellationToken = default)
+    {
+        ApplyBearerToken();
+        var response = await _client.PutAsJsonAsync("api/settings?role=Parent", settings, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<UserSettingsDto>(cancellationToken);
+    }
+
+    public static bool IsFlaggedSignal(NotificationDto notification)
+    {
+        var title = notification.Title ?? string.Empty;
+        var message = notification.Message ?? string.Empty;
+        var type = notification.Type ?? string.Empty;
+
+        return type.Contains("warn", StringComparison.OrdinalIgnoreCase)
+            || type.Contains("alert", StringComparison.OrdinalIgnoreCase)
+            || title.Contains("flag", StringComparison.OrdinalIgnoreCase)
             || title.Contains("block", StringComparison.OrdinalIgnoreCase)
-            || type.Contains("flag", StringComparison.OrdinalIgnoreCase)
-            || type.Contains("block", StringComparison.OrdinalIgnoreCase);
+            || message.Contains("flag", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("block", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("inappropriate", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ApplyBearerToken()
+    {
+        if (!string.IsNullOrWhiteSpace(_authState.Token))
+        {
+            _client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _authState.Token);
+        }
     }
 }
-

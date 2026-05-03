@@ -2,6 +2,10 @@
 
 <div class="d-flex align-items-center justify-content-between">
     <h3 class="mb-2">Chats</h3>
+    @if (!Loading && Chats.Any())
+    {
+        <small class="text-muted badge bg-light text-dark">@Chats.Count()</small>
+    }
 </div>
 
 <input class="form-control form-control-sm mb-2" placeholder="Search chats..." @bind="_query" @bind:event="oninput" />
@@ -17,13 +21,40 @@
     {
         if (!FilteredChats.Any())
         {
-            <li class="list-group-item text-muted">No chats yet.</li>
+            <li class="list-group-item text-muted text-center py-3">
+                <small>No chats yet. Select a classmate to start!</small>
+            </li>
         }
         else
         {
             @foreach (var chat in FilteredChats)
             {
-                <li class="list-group-item @(chat.IsSelected ? "bg-success text-white" : "")" @onclick="() => HandleUserClick(chat)">@chat.Name</li>
+                <li class="list-group-item d-flex align-items-center gap-2 @(chat.IsSelected ? "bg-success text-white" : "")"
+                    @onclick="() => HandleUserClick(chat)"
+                    style="cursor: pointer;">
+                    <div style="position: relative; width: 36px; height: 36px; flex-shrink: 0;">
+                        <div class="avatar-circle" style="width:36px;height:36px;">
+                            @if (!string.IsNullOrWhiteSpace(chat.AvatarUrl))
+                            {
+                                <img src="@chat.AvatarUrl" alt="avatar" class="avatar-img" />
+                            }
+                            else
+                            {
+                                <span class="avatar-initials">@GetInitials(chat.Name)</span>
+                            }
+                        </div>
+                        @if (chat.IsOnline)
+                        {
+                            <span style="position:absolute; bottom:0; right:0; width:10px; height:10px;
+                                         background:#28a745; border-radius:50%; border:2px solid white;"></span>
+                        }
+                    </div>
+                    <span class="flex-grow-1 text-truncate" style="max-width:120px;">@chat.Name</span>
+                    @if (chat.UnreadCount > 0)
+                    {
+                        <span class="badge bg-danger rounded-pill">@chat.UnreadCount</span>
+                    }
+                </li>
             }
         }
     }
@@ -48,5 +79,13 @@
     private async Task HandleUserClick(UserDto chat)
     {
         await OnUserSelected.InvokeAsync(chat);
+    }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return string.Concat(parts[0][0], parts[^1][0]).ToUpper();
     }
 }

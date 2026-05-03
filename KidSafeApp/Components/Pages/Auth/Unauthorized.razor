@@ -1,20 +1,19 @@
 @page "/unauthorized"
 @inject NavigationManager NavigationManager
 
-<PageTitle>Unauthorized</PageTitle>
+<PageTitle>Login</PageTitle>
 
 <div class="container py-5" style="max-width: 680px;">
-    <div class="alert alert-danger mb-3">
-        You are not authorized to access this dashboard.
-    </div>
-    <p class="text-muted mb-3">Please login with the correct account or contact admin to update your role access.</p>
-    <div class="d-flex gap-2">
-        <button class="btn btn-primary" @onclick="GoToLogin">Go to Login</button>
-        <button class="btn btn-outline-secondary" @onclick="GoHome">Go Home</button>
+    <div class="alert alert-info mb-3">
+        Redirecting to login...
     </div>
 </div>
 
 @code {
-    private void GoToLogin() => NavigationManager.NavigateTo("/login", replace: true);
-    private void GoHome() => NavigationManager.NavigateTo("/", replace: true);
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/login", replace: true);
+    }
 }
+
+

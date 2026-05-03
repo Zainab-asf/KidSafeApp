@@ -1,4 +1,4 @@
-﻿@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -14,21 +14,21 @@
         {
             @switch (RoleState.CurrentRole)
             {
-                case KidSafeApp.States.AppRole.Child:
+                case AppRole.Child:
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="child/dashboard">
                             <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Child Dashboard
                         </NavLink>
                     </div>
                     break;
-                case KidSafeApp.States.AppRole.Parent:
+                case AppRole.Parent:
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="parent/dashboard">
                             <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Parent Dashboard
                         </NavLink>
                     </div>
                     break;
-                case KidSafeApp.States.AppRole.Teacher:
+                case AppRole.Teacher:
                     <div class="nav-item px-3">
                         <NavLink class="nav-link" href="teacher/dashboard">
                             <span class="bi bi-mortarboard-fill-nav-menu" aria-hidden="true"></span> Teacher Dashboard
@@ -39,3 +39,5 @@
         }
     </nav>
 </div>
+
+

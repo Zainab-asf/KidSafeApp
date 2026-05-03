@@ -1,4 +1,4 @@
-@using KidSafeApp.States
+@using KidSafeApp.StateManagement
 @inject AccountManager AccountManager
 @inject NavigationManager NavigationManager
 @implements IDisposable
@@ -71,3 +71,5 @@
         AccountManager.OnAccountsChanged -= StateHasChanged;
     }
 }
+
+

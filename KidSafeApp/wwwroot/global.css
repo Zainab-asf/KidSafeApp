@@ -1,0 +1,191 @@
+/* Global CSS Fixes and Enhancements */
+/* This file ensures all styling is properly applied and responsive */
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+#app {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main Page Layout */
+.page {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+main {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+article {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Dashboard Shells - Ensure Full Width & Height */
+.ks-app-shell {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.ks-dashboard {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ks-main {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ks-app-content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Teacher Shell Specific */
+.ks-teacher-shell {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ks-teacher-content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Parent Shell Specific */
+.ks-parent-shell {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.ks-parent-content {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure CSS Custom Properties Cascade */
+.page,
+main,
+article,
+.ks-app-shell,
+.ks-dashboard,
+.ks-main,
+.ks-app-content,
+.ks-teacher-shell,
+.ks-teacher-content,
+.ks-parent-shell,
+.ks-parent-content {
+    color: var(--ks-text);
+    background-color: transparent;
+}
+
+/* Fix for Content Sections */
+.ks-child-dashboard {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.ks-child-dashboard-body {
+    width: 100%;
+    flex: 1;
+}
+
+/* Ensure Responsive Behavior */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+
+    /* Bottom nav spacing is handled by MainLayout.razor.css via padding */
+}
+
+@media (max-width: 900px) {
+    body {
+        overflow-x: hidden;
+    }
+}
+
+/* Bottom Navbar Spacing Fix */
+body {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+/* Ensure Flexbox Children Fill Space */
+.page > *,
+main > *,
+article > * {
+    min-width: 0;
+}
+
+/* Dashboard max-width is applied in MainLayout to main.ks-main; avoid duplicating here. */
+
+/* Accessibility: Ensure Focus Visible */
+button, a, input, select, textarea {
+    outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--ks-green);
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .ks-bottom-nav {
+        display: none;
+    }
+}

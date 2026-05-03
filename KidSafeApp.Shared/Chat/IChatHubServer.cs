@@ -5,4 +5,5 @@ namespace KidSafeApp.Shared.Chat;
 public interface IChatHubServer
 {
 	Task SetUserOnline(UserDto user);
+	Task SendMessage(int toUserId, string content);
 }

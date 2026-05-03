@@ -1,10 +1,12 @@
 @namespace KidSafeApp.Components.Pages.Teacher
 @page "/teacher/dashboard"
 
-@inject KidSafeApp.States.RoleState RoleState
+<PageTitle>Teacher Classroom Dashboard</PageTitle>
+
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
-@inject HttpClient Client
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject TeacherDashboardApiClient DashboardApi
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -12,7 +14,7 @@
 }
 else if (!string.Equals(AuthState.User?.Role, "Teacher", StringComparison.OrdinalIgnoreCase))
 {
-    <NavigateTo href="/unauthorized" replace="true" />
+    <NavigateTo href="/login/teacher" replace="true" />
 }
 
 @if (!RoleState.IsRoleLoaded)
@@ -21,81 +23,120 @@ else if (!string.Equals(AuthState.User?.Role, "Teacher", StringComparison.Ordina
 }
 else
 {
-<div class="portal">
-    <header class="portal-header">
-        <div>
-            <h1 class="portal-title">Teacher Portal 👩‍🏫</h1>
-            <div class="portal-subtitle">Simple classroom overview for daily teaching.</div>
-        </div>
-
-        <div class="portal-actions">
-            <button class="btn btn-outline-secondary" type="button" @onclick="HandleBack">Back</button>
-            <button class="btn btn-outline-danger" type="button" @onclick="HandleLogout">Logout</button>
-        </div>
-    </header>
-
-    <section class="portal-grid">
-        <div class="portal-card">
-            <div class="portal-card-title">Courses 📚</div>
-            <div class="portal-stat">@_summary.TotalCourses</div>
-            <div class="portal-muted">@_summary.PublishedCourses published</div>
-        </div>
-
-        <div class="portal-card">
-            <div class="portal-card-title">Pending Reviews ⏳</div>
-            <div class="portal-stat">@_summary.PendingLessonSubmissions</div>
-            <div class="portal-muted">Lesson submissions pending completion</div>
-        </div>
-
-        <div class="portal-card">
-            <div class="portal-card-title">Assignments 📝</div>
-            <div class="portal-stat">@_summary.TotalLessons</div>
-            <div class="portal-muted">@_summary.PublishedLessons published lessons</div>
-        </div>
-
-        <div class="portal-card">
-            <div class="portal-card-title">Student Activity 📈</div>
-            @if (!string.IsNullOrWhiteSpace(_error))
-            {
-                <div class="small text-danger">@_error</div>
-            }
-            else if (_loading)
-            {
-                <div class="small text-secondary">Loading...</div>
-            }
-            else if (_courses.Count == 0)
-            {
-                <div class="small text-secondary">No course activity yet.</div>
-            }
-            else
-            {
-                <ul class="portal-list">
-                    @foreach (var c in _courses.Take(3))
-                    {
-                        <li>@c.Title - @(c.IsPublished ? "Published" : "Draft")</li>
-                    }
-                </ul>
-            }
-        </div>
-    </section>
-
-    <section class="portal-wide">
-        <div class="portal-card portal-card-wide">
-            <div class="portal-card-title">Quick Actions ⚡</div>
-            <div class="portal-controls">
-                <button class="btn btn-primary" type="button" @onclick="GoToAssignments">Create Assignment</button>
-                <button class="btn btn-outline-primary" type="button" @onclick="GoToClasses">Open Gradebook</button>
-                <button class="btn btn-outline-primary" type="button" @onclick="GoToReports">View Reports</button>
+    <TeacherPageShell Title="Teacher Classroom Dashboard">
+        @if (_loading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border" style="color: var(--ks-green);" role="status"></div>
             </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        else
+        {
+
+        <!-- Hero card matching parent style -->
+        <section class="hero-card">
+            <div class="hero-avatar">👩‍🏫</div>
+        <div class="hero-copy">
+            <div class="hero-greeting">Good morning,</div>
+            <div class="hero-title">@((AuthState.User?.Name) ?? "Teacher")</div>
+            <div class="hero-subtitle">Courses: @(_dashboard?.Summary.TotalCourses ?? 0)</div>
         </div>
-    </section>
-</div>
+        <div class="hero-score">
+            <div class="hero-score-value">@Math.Round(_dashboard?.Summary.AverageProgressPercent ?? 0, 0)%</div>
+            <small>Avg Progress</small>
+        </div>
+        </section>
+
+        <!-- Stat grid using parent tokens -->
+        <section class="stats-grid">
+            <article class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-value">@(_dashboard?.Summary.TotalLessons ?? 0)</div>
+                <div class="stat-label">Total Lessons</div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-value">@(_dashboard?.Summary.PendingLessonSubmissions ?? 0)</div>
+                <div class="stat-label">Pending Reviews</div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value">@(_dashboard?.Summary.CompletedLessonSubmissions ?? 0)</div>
+                <div class="stat-label">Completed</div>
+            </article>
+        </section>
+
+        <!-- Progress and weekly chart reuse parent panel-card -->
+        <section class="panel-card">
+            <h3>This Week's Activity</h3>
+            <div class="weekly-chart">
+                @foreach (var day in _dashboard?.Weekly ?? new List<WeeklyPointDto>())
+                {
+                    <div class="week-col">
+                        <div class="bar-stack">
+                            <div class="bar-block safe" style="height:@day.Safe%"></div>
+                            <div class="bar-block flagged" style="height:@day.Flagged%"></div>
+                            <div class="bar-block blocked" style="height:@day.Blocked%"></div>
+                        </div>
+                        <small>@day.Day</small>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <!-- Recent alerts using parent list style -->
+        <section class="panel-card">
+            <h3>Recent Alerts</h3>
+            <div class="parent-recent-list">
+                @if (_dashboard?.Courses is null || !_dashboard.Courses.Any())
+                {
+                    <div class="parent-empty-state">No recent alerts.</div>
+                }
+                else
+                {
+                    @foreach (var c in _dashboard.Courses.Take(6))
+                    {
+                        <div class="parent-recent-item">
+                            <div class="parent-recent-meta">
+                                <strong>@c.Title</strong>
+                                <small>@(c.IsPublished ? "Published" : "Draft")</small>
+                            </div>
+                            <span class="parent-alert-badge badge-info">Info</span>
+                        </div>
+                    }
+                }
+            </div>
+        </section>
+
+        <section class="quick-grid">
+            <button class="quick-card quick-primary" @onclick="GoToClasses">
+                <div class="quick-title">Manage Students</div>
+                <small>Open class management</small>
+            </button>
+            <button class="quick-card" @onclick="GoToReports">
+                <div class="quick-title">View Flagged</div>
+                <small>Open flagged messages</small>
+            </button>
+            <button class="quick-card" @onclick="GoToNotifications">
+                <div class="quick-title">Notifications</div>
+                <small>Open alerts feed</small>
+            </button>
+            <button class="quick-card" @onclick="GoToSettings">
+                <div class="quick-title">Settings</div>
+                <small>Profile & preferences</small>
+            </button>
+        </section>
+        }
+    </TeacherPageShell>
 }
 
 @code {
-    private TeacherSummaryDto _summary = new();
-    private List<CourseDto> _courses = new();
-    private bool _loading;
+    private TeacherDashboardDto? _dashboard;
+    private bool _loading = true;
     private string? _error;
 
     protected override async Task OnInitializedAsync()
@@ -109,8 +150,7 @@ else
         _error = null;
         try
         {
-            _summary = await Client.GetFromJsonAsync<TeacherSummaryDto>("api/teacher/courses/summary") ?? new();
-            _courses = await Client.GetFromJsonAsync<List<CourseDto>>("api/teacher/courses") ?? new();
+            _dashboard = await DashboardApi.GetDashboardAsync();
         }
         catch (Exception ex)
         {
@@ -135,4 +175,7 @@ else
     private void GoToAssignments() => NavigationManager.NavigateTo("/teacher/assignments");
 
     private void GoToReports() => NavigationManager.NavigateTo("/teacher/reports");
+    private void GoToNotifications() => NavigationManager.NavigateTo("/parent/notifications");
+    private void GoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+
 }

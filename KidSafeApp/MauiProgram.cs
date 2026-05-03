@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using KidSafeApp.Services;
-using KidSafeApp.States;
+using KidSafeApp.StateManagement;
 using System.Net.Http;
 
 namespace KidSafeApp
@@ -46,6 +46,9 @@ namespace KidSafeApp
             builder.Services.AddScoped<HubConnectionService>();
             builder.Services.AddScoped<AuthenticationService>();
             builder.Services.AddScoped<ParentDashboardApiClient>();
+            builder.Services.AddScoped<ChildDashboardApiClient>();
+            builder.Services.AddScoped<TeacherDashboardApiClient>();
+            builder.Services.AddScoped<AdminDashboardApiClient>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

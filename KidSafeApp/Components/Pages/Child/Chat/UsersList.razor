@@ -3,20 +3,20 @@
 @inject HttpClient Client
 
 <div class="d-flex align-items-center justify-content-between">
-    <h3 class="mb-2">Connected Classmates</h3>
+    <h3 class="mb-2">All Children</h3>
     @if (!Loading && Users.Count > 0)
     {
         <small class="text-muted badge bg-light text-dark">@Users.Count</small>
     }
 </div>
 
-<input class="form-control form-control-sm mb-2" placeholder="Search classmates..." @bind="_query" @bind:event="oninput" />
+<input class="form-control form-control-sm mb-2" placeholder="Search children..." @bind="_query" @bind:event="oninput" />
 <ul class="list-group list-group-flush">
     @if (Loading)
     {
         <li class="list-group-item">
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            Loading classmates...
+            Loading...
         </li>
     }
     else
@@ -24,16 +24,39 @@
         if (!FilteredUsers.Any())
         {
             <li class="list-group-item text-muted text-center py-3">
-                <small>No classmates found in your class</small>
+                <small>No other child users found.</small>
             </li>
         }
         else
         {
             foreach (var user in FilteredUsers)
             {
-                <li class="list-group-item d-flex align-items-center justify-content-between" @onclick="() => HandleUserClick(user)" style="cursor: pointer;">
-                    <span>@user.Name</span>
-                    <span class="badge rounded-pill bg-success">Online</span>
+                <li class="list-group-item d-flex align-items-center justify-content-between"
+                    @onclick="() => HandleUserClick(user)"
+                    style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="position: relative; width: 32px; height: 32px; flex-shrink: 0;">
+                            <div class="avatar-circle" style="width:32px;height:32px;">
+                                @if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+                                {
+                                    <img src="@user.AvatarUrl" alt="avatar" class="avatar-img" />
+                                }
+                                else
+                                {
+                                    <span class="avatar-initials">@GetInitials(user.Name)</span>
+                                }
+                            </div>
+                            @if (user.IsOnline)
+                            {
+                                <span style="position:absolute; bottom:0; right:0; width:9px; height:9px;
+                                             background:#28a745; border-radius:50%; border:2px solid white;"></span>
+                            }
+                        </div>
+                        <span class="text-truncate" style="max-width: 100px;">@user.Name</span>
+                    </div>
+                    <span class="badge rounded-pill @(user.IsOnline ? "bg-success" : "bg-secondary")">
+                        @(user.IsOnline ? "Online" : "Offline")
+                    </span>
                 </li>
             }
         }
@@ -59,5 +82,13 @@
     private async Task HandleUserClick(UserDto user)
     {
         await OnUserSelected.InvokeAsync(user);
+    }
+
+    private string GetInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return string.Concat(parts[0][0], parts[^1][0]).ToUpper();
     }
 }

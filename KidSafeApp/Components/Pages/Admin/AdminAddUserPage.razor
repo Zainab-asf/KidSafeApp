@@ -1,0 +1,11 @@
+@page "/admin/add-user"
+@inject NavigationManager Nav
+
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.NavigateTo("/admin/users", replace: true);
+    }
+}
+
+

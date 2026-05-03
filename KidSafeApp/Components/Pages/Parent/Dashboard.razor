@@ -1,10 +1,13 @@
 @namespace KidSafeApp.Components.Pages.Parent
 @page "/parent/dashboard"
+@using KidSafeApp.Services
 
-@inject KidSafeApp.States.RoleState RoleState
+<PageTitle>Parent Safety Dashboard</PageTitle>
+
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject ParentDashboardApiClient ParentApiClient
-@inject KidSafeApp.States.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
 
 @if (!AuthState.IsAuthenticated)
 {
@@ -12,7 +15,7 @@
 }
 else if (!string.Equals(AuthState.User?.Role, "Parent", StringComparison.OrdinalIgnoreCase))
 {
-    <NavigateTo href="/unauthorized" replace="true" />
+    <NavigateTo href="/login/parent" replace="true" />
 }
 
 @if (!RoleState.IsRoleLoaded)
@@ -22,20 +25,37 @@ else if (!string.Equals(AuthState.User?.Role, "Parent", StringComparison.Ordinal
 else
 {
 <ParentPageShell>
-    @if (!string.IsNullOrWhiteSpace(_error))
+    @if (_loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="color: var(--ks-green);" role="status"></div>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
     {
         <div class="alert alert-danger mt-3">@_error</div>
     }
+    else
+    {
 
     <section class="hero-card">
         <div class="hero-avatar">👧</div>
         <div class="hero-copy">
-            <div class="hero-greeting">Hello, @(_parentName) 👋</div>
-            <div class="hero-title">Monitoring @_childName</div>
-            <div class="hero-subtitle">Grade @_childGrade • @_safeStreak-day safe streak</div>
+            <div class="hero-greeting">Hello, @(_dashboard?.ParentName ?? string.Empty) 👋</div>
+            <div class="hero-title">
+                @if (_dashboard?.HasLinkedChild == true)
+                {
+                    <span>Monitoring @_dashboard.ChildName</span>
+                }
+                else
+                {
+                    <span>No linked child</span>
+                }
+            </div>
+            <div class="hero-subtitle">@HeroSubtitle</div>
         </div>
         <div class="hero-score">
-            <div class="hero-score-value">@_safeRate%</div>
+            <div class="hero-score-value">@(_dashboard?.SafeRate ?? 0)%</div>
             <small>Safe Rate</small>
         </div>
     </section>
@@ -43,17 +63,17 @@ else
     <section class="stats-grid">
         <article class="stat-card stat-red">
             <div class="stat-icon">🚩</div>
-            <div class="stat-value">@_flaggedCount</div>
+            <div class="stat-value">@(_dashboard?.FlaggedCount ?? 0)</div>
             <div class="stat-label">Flagged</div>
         </article>
         <article class="stat-card stat-yellow">
             <div class="stat-icon">🔔</div>
-            <div class="stat-value">@_unreadAlerts</div>
+            <div class="stat-value">@(_dashboard?.UnreadAlerts ?? 0)</div>
             <div class="stat-label">Unread Alerts</div>
         </article>
         <article class="stat-card stat-green">
             <div class="stat-icon">🏅</div>
-            <div class="stat-value">@_badgesEarned</div>
+            <div class="stat-value">@(_dashboard?.BadgesEarned ?? 0)</div>
             <div class="stat-label">Badges Earned</div>
         </article>
     </section>
@@ -63,36 +83,36 @@ else
         <div class="progress-line">
             <div class="progress-row">
                 <span>Safe Messages</span>
-                <strong>@_safeMessages</strong>
+                <strong>@(_dashboard?.SafeMessages ?? 0)</strong>
             </div>
-            <div class="progress-track"><div class="progress-fill green" style="width:@_safeBar%"></div></div>
+            <div class="progress-track"><div class="progress-fill green" style="width:@(_dashboard?.SafeBar ?? 0)%"></div></div>
         </div>
         <div class="progress-line">
             <div class="progress-row">
                 <span>Flagged Events</span>
-                <strong>@_flaggedCount</strong>
+                <strong>@(_dashboard?.FlaggedCount ?? 0)</strong>
             </div>
-            <div class="progress-track"><div class="progress-fill yellow" style="width:@_flaggedBar%"></div></div>
+            <div class="progress-track"><div class="progress-fill yellow" style="width:@(_dashboard?.FlaggedBar ?? 0)%"></div></div>
         </div>
         <div class="progress-line">
             <div class="progress-row">
                 <span>Badges Earned</span>
-                <strong>@_badgesEarned</strong>
+                <strong>@(_dashboard?.BadgesEarned ?? 0)</strong>
             </div>
-            <div class="progress-track"><div class="progress-fill blue" style="width:@_badgeBar%"></div></div>
+            <div class="progress-track"><div class="progress-fill blue" style="width:@(_dashboard?.BadgeBar ?? 0)%"></div></div>
         </div>
     </section>
 
     <section class="panel-card">
         <h3>Weekly Activity</h3>
         <div class="weekly-chart">
-            @foreach (var day in _weekly)
+            @foreach (var day in _dashboard?.Weekly ?? new List<WeeklyPointDto>())
             {
                 <div class="week-col">
                     <div class="bar-stack">
-                        <div class="bar-block safe" style="height:@day.SafeHeight%"></div>
-                        <div class="bar-block flagged" style="height:@day.FlaggedHeight%"></div>
-                        <div class="bar-block blocked" style="height:@day.BlockedHeight%"></div>
+                        <div class="bar-block safe" style="height:@day.Safe%"></div>
+                        <div class="bar-block flagged" style="height:@day.Flagged%"></div>
+                        <div class="bar-block blocked" style="height:@day.Blocked%"></div>
                     </div>
                     <small>@day.Day</small>
                 </div>
@@ -109,7 +129,7 @@ else
         <button class="quick-card quick-primary" @onclick="GoToProgress">
             <div>
                 <div class="quick-title">View Reports</div>
-                <small>@_newFlags new flags</small>
+                <small>@(_dashboard?.NewFlags ?? 0) new flags</small>
             </div>
         </button>
         <button class="quick-card" @onclick="GoToFlagged">
@@ -121,7 +141,7 @@ else
         <button class="quick-card" @onclick="GoToNotifications">
             <div>
                 <div class="quick-title">View Alerts</div>
-                <small>@_unreadAlerts unread alerts</small>
+                <small>@(_dashboard?.UnreadAlerts ?? 0) unread alerts</small>
             </div>
         </button>
         <button class="quick-card" @onclick="GoToSettings">
@@ -131,36 +151,69 @@ else
             </div>
         </button>
     </section>
+
+    <section class="parent-enhanced-grid">
+        <article class="panel-card parent-insights-card">
+            <h3>Safety Overview</h3>
+            <div class="parent-insight-row">
+                <span>Safe Rate</span>
+                <strong>@(_dashboard?.SafeRate ?? 0)%</strong>
+            </div>
+            <div class="parent-insight-row">
+                <span>Unread Alerts</span>
+                <strong>@(_dashboard?.UnreadAlerts ?? 0)</strong>
+            </div>
+            <div class="parent-insight-row">
+                <span>Flagged Signals</span>
+                <strong>@(_dashboard?.FlaggedCount ?? 0)</strong>
+            </div>
+            <div class="parent-insight-row">
+                <span>Safe Streak</span>
+                <strong>@(_dashboard?.SafeStreak ?? 0) days</strong>
+            </div>
+            <a class="parent-link-btn" href="/parent/progress">See detailed report</a>
+        </article>
+
+        <article class="panel-card parent-recent-card">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                <h3 class="m-0">Recent Alerts</h3>
+                <a class="parent-link-inline" href="/parent/notifications">View all</a>
+            </div>
+
+            @if (_dashboard is null || _dashboard.RecentAlerts.Count == 0)
+            {
+                <div class="parent-empty-state">No recent alerts.</div>
+            }
+            else
+            {
+                <div class="parent-recent-list">
+                    @foreach (var alert in _dashboard.RecentAlerts)
+                    {
+                        <div class="parent-recent-item">
+                            <div class="parent-recent-meta">
+                                <strong>@alert.Title</strong>
+                                <small>@alert.CreatedAt.ToLocalTime().ToString("g")</small>
+                            </div>
+                            <span class="parent-alert-badge @GetAlertBadgeClass(alert)">@GetAlertBadgeText(alert)</span>
+                        </div>
+                    }
+                </div>
+            }
+        </article>
+    </section>
+    }
 </ParentPageShell>
 }
 
 @code {
     private string? _error;
-    private IReadOnlyList<NotificationDto> _notifications = Array.Empty<NotificationDto>();
-    private string _parentName = "Fatima";
-    private string _childName = "Ali Hassan";
-    private string _childGrade = "Grade 5A";
-    private int _safeRate = 91;
-    private int _flaggedCount;
-    private int _unreadAlerts;
-    private int _badgesEarned;
-    private int _safeMessages;
-    private int _safeBar;
-    private int _flaggedBar;
-    private int _badgeBar;
-    private int _safeStreak = 5;
-    private int _newFlags = 2;
+    private ParentDashboardDto? _dashboard;
+    private bool _loading = true;
 
-    private readonly List<WeeklyPoint> _weekly = new()
-    {
-        new("Mon", 70, 8, 1),
-        new("Tue", 88, 5, 1),
-        new("Wed", 62, 10, 1),
-        new("Thu", 95, 3, 1),
-        new("Fri", 66, 7, 1),
-        new("Sat", 45, 4, 1),
-        new("Sun", 30, 2, 1)
-    };
+    private string HeroSubtitle
+        => _dashboard?.HasLinkedChild == true
+            ? $"{_dashboard.ChildGrade} • {_dashboard.SafeStreak}-day safe streak"
+            : "Link a child to see progress";
 
     protected override async Task OnInitializedAsync()
     {
@@ -171,22 +224,20 @@ else
     {
         try
         {
-            _notifications = await ParentApiClient.GetNotificationsAsync();
-
-            _flaggedCount = Math.Max(0, _notifications.Count(ParentDashboardApiClient.IsFlaggedSignal));
-            _unreadAlerts = _notifications.Count(n => !n.IsRead);
-            _badgesEarned = Math.Max(0, _notifications.Count(n => (n.Title ?? string.Empty).Contains("badge", StringComparison.OrdinalIgnoreCase)));
-            _safeMessages = 163;
-            _safeBar = 100;
-            _flaggedBar = 40;
-            _badgeBar = 70;
-            _safeRate = 91;
-            _newFlags = Math.Max(0, _notifications.Count(n => !n.IsRead && ParentDashboardApiClient.IsFlaggedSignal(n)));
-            _safeStreak = 5;
+            _loading = true;
+            _dashboard = await ParentApiClient.GetDashboardAsync();
+            if (_dashboard is null)
+            {
+                _dashboard = new ParentDashboardDto();
+            }
         }
         catch (Exception ex)
         {
             _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 
@@ -194,6 +245,22 @@ else
     private void GoToFlagged() => NavigationManager.NavigateTo("/parent/flagged");
     private void GoToProgress() => NavigationManager.NavigateTo("/parent/progress");
     private void GoToSettings() => NavigationManager.NavigateTo("/parent/settings");
+
+    private static string GetAlertBadgeText(NotificationDto alert)
+    {
+        var title = alert.Title ?? string.Empty;
+        if (ParentDashboardApiClient.IsFlaggedSignal(alert)) return "Flagged";
+        if (title.Contains("badge", StringComparison.OrdinalIgnoreCase)) return "Achievement";
+        return "Info";
+    }
+
+    private static string GetAlertBadgeClass(NotificationDto alert)
+    {
+        var title = alert.Title ?? string.Empty;
+        if (ParentDashboardApiClient.IsFlaggedSignal(alert)) return "badge-flagged";
+        if (title.Contains("badge", StringComparison.OrdinalIgnoreCase)) return "badge-achievement";
+        return "badge-info";
+    }
 
     private sealed record WeeklyPoint(string Day, int SafeHeight, int FlaggedHeight, int BlockedHeight);
 }

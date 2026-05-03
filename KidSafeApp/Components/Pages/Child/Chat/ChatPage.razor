@@ -4,11 +4,11 @@
 @using KidSafeApp.Helpers
 @using KidSafeApp.Constants
 @inject HttpClient Client
-@inject KidSafeApp.States.RoleState RoleState
+@inject KidSafeApp.StateManagement.RoleState RoleState
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
-@inject KidSafeApp.States.AuthenticationState AuthState
-@inject KidSafeApp.States.AdminSessionState AdminSession
+@inject KidSafeApp.StateManagement.AuthenticationState AuthState
+@inject KidSafeApp.StateManagement.AdminSessionState AdminSession
 @inject KidSafeApp.Services.HubConnectionService HubService
 @inject KidSafeApp.Services.AuthenticationService AuthService
 
@@ -23,6 +23,17 @@
                     <div class="small text-muted">@AuthenticationState?.User?.Name</div>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
+                    @if (!HubService.IsConnected)
+                    {
+                        <span class="badge bg-warning text-dark">
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            Connecting...
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Connected</span>
+                    }
                     <button type="button" class="btn btn-outline-secondary" @onclick="HandleBack">Back</button>
                     <button type="button" class="btn btn-outline-danger" @onclick="HandleLogout">Logout</button>
                 </div>
@@ -34,9 +45,9 @@
                     <ChatsList Loading="_loadingUsers" Chats="Chats" OnUserSelected="OnUserSelected" />
                 </div>
                 <div class="col-12 col-lg-6 d-flex px-0 ks-chat-pane">
-                    <ChatDetails SelectedUser="_selectedUser" 
+                    <ChatDetails SelectedUser="_selectedUser"
                         NewIncomingMessage="@_newIncomingMessage"
-                        OnIncomingMessageRecieved = "()=> _newIncomingMessage = null"
+                        OnIncomingMessageRecieved="OnIncomingMessageHandled"
                         OnCancel="HandleChatDetailsCancel" />
                 </div>
                 <div class="col-12 col-lg-3 ks-chat-pane">
@@ -52,7 +63,7 @@
     public AuthenticationState? AuthenticationState { get; set; }
 
     private bool _loadingUsers = false;
-    public ICollection<UserDto> Users { get; set; } = new HashSet<UserDto>();
+    public ICollection<UserDto> Users { get; set; } = new List<UserDto>();
     public IList<UserDto> Chats { get; set; } = new List<UserDto>();
 
     private UserDto? _selectedUser = null;
@@ -70,16 +81,17 @@
         try
         {
             _loadingUsers = true;
+            StateHasChanged();
 
-            // Load users and chats in parallel
-            var userListTask = GetClient().GetFromJsonAsync<ICollection<UserDto>>(
-                ChatPageConstants.GetUsersEndpoint, JsonConverter.JsonSerializerOptions);
-            var chatListTask = GetClient().GetFromJsonAsync<IList<UserDto>>(
-                ChatPageConstants.GetChatsEndpoint, JsonConverter.JsonSerializerOptions);
-
-            // Connect to hub and await data loading
-            await HubService.ConnectAsync();
+            // Connect hub and set user online
+            await HubService.InitializeAsync();
             RegisterHubEventHandlers();
+
+            // Load users list and existing chats in parallel
+            var userListTask = GetClient().GetFromJsonAsync<ICollection<UserDto>>(
+                ChatPageConstants.GetUsersEndpoint, JsonHelper.DefaultOptions);
+            var chatListTask = GetClient().GetFromJsonAsync<IList<UserDto>>(
+                ChatPageConstants.GetChatsEndpoint, JsonHelper.DefaultOptions);
 
             var usersList = await userListTask;
             if (usersList is not null)
@@ -91,12 +103,6 @@
             if (chatsList is not null)
             {
                 Chats = chatsList;
-            }
-
-            // Mark user as online
-            if (AuthenticationState?.User is not null)
-            {
-                await HubService.SetUserOnlineAsync(AuthenticationState.User);
             }
         }
         catch (HttpRequestException)
@@ -118,20 +124,31 @@
         finally
         {
             _loadingUsers = false;
+            StateHasChanged();
         }
     }
 
     private void RegisterHubEventHandlers()
     {
+        // A new user came online
         HubService.OnUserConnected += async user =>
         {
             await InvokeAsync(() =>
             {
-                Users.Add(user);
+                var existing = Users.FirstOrDefault(u => u.Id == user.Id);
+                if (existing is not null)
+                {
+                    existing.IsOnline = true;
+                }
+                else
+                {
+                    Users.Add(user);
+                }
                 StateHasChanged();
             });
         };
 
+        // Bulk online-users snapshot sent on connect
         HubService.OnOnlineUsersList += async users =>
         {
             await InvokeAsync(() =>
@@ -145,6 +162,7 @@
             });
         };
 
+        // A specific user went online (disconnect fires UserIsOnline with offline intent – kept for online only)
         HubService.OnUserIsOnline += async userId =>
         {
             await InvokeAsync(() =>
@@ -158,21 +176,42 @@
             });
         };
 
+        // Incoming message
         HubService.OnMessageReceived += async messageDto =>
         {
             await InvokeAsync(() =>
             {
+                // Find the sender in users list
                 var fromUser = Users.FirstOrDefault(u => u.Id == messageDto.FromUserId);
                 if (fromUser is null)
                 {
+                    // Unknown user - reload user list
+                    _ = RefreshParticipantsAsync();
                     return;
                 }
 
-                if (!Chats.Any(c => c.Id == messageDto.FromUserId))
+                // Move/add sender to top of Chats list
+                var existingChat = Chats.FirstOrDefault(c => c.Id == messageDto.FromUserId);
+                if (existingChat is null)
                 {
+                    fromUser.UnreadCount = 1;
                     Chats.Insert(0, fromUser);
                 }
-                else if (_selectedUser?.Id == messageDto.FromUserId)
+                else
+                {
+                    // Move to top
+                    Chats.Remove(existingChat);
+                    Chats.Insert(0, existingChat);
+
+                    // Increment unread only if this chat is not currently selected
+                    if (_selectedUser?.Id != messageDto.FromUserId)
+                    {
+                        existingChat.UnreadCount++;
+                    }
+                }
+
+                // If this conversation is open, pass message to ChatDetails
+                if (_selectedUser?.Id == messageDto.FromUserId)
                 {
                     _newIncomingMessage = messageDto;
                 }
@@ -191,7 +230,7 @@
     {
         if (!string.IsNullOrWhiteSpace(AuthService.CurrentToken))
         {
-            Client.DefaultRequestHeaders.Authorization = 
+            Client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", AuthService.CurrentToken);
         }
         return Client;
@@ -202,9 +241,9 @@
         try
         {
             var refreshedUsers = await GetClient().GetFromJsonAsync<ICollection<UserDto>>(
-                ChatPageConstants.GetUsersEndpoint, JsonConverter.JsonSerializerOptions);
+                ChatPageConstants.GetUsersEndpoint, JsonHelper.DefaultOptions);
             var refreshedChats = await GetClient().GetFromJsonAsync<IList<UserDto>>(
-                ChatPageConstants.GetChatsEndpoint, JsonConverter.JsonSerializerOptions);
+                ChatPageConstants.GetChatsEndpoint, JsonHelper.DefaultOptions);
 
             await InvokeAsync(() =>
             {
@@ -215,30 +254,42 @@
         }
         catch
         {
-            // Ignore transient sync failures; next reconnect/event will retry.
+            // Ignore transient sync failures
         }
     }
 
     private async Task OnUserSelected(UserDto user)
     {
-        _selectedUser = user;
-
-        var selectedChatUser = Chats.FirstOrDefault(c => c.IsSelected);
-        if (selectedChatUser is not null)
+        // Deselect old
+        var previously = Chats.FirstOrDefault(c => c.IsSelected);
+        if (previously is not null)
         {
-            selectedChatUser.IsSelected = false;
+            previously.IsSelected = false;
         }
 
+        _selectedUser = user;
+        _newIncomingMessage = null;
+
+        // Add to chats list if not already there
         var chatUser = Chats.FirstOrDefault(c => c.Id == user.Id);
         if (chatUser is null)
         {
             user.IsSelected = true;
-            Chats.Add(user);
+            user.UnreadCount = 0;
+            Chats.Insert(0, user);
         }
         else
         {
             chatUser.IsSelected = true;
+            chatUser.UnreadCount = 0; // Clear unread when opening
         }
+
+        StateHasChanged();
+    }
+
+    private void OnIncomingMessageHandled()
+    {
+        _newIncomingMessage = null;
     }
 
     private async Task HandleChatDetailsCancel(bool shouldRemoveFromChatsList)
@@ -255,7 +306,7 @@
         await HubService.DisconnectAsync();
         try
         {
-            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.States.AuthenticationState.AuthStoreKey);
+            await JsRuntime.InvokeVoidAsync("window.removeFromStorage", KidSafeApp.StateManagement.AuthenticationState.AuthStoreKey);
         }
         catch
         {
@@ -268,9 +319,9 @@
     {
         NavigationManager.NavigateTo(RoleState.CurrentRole switch
         {
-            KidSafeApp.States.AppRole.Child => "/child/dashboard",
-            KidSafeApp.States.AppRole.Parent => "/parent/dashboard",
-            KidSafeApp.States.AppRole.Teacher => "/teacher/dashboard",
+            AppRole.Child => "/child/dashboard",
+            AppRole.Parent => "/parent/dashboard",
+            AppRole.Teacher => "/teacher/dashboard",
             _ => "/"
         });
     }

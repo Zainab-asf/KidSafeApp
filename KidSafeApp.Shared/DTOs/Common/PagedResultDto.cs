@@ -2,11 +2,9 @@ namespace KidSafeApp.Shared.DTOs.Common;
 
 public sealed class PagedResultDto<T>
 {
-    public IReadOnlyList<T> Items { get; init; } = Array.Empty<T>();
-    public int TotalCount { get; init; }
-    public int PageNumber { get; init; }
-    public int PageSize { get; init; }
-
-    public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling((double)TotalCount / PageSize);
+    public required IReadOnlyList<T> Items { get; init; }
+    public required int PageNumber { get; init; }
+    public required int PageSize { get; init; }
+    public required int TotalCount { get; init; }
+    public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 }
-

@@ -20,7 +20,10 @@ namespace KidSafeApp.Backend.Data.Migrations
                     Name = table.Column<string>(type: "varchar(25)", unicode: false, maxLength: 25, nullable: false),
                     AddedOn = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Username = table.Column<string>(type: "varchar(50)", unicode: false, maxLength: 50, nullable: false),
-                    Password = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
+                    Password = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Role = table.Column<string>(type: "varchar(20)", unicode: false, maxLength: 20, nullable: false),
+                    IsApproved = table.Column<bool>(type: "bit", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {

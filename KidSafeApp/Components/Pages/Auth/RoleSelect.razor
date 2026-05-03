@@ -1,7 +1,8 @@
 @page "/auth"
+@using KidSafeApp.StateManagement
 
 @inject NavigationManager Navigation
-@inject KidSafeApp.States.RoleState RoleState
+@inject RoleState RoleState
 
 <div class="auth-page">
   <div class="auth-card">
@@ -23,6 +24,11 @@
         <div class="auth-option-title">I am a Teacher 👩‍🏫</div>
         <div class="auth-option-text">Manage classes, assign lessons, and review activity.</div>
       </button>
+
+      <button class="auth-option auth-admin" @onclick="GoToAdmin">
+        <div class="auth-option-title">I am an Admin 🛡️</div>
+        <div class="auth-option-text">Manage users, monitor system, and configure settings.</div>
+      </button>
     </div>
 
     <p class="auth-hint">You can switch dashboards later from the left navigation.</p>
@@ -32,22 +38,27 @@
 @code {
   private async Task GoToChild()
   {
-    RoleState.SelectRole(KidSafeApp.States.AppRole.Child);
-    await RoleState.InitializeAsync(KidSafeApp.States.AppRole.Child);
- Navigation.NavigateTo("/child/dashboard", replace: true);
+    RoleState.SelectRole(AppRole.Child);
+    await RoleState.InitializeAsync(AppRole.Child);
+    Navigation.NavigateTo("/child/dashboard", replace: true);
   }
 
   private async Task GoToParent()
   {
-    RoleState.SelectRole(KidSafeApp.States.AppRole.Parent);
-    await RoleState.InitializeAsync(KidSafeApp.States.AppRole.Parent);
- Navigation.NavigateTo("/parent/dashboard", replace: true);
+    RoleState.SelectRole(AppRole.Parent);
+    await RoleState.InitializeAsync(AppRole.Parent);
+    Navigation.NavigateTo("/parent/dashboard", replace: true);
   }
 
   private async Task GoToTeacher()
   {
-    RoleState.SelectRole(KidSafeApp.States.AppRole.Teacher);
-    await RoleState.InitializeAsync(KidSafeApp.States.AppRole.Teacher);
- Navigation.NavigateTo("/teacher/dashboard", replace: true);
+    RoleState.SelectRole(AppRole.Teacher);
+    await RoleState.InitializeAsync(AppRole.Teacher);
+    Navigation.NavigateTo("/teacher/dashboard", replace: true);
+  }
+
+  private void GoToAdmin()
+  {
+    Navigation.NavigateTo("/admin-login", replace: true);
   }
 }
