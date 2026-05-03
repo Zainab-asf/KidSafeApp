@@ -10,7 +10,7 @@ namespace KidSafeApp.States
         public event PropertyChangedEventHandler? PropertyChanged;
         //public int Id { get; set; }
         //public string? Name { get; set; }
-        public UserDto User { get; set; } = default;
+        public UserDto? User { get; set; }
         public string? Token { get; set; }
 
         private bool _isAuthenticated;

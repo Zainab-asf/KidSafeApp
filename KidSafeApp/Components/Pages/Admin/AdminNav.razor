@@ -1,0 +1,55 @@
+@* AdminNav.razor — Drop into MainLayout or each admin page *@
+@inject NavigationManager Nav
+
+<nav class="anav-sidebar">
+    <div class="anav-brand">
+        <div class="anav-logo"><i class="bi bi-shield-check"></i></div>
+        <span>KidSafe</span>
+    </div>
+
+    <div class="anav-links">
+        <NavLink class="anav-item" href="/admin/dashboard" Match="NavLinkMatch.All">
+            <i class="bi bi-grid"></i><span>Overview</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/child-chat">
+            <i class="bi bi-chat-dots"></i><span>Child Chat</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/parent-portal">
+            <i class="bi bi-people"></i><span>Parents</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/teacher-module">
+            <i class="bi bi-mortarboard"></i><span>Teachers</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/users">
+            <i class="bi bi-person-gear"></i><span>Users</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/add-user">
+            <i class="bi bi-person-plus"></i><span>Add User</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/notifications">
+            <i class="bi bi-bell"></i><span>Alerts</span>
+        </NavLink>
+        <NavLink class="anav-item" href="/admin/settings">
+            <i class="bi bi-gear"></i><span>Settings</span>
+        </NavLink>
+    </div>
+</nav>
+
+@* Mobile bottom nav *@
+<nav class="anav-mobile">
+    <NavLink class="anav-mob-item" href="/admin/dashboard" Match="NavLinkMatch.All">
+        <i class="bi bi-grid"></i><span>Home</span>
+    </NavLink>
+    <NavLink class="anav-mob-item" href="/admin/users">
+        <i class="bi bi-person-gear"></i><span>Users</span>
+    </NavLink>
+    <NavLink class="anav-mob-item" href="/admin/child-chat">
+        <i class="bi bi-chat-dots"></i><span>Chats</span>
+    </NavLink>
+    <NavLink class="anav-mob-item" href="/admin/notifications">
+        <i class="bi bi-bell"></i><span>Alerts</span>
+    </NavLink>
+    <NavLink class="anav-mob-item" href="/admin/settings">
+        <i class="bi bi-gear"></i><span>Settings</span>
+    </NavLink>
+</nav>

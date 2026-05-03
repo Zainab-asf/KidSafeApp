@@ -1,0 +1,25 @@
+@namespace KidSafeApp.Components.Shared.Parent
+
+@if (!string.IsNullOrWhiteSpace(Title))
+{
+    <div class="container-fluid py-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div>
+                <h2 class="mb-0">@Title</h2>
+            </div>
+        </div>
+        @ChildContent
+    </div>
+}
+else
+{
+    <div class="container-fluid py-3">
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
+
