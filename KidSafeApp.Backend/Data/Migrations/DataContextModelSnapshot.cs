@@ -460,6 +460,9 @@ namespace KidSafeApp.Backend.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Username")
+                        .IsUnique();
+
                     b.ToTable("User");
                 });
 

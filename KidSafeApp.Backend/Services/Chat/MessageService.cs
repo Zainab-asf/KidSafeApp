@@ -262,6 +262,7 @@ public sealed class MessageService : IMessageService
 
     private async Task<bool> HasSharedClassAccessAsync(int childId, int otherUserId, string otherUserRole, CancellationToken cancellationToken)
     {
+        // Children can chat with any other active, approved child user
         if (string.IsNullOrWhiteSpace(otherUserRole)
             || string.Equals(otherUserRole, "Child", StringComparison.OrdinalIgnoreCase))
         {
@@ -269,10 +270,10 @@ public sealed class MessageService : IMessageService
                 .AsNoTracking()
                 .AnyAsync(u => u.Id == otherUserId
                                && u.IsActive
-                               && u.IsApproved
-                               && (u.Role == "Child" || u.Role == "child" || u.Role == string.Empty), cancellationToken);
+                               && u.IsApproved, cancellationToken);
         }
 
+        // Children can chat with their own classroom's teacher
         var childClassIds = await _dbContext.ClassRoomStudents
             .AsNoTracking()
             .Where(cs => cs.StudentId == childId)

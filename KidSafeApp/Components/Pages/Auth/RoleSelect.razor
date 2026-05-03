@@ -57,10 +57,8 @@
     Navigation.NavigateTo("/teacher/dashboard", replace: true);
   }
 
-  private async Task GoToAdmin()
+  private void GoToAdmin()
   {
-    RoleState.SelectRole(AppRole.Admin);
-    await RoleState.InitializeAsync(AppRole.Admin);
-    Navigation.NavigateTo("/admin/dashboard", replace: true);
+    Navigation.NavigateTo("/admin-login", replace: true);
   }
 }

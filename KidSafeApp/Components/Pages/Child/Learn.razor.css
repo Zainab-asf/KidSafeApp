@@ -1,12 +1,12 @@
+/* ===== Learn Page - Unified Design System ===== */
+
 .ks-learn-container {
-    --ks-primary: var(--ks-green);
-    --ks-primary-dark: var(--ks-green-dark);
     width: 100%;
     margin: 0;
     padding: 0 1rem;
 }
 
-/* HEADER */
+/* ===== Header ===== */
 .ks-learn-header {
     display: flex;
     align-items: flex-start;
@@ -42,25 +42,25 @@
     align-items: center;
     justify-content: center;
     padding: 1.25rem;
-    border-radius: 1rem;
-    border: 1px solid rgba(132, 204, 22, 0.26);
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.16) 0%, rgba(132, 204, 22, 0.08) 100%);
+    border-radius: var(--ks-radius-lg);
+    border: 1px solid var(--ks-border);
+    background: var(--ks-green-bg);
     min-width: 100px;
 }
 
 .ks-stat-value {
     font-size: 1.75rem;
     font-weight: 900;
-    color: var(--ks-primary);
+    color: var(--ks-green);
 }
 
 .ks-stat-label {
-    font-size: 0.85rem;
+    font-size: var(--ks-fs-sm);
     color: var(--ks-muted);
     margin-top: 0.25rem;
 }
 
-/* CATEGORY TABS */
+/* ===== Category Tabs ===== */
 .ks-category-tabs {
     display: flex;
     gap: 0.75rem;
@@ -71,60 +71,63 @@
 
 .ks-tab {
     padding: 0.75rem 1.25rem;
-    border-radius: 10px;
-    border: 1.5px solid rgba(15, 23, 42, 0.15);
-    background: white;
-    color: var(--ks-green-dark);
+    border-radius: var(--ks-radius);
+    border: 1.5px solid var(--ks-border-strong);
+    background: var(--ks-surface);
+    color: var(--ks-text-secondary);
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.3s ease;
+    transition: var(--ks-transition);
 }
 
-.ks-tab:hover {
-    border-color: var(--ks-primary);
-    background: rgba(132, 204, 22, 0.10);
-}
+    .ks-tab:hover {
+        border-color: var(--ks-green);
+        background: var(--ks-green-bg);
+        color: var(--ks-green-dark);
+    }
 
-.ks-tab.active {
-    background: linear-gradient(135deg, var(--ks-primary) 0%, var(--ks-primary-dark) 100%);
-    color: white;
-    border-color: var(--ks-primary);
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.24);
-}
+    .ks-tab.active {
+        background: linear-gradient(135deg, var(--ks-green) 0%, var(--ks-green-dark) 100%);
+        /* FIX: was `color: #fff` — keep #fff for text on coloured bg */
+        color: #fff;
+        border-color: var(--ks-green);
+        box-shadow: var(--ks-shadow);
+    }
 
-/* FEATURED COURSE */
+/* ===== Featured Course ===== */
 .ks-featured-course {
-    background: linear-gradient(135deg, var(--ks-primary) 0%, var(--ks-primary-dark) 100%);
-    border-radius: .9rem;
+    background: linear-gradient(135deg, var(--ks-green) 0%, var(--ks-green-dark) 100%);
+    border-radius: var(--ks-radius-lg);
     padding: 2rem;
     margin-bottom: 2.5rem;
-    color: white;
+    /* FIX: was `color: white` — use #fff consistently */
+    color: #fff;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+    box-shadow: var(--ks-shadow-md);
 }
 
-.ks-featured-course::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -10%;
-    width: 400px;
-    height: 400px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    pointer-events: none;
-}
+    .ks-featured-course::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        pointer-events: none;
+    }
 
 .ks-featured-badge {
     display: inline-block;
     padding: 0.4rem 0.9rem;
-    border-radius: 999px;
+    border-radius: var(--ks-radius-full);
     background: rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: var(--ks-fs-xs);
     margin-bottom: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
@@ -143,7 +146,7 @@
 .ks-featured-course p {
     margin: 0 0 1rem 0;
     font-size: 1.05rem;
-    line-height: 1.6;
+    line-height: var(--ks-lh-relaxed);
     opacity: 0.95;
     max-width: 70ch;
 }
@@ -156,25 +159,20 @@
     opacity: 0.9;
 }
 
+/* Featured course has an inverted button — white bg, green text */
 .ks-featured-course .btn-primary {
-    background: white;
-    color: var(--ks-primary);
+    background: var(--ks-surface);
+    color: var(--ks-green);
     font-weight: 700;
     border: none;
 }
 
-.ks-featured-course .btn-primary,
-.ks-learn-card .btn,
-.ks-tab {
-    color: inherit;
-}
+    .ks-featured-course .btn-primary:hover {
+        background: var(--ks-surface-2);
+        transform: translateY(-2px);
+    }
 
-.ks-featured-course .btn-primary:hover {
-    background: rgba(255, 255, 255, 0.9);
-    transform: translateY(-2px);
-}
-
-/* LEARN GRID */
+/* ===== Learn Grid ===== */
 .ks-learn-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -182,43 +180,35 @@
 }
 
 .ks-learn-card {
-    background: white;
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    border-radius: .9rem;
+    background: var(--ks-surface);
+    border: 1px solid var(--ks-border);
+    border-radius: var(--ks-radius-lg);
     overflow: hidden;
-    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--ks-shadow);
+    transition: var(--ks-transition);
     position: relative;
     display: flex;
     flex-direction: column;
 }
 
-.ks-learn-card:hover {
-    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
-    border-color: rgba(15, 23, 42, 0.06);
-    transform: none;
-}
+    .ks-learn-card:hover {
+        box-shadow: var(--ks-shadow-md);
+        border-color: var(--ks-green);
+        transform: translateY(-2px);
+    }
 
+/* FIX: was `rgba(68, 161, 148, 0.2)` — use border token */
 .ks-card-flag {
     display: inline-block;
     padding: 0.4rem 0.8rem;
-    border-radius: 0.75rem;
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(132, 204, 22, 0.12) 100%);
+    border-radius: var(--ks-radius);
+    background: var(--ks-green-bg);
     color: var(--ks-green-dark);
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: var(--ks-fs-xs);
     margin: 1rem;
     width: fit-content;
-}
-
-.ks-flag-warning {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.08) 100%);
-    color: var(--ks-green-dark);
-}
-
-.ks-flag-advanced {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%);
-    color: var(--ks-green-dark);
+    border: 1px solid var(--ks-border);
 }
 
 .ks-card-content {
@@ -238,26 +228,26 @@
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--ks-green-dark);
-    line-height: 1.4;
+    line-height: var(--ks-lh-tight);
 }
 
 .ks-learn-card p {
     margin: 0 0 1rem 0;
     color: var(--ks-muted);
     font-size: 0.95rem;
-    line-height: 1.5;
+    line-height: var(--ks-lh-normal);
 }
 
 .ks-card-stats {
     display: flex;
     gap: 1rem;
     margin-bottom: 1rem;
-    font-size: 0.85rem;
+    font-size: var(--ks-fs-sm);
     color: var(--ks-muted);
     font-weight: 500;
 }
 
-/* PROGRESS */
+/* ===== Progress ===== */
 .ks-progress-container {
     flex-grow: 1;
     display: flex;
@@ -266,57 +256,61 @@
     margin-bottom: 1rem;
 }
 
+/* FIX: was `background: rgba(83, 125, 150, 0.1)` — use border token */
 .ks-progress-bar {
     height: 6px;
-    border-radius: 999px;
-    background: rgba(15, 23, 42, 0.08);
+    border-radius: var(--ks-radius-full);
+    background: var(--ks-border);
     overflow: hidden;
 }
 
 .ks-progress {
     height: 100%;
-    background: linear-gradient(90deg, var(--ks-primary) 0%, var(--ks-primary-dark) 100%);
-    border-radius: 999px;
+    background: linear-gradient(90deg, var(--ks-green) 0%, var(--ks-green-dark) 100%);
+    border-radius: var(--ks-radius-full);
     transition: width 0.4s ease;
 }
 
 .ks-progress-text {
-    font-size: 0.75rem;
+    font-size: var(--ks-fs-xs);
     color: var(--ks-muted);
     font-weight: 600;
 }
 
-/* BUTTONS */
+/* ===== Buttons ===== */
 .btn-outline-primary {
-    border: 1.5px solid var(--ks-primary);
-    color: var(--ks-primary);
-    background: white;
+    border: 1.5px solid var(--ks-green);
+    color: var(--ks-green);
+    background: var(--ks-surface);
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: var(--ks-transition);
 }
 
-.btn-outline-primary:hover {
-    background: rgba(68, 161, 148, 0.12);
-    border-color: var(--ks-primary);
-}
+    .btn-outline-primary:hover {
+        background: var(--ks-green-bg);
+        border-color: var(--ks-green);
+        /* FIX: was missing colour on hover — add green-dark */
+        color: var(--ks-green-dark);
+    }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--ks-primary) 0%, var(--ks-primary-dark) 100%);
+    background: linear-gradient(135deg, var(--ks-green) 0%, var(--ks-green-dark) 100%);
     border: none;
-    color: white;
+    /* FIX: was `color: white` — use #fff */
+    color: #fff;
     font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(132, 204, 22, 0.24);
+    transition: var(--ks-transition);
+    box-shadow: var(--ks-shadow);
 }
 
-.btn-primary:hover {
-    box-shadow: 0 6px 16px rgba(68, 161, 148, 0.3);
-    transform: translateY(-2px);
-}
+    .btn-primary:hover {
+        box-shadow: var(--ks-shadow-md);
+        transform: translateY(-2px);
+    }
 
 .btn-sm {
     padding: 0.6rem 1rem;
-    font-size: 0.9rem;
+    font-size: var(--ks-fs-sm);
 }
 
 .w-100 {
@@ -324,18 +318,19 @@
 }
 
 .mt-2 {
-    margin-top: 0.5rem;
+    margin-top: var(--ks-space-2);
 }
 
 .mt-3 {
-    margin-top: 1rem;
+    margin-top: var(--ks-space-4);
 }
 
-/* RESPONSIVE */
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
     .ks-learn-container {
         padding: 0;
     }
+
     .ks-learn-header {
         flex-direction: column;
         align-items: stretch;
@@ -350,9 +345,9 @@
         padding: 1.5rem 1rem;
     }
 
-    .ks-featured-course h2 {
-        font-size: 1.5rem;
-    }
+        .ks-featured-course h2 {
+            font-size: 1.5rem;
+        }
 
     .ks-learn-grid {
         grid-template-columns: 1fr;

@@ -65,10 +65,9 @@
     width: 100%;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
-    border-radius: 2rem;
-    padding: 3rem 2.5rem;
-    box-shadow: 0 20px 60px rgba(83, 125, 150, 0.15),
-                0 8px 20px rgba(83, 125, 150, 0.08);
+    border-radius: var(--ks-radius-xl);
+    padding: var(--ks-space-10) var(--ks-space-8);
+    box-shadow: var(--ks-shadow-xl);
     border: 1px solid rgba(255, 255, 255, 0.6);
     animation: fadeInUp 0.8s ease-out;
 }
@@ -86,13 +85,13 @@
 
 /* Logo Section */
 .splash-logo {
-    margin-bottom: 2.5rem;
+    margin-bottom: var(--ks-space-6);
 }
 
 .logo-icon {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto 1.5rem;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto var(--ks-space-4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -108,13 +107,13 @@
 }
 
 .logo-svg {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     color: #ffffff;
 }
 
 .brand-name {
-    font-size: 2.5rem;
+    font-size: 2.15rem;
     font-weight: 800;
     color: var(--ks-green-dark);
     margin: 0;
@@ -136,19 +135,19 @@
 .splash-features {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
-    margin-bottom: 2.5rem;
+    gap: var(--ks-space-3);
+    margin-bottom: var(--ks-space-6);
 }
 
 .feature-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: var(--ks-space-3);
+    padding: var(--ks-space-3) var(--ks-space-4);
     background: rgba(255, 255, 255, 0.6);
-    border-radius: 12px;
-    border: 1px solid rgba(83, 125, 150, 0.08);
-    font-size: 0.95rem;
+    border-radius: var(--ks-radius);
+    border: 1px solid var(--ks-border);
+    font-size: var(--ks-fs-sm);
     color: var(--ks-text);
     font-weight: 500;
     animation: fadeInUp 0.6s ease-out both;
@@ -171,7 +170,7 @@
 
 /* Loader Section */
 .splash-loader {
-    margin-bottom: 2rem;
+    margin-bottom: var(--ks-space-6);
 }
 
 .loader-dots {
@@ -210,9 +209,9 @@
     background: linear-gradient(135deg, var(--ks-green), var(--ks-green-dark));
     color: #ffffff;
     border: none;
-    border-radius: 50px;
-    padding: 0.85rem 2rem;
-    font-size: 0.95rem;
+    border-radius: var(--ks-radius-full);
+    padding: var(--ks-space-3) var(--ks-space-8);
+    font-size: var(--ks-fs-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -231,40 +230,40 @@
 /* Responsive Design */
 @media (max-width: 576px) {
     .splash-container {
-        padding: 1rem;
+        padding: var(--ks-space-4);
     }
 
     .splash-content {
-        padding: 2rem 1.5rem;
-        border-radius: 1.5rem;
+        padding: var(--ks-space-8) var(--ks-space-6);
+        border-radius: var(--ks-radius-lg);
     }
 
     .logo-icon {
-        width: 80px;
-        height: 80px;
+        width: 64px;
+        height: 64px;
     }
 
     .logo-svg {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
     }
 
     .brand-name {
-        font-size: 2rem;
+        font-size: 1.75rem;
     }
 
     .brand-tagline {
-        font-size: 1rem;
+        font-size: var(--ks-fs-sm);
     }
 
     .feature-item {
-        font-size: 0.85rem;
-        padding: 0.6rem 0.8rem;
+        font-size: var(--ks-fs-xs);
+        padding: var(--ks-space-2) var(--ks-space-3);
     }
 
     .skip-btn {
-        padding: 0.75rem 1.5rem;
-        font-size: 0.85rem;
+        padding: var(--ks-space-3) var(--ks-space-6);
+        font-size: var(--ks-fs-xs);
     }
 }
 

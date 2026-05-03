@@ -1,4 +1,4 @@
-﻿using KidSafeApp.Backend.Services.Chat;
+using KidSafeApp.Backend.Services.Chat;
 using KidSafeApp.Shared.Chat;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -27,16 +27,17 @@ namespace KidSafeApp.Backend.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            // Remove user from online list
+            // Remove user from online list and notify others they went offline
             if (TryGetCurrentUserId(out var parsedUserId) && _onlineUsers.ContainsKey(parsedUserId))
             {
                 _onlineUsers.Remove(parsedUserId);
-                await Clients.Others.UserIsOnline(parsedUserId);
+                await Clients.Others.UserIsOnline(parsedUserId); // userId with IsOnline=false indicates offline
                 _logger.LogInformation("User {UserId} disconnected from chat hub", parsedUserId);
             }
 
             await base.OnDisconnectedAsync(exception);
         }
+
 
         public async Task SetUserOnline(UserDto user)
         {

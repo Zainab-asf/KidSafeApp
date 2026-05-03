@@ -1,7 +1,94 @@
 @inherits LayoutComponentBase
+@using KidSafeApp.StateManagement
+@inject RoleState RoleState
+@inject AuthenticationState AuthState
 
-<div class="app-container">
-    <main>
-        @Body
-    </main>
+<div class="page">
+    <!-- Top Header Bar -->
+    <header class="top-row">
+        <button class="hamburger-menu @(AuthState?.IsAuthenticated == true ? "visible" : "")" @onclick="ToggleSidebar" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a class="navbar-brand" href="">
+            <span class="brand-icon">🛡️</span>
+            <span class="brand-text">KidSafeApp</span>
+        </a>
+        <div class="header-right">
+            @if (AuthState?.IsAuthenticated == true)
+            {
+                <div class="header-user">
+                    <span class="header-avatar">👤</span>
+                </div>
+            }
+        </div>
+    </header>
+
+    <div class="app-shell-layout">
+        <!-- Left navigation: sliding drawer (all screen sizes); open from header menu -->
+        <Sidebar @ref="_sidebar" />
+
+        <!-- Mobile Bottom Navigation Bar -->
+        @if (RoleState?.CurrentRole == AppRole.Child && AuthState?.IsAuthenticated == true)
+        {
+            <nav class="ks-bottom-nav">
+                <NavLink class="bottom-nav-link" href="/child/dashboard" Match="NavLinkMatch.All">
+                    <span class="bottom-nav-icon">📊</span>
+                    <span class="bottom-nav-label">Dashboard</span>
+                </NavLink>
+                <NavLink class="bottom-nav-link" href="/child/notifications">
+                    <span class="bottom-nav-icon">🔔</span>
+                    <span class="bottom-nav-label">Alerts</span>
+                </NavLink>
+                <NavLink class="bottom-nav-link" href="/child/chat">
+                    <span class="bottom-nav-icon">💬</span>
+                    <span class="bottom-nav-label">Chat</span>
+                </NavLink>
+                <NavLink class="bottom-nav-link" href="/child/profile">
+                    <span class="bottom-nav-icon">👤</span>
+                    <span class="bottom-nav-label">Profile</span>
+                </NavLink>
+            </nav>
+        }
+        else if (RoleState?.CurrentRole == AppRole.Parent && AuthState?.IsAuthenticated == true)
+        {
+            <nav class="ks-bottom-nav">
+                <NavLink class="bottom-nav-link" href="/parent/dashboard" Match="NavLinkMatch.All">
+                    <span class="bottom-nav-icon">🏠</span>
+                    <span class="bottom-nav-label">Dashboard</span>
+                </NavLink>
+                <NavLink class="bottom-nav-link" href="/parent/notifications">
+                    <span class="bottom-nav-icon">🔔</span>
+                    <span class="bottom-nav-label">Alerts</span>
+                </NavLink>
+                <NavLink class="bottom-nav-link" href="/parent/flagged">
+                    <span class="bottom-nav-icon">🚩</span>
+                    <span class="bottom-nav-label">Flagged</span>
+                </NavLink>
+                <NavLink class="bottom-nav-link" href="/parent/profile">
+                    <span class="bottom-nav-icon">👤</span>
+                    <span class="bottom-nav-label">Profile</span>
+                </NavLink>
+            </nav>
+        }
+
+        <!-- Main Content Area -->
+        <main class="main-content @(HasBottomNav ? "has-bottom-nav" : "")">
+            @Body
+        </main>
+    </div>
 </div>
+
+@code {
+    private Sidebar? _sidebar;
+
+    private bool HasBottomNav =>
+        AuthState?.IsAuthenticated == true &&
+        (RoleState?.CurrentRole == AppRole.Child || RoleState?.CurrentRole == AppRole.Parent);
+
+    private void ToggleSidebar()
+    {
+        _sidebar?.ToggleSidebar();
+    }
+}

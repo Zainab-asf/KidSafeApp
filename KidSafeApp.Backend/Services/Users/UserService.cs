@@ -14,23 +14,36 @@ public sealed class UserService : IUserService
     private readonly TokenService _tokenService;
     private readonly IPasswordHasher<User> _passwordHasher;
 
-    public UserService(IUserRepository users, TokenService tokenService, IPasswordHasher<User> passwordHasher)
+    public UserService(
+        IUserRepository users,
+        TokenService tokenService,
+        IPasswordHasher<User> passwordHasher)
     {
         _users = users;
         _tokenService = tokenService;
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<PagedResultDto<AdminUserDto>> GetUsersAsync(AdminUsersQueryDto query, CancellationToken cancellationToken)
+    // ===================== GET USERS =====================
+    public async Task<PagedResultDto<AdminUserDto>> GetUsersAsync(
+        AdminUsersQueryDto query,
+        CancellationToken cancellationToken)
     {
         var pageNumber = query.PageNumber <= 0 ? 1 : query.PageNumber;
-        var pageSize = query.PageSize switch { <= 0 => 10, > 100 => 100, _ => query.PageSize };
+        var pageSize = query.PageSize switch
+        {
+            <= 0 => 10,
+            > 100 => 100,
+            _ => query.PageSize
+        };
 
         var usersQuery = _users.Query().AsNoTracking();
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var search = query.Search.Trim();
-            usersQuery = usersQuery.Where(u => u.Name.Contains(search) || u.Username.Contains(search));
+            usersQuery = usersQuery.Where(u =>
+                u.Name.Contains(search) || u.Username.Contains(search));
         }
 
         if (!string.IsNullOrWhiteSpace(query.Role))
@@ -40,37 +53,37 @@ public sealed class UserService : IUserService
         }
 
         if (query.IsActive.HasValue)
-        {
             usersQuery = usersQuery.Where(u => u.IsActive == query.IsActive.Value);
-        }
 
         if (query.IsApproved.HasValue)
-        {
             usersQuery = usersQuery.Where(u => u.IsApproved == query.IsApproved.Value);
-        }
 
         var totalCount = await usersQuery.CountAsync(cancellationToken);
+
         var entities = await usersQuery
             .OrderByDescending(u => u.AddedOn)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
-        var items = entities.Select(AdminUserMapper.ToDto).ToList();
 
         return new PagedResultDto<AdminUserDto>
         {
-            Items = items,
+            Items = entities.Select(AdminUserMapper.ToDto).ToList(),
             PageNumber = pageNumber,
             PageSize = pageSize,
             TotalCount = totalCount
         };
     }
 
-    public async Task<AdminUserDto> CreateUserAsync(AdminCreateUserDto dto, CancellationToken cancellationToken)
+    // ===================== CREATE USER =====================
+    public async Task<AdminUserDto> CreateUserAsync(
+        AdminCreateUserDto dto,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Password))
+        if (string.IsNullOrWhiteSpace(dto.Name) ||
+            string.IsNullOrWhiteSpace(dto.Password))
         {
-            throw new ServiceException("Name, username and password are required.");
+            throw new ServiceException("Name and password are required.");
         }
 
         var role = (dto.Role ?? string.Empty).Trim();
@@ -80,21 +93,23 @@ public sealed class UserService : IUserService
         }
 
         var username = (dto.Username ?? string.Empty).Trim();
-        if (string.Equals(role, Roles.Child, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(dto.RegistrationNo))
+
+        // Child username override
+        if (string.Equals(role, Roles.Child, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(dto.RegistrationNo))
         {
             username = dto.RegistrationNo.Trim();
         }
 
         if (string.IsNullOrWhiteSpace(username))
-        {
             throw new ServiceException("Username is required.");
-        }
 
-        var exists = await _users.UsernameExistsAsync(username, null, cancellationToken);
-        if (exists)
-        {
+        // Username length validation (matches DB column varchar(50))
+        if (username.Length > 50)
+            throw new ServiceException("Username must not exceed 50 characters.");
+
+        if (await _users.UsernameExistsAsync(username, null, cancellationToken))
             throw new ServiceException("Username already exists.");
-        }
 
         var user = new User
         {
@@ -103,110 +118,141 @@ public sealed class UserService : IUserService
             Role = role,
             IsApproved = dto.IsApproved,
             IsActive = dto.IsActive,
-            AddedOn = DateTime.UtcNow
+            AddedOn = DateTime.UtcNow,
+            Password = dto.Password.Trim()   // stored as plain-text (hashing disabled)
         };
-        user.Password = _passwordHasher.HashPassword(user, dto.Password.Trim());
 
-        await _users.AddAsync(user, cancellationToken);
-        await _users.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _users.AddAsync(user, cancellationToken);
+            await _users.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new ServiceException($"Database insert failed: {message}");
+        }
+
         return AdminUserMapper.ToDto(user);
     }
 
-    public async Task UpdateUserAsync(int id, AdminUpdateUserDto dto, CancellationToken cancellationToken)
+    // ===================== UPDATE USER =====================
+    public async Task UpdateUserAsync(
+        int id,
+        AdminUpdateUserDto dto,
+        CancellationToken cancellationToken)
     {
         var user = await _users.GetByIdAsync(id, cancellationToken);
+
         if (user is null)
-        {
             throw new ServiceException("User not found.", StatusCodes.Status404NotFound);
-        }
 
-        var role = (dto.Role ?? string.Empty).Trim();
-        if (!Roles.All.Contains(role))
+        // ✅ Only update role if provided
+        if (!string.IsNullOrWhiteSpace(dto.Role))
         {
-            throw new ServiceException("Invalid role. Allowed: Child, Parent, Teacher, Admin.");
+            var role = dto.Role.Trim();
+
+            if (!Roles.All.Contains(role))
+                throw new ServiceException("Invalid role.");
+
+            user.Role = role;
         }
 
-        user.Role = role;
         user.IsApproved = dto.IsApproved;
         user.IsActive = dto.IsActive;
-        await _users.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _users.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new ServiceException($"Database update failed: {message}");
+        }
     }
 
+    // ===================== DELETE USER (SOFT DELETE) =====================
     public async Task DeleteUserAsync(int id, CancellationToken cancellationToken)
     {
         var user = await _users.GetByIdAsync(id, cancellationToken);
-        if (user is null)
-        {
-            throw new ServiceException("User not found.", StatusCodes.Status404NotFound);
-        }
 
+        if (user is null)
+            throw new ServiceException("User not found.", StatusCodes.Status404NotFound);
+
+        // Prevent deleting last admin
         if (string.Equals(user.Role, Roles.Admin, StringComparison.OrdinalIgnoreCase))
         {
-            var otherActiveAdmins = await _users.Query().AsNoTracking()
-                .CountAsync(u => u.Id != id && u.IsActive && u.Role == Roles.Admin, cancellationToken);
-            if (otherActiveAdmins == 0)
-            {
+            var otherAdmins = await _users.Query().AsNoTracking()
+                .CountAsync(u =>
+                    u.Id != id &&
+                    u.IsActive &&
+                    u.Role == Roles.Admin,
+                    cancellationToken);
+
+            if (otherAdmins == 0)
                 throw new ServiceException("Cannot delete the last active admin.");
-            }
         }
 
         user.IsActive = false;
         user.IsApproved = false;
+
         await _users.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginDto dto, CancellationToken cancellationToken)
+    // ===================== LOGIN =====================
+    public async Task<AuthResponseDto> LoginAsync(
+        LoginDto dto,
+        CancellationToken cancellationToken)
     {
         var username = (dto.Username ?? string.Empty).Trim();
         var password = (dto.Password ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+
+        if (string.IsNullOrWhiteSpace(username) ||
+            string.IsNullOrWhiteSpace(password))
         {
             throw new ServiceException("Username and password are required.");
         }
 
         var user = await _users.GetByUsernameAsync(username, cancellationToken);
+
         if (user is null)
-        {
             throw new ServiceException("Incorrect credentials");
-        }
 
         PasswordVerificationResult verifyResult;
+
         try
         {
             verifyResult = _passwordHasher.VerifyHashedPassword(user, user.Password, password);
         }
-        catch (FormatException)
+        catch
         {
             verifyResult = PasswordVerificationResult.Failed;
         }
 
         if (verifyResult == PasswordVerificationResult.Failed)
         {
-            // Backward-compatible fallback for existing clear-text rows.
+            // fallback for plain-text passwords
             if (!string.Equals(user.Password?.Trim(), password, StringComparison.Ordinal))
-            {
                 throw new ServiceException("Incorrect credentials");
-            }
 
-            user.Password = _passwordHasher.HashPassword(user, password);
+            // plain-text match succeeded — no rehash
         }
         else if (verifyResult == PasswordVerificationResult.SuccessRehashNeeded)
         {
-            user.Password = _passwordHasher.HashPassword(user, password);
-            await _users.SaveChangesAsync(cancellationToken);
+            // rehash skipped (plain-text mode)
         }
 
         if (!user.IsActive)
-        {
-            throw new ServiceException("Account is disabled. Contact an administrator.");
-        }
+            throw new ServiceException("Account is disabled.");
 
         if (!user.IsApproved)
-        {
-            throw new ServiceException("Account is pending approval. Contact an administrator.");
-        }
+            throw new ServiceException("Account is pending approval.");
 
         var token = _tokenService.GenerateJWT(user);
-        return new AuthResponseDto(new UserDto(user.Id, user.Name, false, user.Role), token);
+
+        return new AuthResponseDto(
+            new UserDto(user.Id, user.Name, false, user.Role),
+            token);
     }
 }

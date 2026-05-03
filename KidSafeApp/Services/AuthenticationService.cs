@@ -2,26 +2,29 @@ using System.IdentityModel.Tokens.Jwt;
 using KidSafeApp.StateManagement;
 using KidSafeApp.Shared.DTOs.Auth;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace KidSafeApp.Services;
-
 public sealed class AuthenticationService
 {
     private readonly AuthenticationState _authenticationState;
     private readonly RoleState _roleState;
     private readonly AdminSessionState _adminSessionState;
     private readonly NavigationManager _navigationManager;
+    private readonly IJSRuntime _jsRuntime;
 
     public AuthenticationService(
         AuthenticationState authenticationState,
         RoleState roleState,
         AdminSessionState adminSessionState,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        IJSRuntime jsRuntime)
     {
         _authenticationState = authenticationState;
         _roleState = roleState;
         _adminSessionState = adminSessionState;
         _navigationManager = navigationManager;
+        _jsRuntime = jsRuntime;
     }
 
     public async Task<bool> IsTokenValidAsync()
@@ -55,11 +58,7 @@ public sealed class AuthenticationService
         _roleState.Reset();
         try
         {
-            var jsRuntime = (IJSRuntime?)_navigationManager.ToDynamic().JSRuntime;
-            if (jsRuntime != null)
-            {
-                await jsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
-            }
+            await _jsRuntime.InvokeVoidAsync("window.removeFromStorage", AuthenticationState.AuthStoreKey);
         }
         catch { /* ignore if JSRuntime not available */ }
         _navigationManager.NavigateTo("/", replace: true);

@@ -1,4 +1,4 @@
-﻿using KidSafeApp.Backend.Data;
+using KidSafeApp.Backend.Data;
 using KidSafeApp.Backend.Controllers.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -70,12 +70,13 @@ namespace KidSafeApp.Backend.Controllers.Chat
 
             if (string.Equals(role, "Child", StringComparison.OrdinalIgnoreCase))
             {
+                // Children can see and chat with all other active, approved child users
                 var childIds = await _dataContext.Users
                     .AsNoTracking()
                     .Where(u => u.Id != userId
                                 && u.IsActive
                                 && u.IsApproved
-                                && (u.Role == "Child" || u.Role == "child" || u.Role == string.Empty))
+                                && string.Equals(u.Role, "Child", StringComparison.OrdinalIgnoreCase))
                     .Select(u => u.Id)
                     .ToListAsync(cancellationToken);
 

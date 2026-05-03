@@ -58,6 +58,16 @@ public sealed class AdminUsersApiClient
         return result ?? new List<AdminCourseLiteDto>();
     }
 
+    public async Task DeleteUserAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        ApplyBearerToken();
+        var response = await _httpClient.DeleteAsync($"api/admin/users/{userId}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(await response.Content.ReadAsStringAsync(cancellationToken));
+        }
+    }
+
     private void ApplyBearerToken()
     {
         if (string.IsNullOrWhiteSpace(_authenticationState.Token))

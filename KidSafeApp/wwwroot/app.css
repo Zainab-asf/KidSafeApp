@@ -1,6 +1,5 @@
 /* ========================================
    KidSafeApp - Unified Design System
-   Modern, Clean & Consistent UI
    ======================================== */
 
 /* ===== CSS Reset ===== */
@@ -15,6 +14,8 @@
     /* Layout */
     --ks-page-width: 1200px;
     --ks-page-gutter: clamp(1rem, 2vw, 1.5rem);
+    /* Centered portal column width — child, parent, and teacher dashboards (letterboxed sides) */
+    --ks-child-column-max-width: min(60rem, 100%);
     
     /* Colors - Primary Palette */
     --ks-green: #44A194;

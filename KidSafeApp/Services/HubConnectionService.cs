@@ -28,9 +28,23 @@ public sealed class HubConnectionService : IAsyncDisposable
         _authenticationState = authenticationState;
     }
 
+    /// <summary>
+    /// Connects to the hub AND marks the current user as online in one call.
+    /// Call this once when entering the chat page.
+    /// </summary>
+    public async Task InitializeAsync()
+    {
+        await ConnectAsync();
+
+        if (_authenticationState?.User is not null && _authenticationState.User.Id > 0)
+        {
+            await SetUserOnlineAsync(_authenticationState.User);
+        }
+    }
+
     public async Task ConnectAsync()
     {
-        if (_hubConnection is not null)
+        if (_hubConnection is not null && _hubConnection.State != HubConnectionState.Disconnected)
         {
             return;
         }
@@ -43,6 +57,13 @@ public sealed class HubConnectionService : IAsyncDisposable
         _isConnecting = true;
         try
         {
+            // Dispose old disconnected connection if any
+            if (_hubConnection is not null)
+            {
+                await _hubConnection.DisposeAsync();
+                _hubConnection = null;
+            }
+
             _hubConnection = ConfigureConnection();
             RegisterEventHandlers();
             await _hubConnection.StartAsync();
@@ -71,6 +92,17 @@ public sealed class HubConnectionService : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Sends a message through SignalR hub directly (real-time delivery).
+    /// </summary>
+    public async Task SendMessageViaHubAsync(int toUserId, string content)
+    {
+        if (_hubConnection?.State == HubConnectionState.Connected)
+        {
+            await _hubConnection.SendAsync("SendMessage", toUserId, content);
+        }
+    }
+
     private HubConnection ConfigureConnection()
     {
         if (_httpClient.BaseAddress is null)
@@ -80,8 +112,8 @@ public sealed class HubConnectionService : IAsyncDisposable
 
         var hubUrl = new Uri(_httpClient.BaseAddress, "hubs/kidsafeapp");
         return new HubConnectionBuilder()
-            .WithUrl(hubUrl, options => 
-                options.AccessTokenProvider = () => 
+            .WithUrl(hubUrl, options =>
+                options.AccessTokenProvider = () =>
                     Task.FromResult<string?>(_authenticationState?.Token ?? null))
             .WithAutomaticReconnect()
             .Build();
@@ -94,16 +126,16 @@ public sealed class HubConnectionService : IAsyncDisposable
             return;
         }
 
-        _hubConnection.On<UserDto>(nameof(IChatHubClient.UserConnected), 
+        _hubConnection.On<UserDto>(nameof(IChatHubClient.UserConnected),
             user => OnUserConnected?.Invoke(user) ?? Task.CompletedTask);
 
-        _hubConnection.On<IEnumerable<UserDto>>(nameof(IChatHubClient.OnlineUsersList), 
+        _hubConnection.On<IEnumerable<UserDto>>(nameof(IChatHubClient.OnlineUsersList),
             users => OnOnlineUsersList?.Invoke(users) ?? Task.CompletedTask);
 
-        _hubConnection.On<int>(nameof(IChatHubClient.UserIsOnline), 
+        _hubConnection.On<int>(nameof(IChatHubClient.UserIsOnline),
             userId => OnUserIsOnline?.Invoke(userId) ?? Task.CompletedTask);
 
-        _hubConnection.On<MessageDto>(nameof(IChatHubClient.MessageRecieved), 
+        _hubConnection.On<MessageDto>(nameof(IChatHubClient.MessageRecieved),
             message => OnMessageReceived?.Invoke(message) ?? Task.CompletedTask);
 
         _hubConnection.On<int>(nameof(IChatHubClient.RosterUpdated),

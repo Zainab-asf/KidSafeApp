@@ -46,6 +46,9 @@ namespace KidSafeApp
             builder.Services.AddScoped<HubConnectionService>();
             builder.Services.AddScoped<AuthenticationService>();
             builder.Services.AddScoped<ParentDashboardApiClient>();
+            builder.Services.AddScoped<ChildDashboardApiClient>();
+            builder.Services.AddScoped<TeacherDashboardApiClient>();
+            builder.Services.AddScoped<AdminDashboardApiClient>();
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();

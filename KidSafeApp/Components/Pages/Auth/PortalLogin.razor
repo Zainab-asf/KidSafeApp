@@ -68,7 +68,7 @@
     {
         if (NormalizedPortalRole is not ("child" or "parent" or "teacher"))
         {
-            NavigationManager.NavigateTo("/unauthorized", replace: true);
+            NavigationManager.NavigateTo("/login", replace: true);
         }
     }
 
@@ -133,7 +133,7 @@
                 "Child" => "/child/dashboard",
                 "Parent" => "/parent/dashboard",
                 "Teacher" => "/teacher/dashboard",
-                _ => "/unauthorized"
+                _ => "/login"
             };
 
             NavigationManager.NavigateTo(destination, replace: true);

@@ -4,7 +4,7 @@
     --portal-primary: var(--ks-green);
     --portal-primary-dark: var(--ks-green-dark);
     padding: var(--ks-page-gutter);
-    max-width: var(--ks-page-width);
+    max-width: var(--ks-child-column-max-width);
     margin: 0 auto;
     background: var(--ks-bg);
 }

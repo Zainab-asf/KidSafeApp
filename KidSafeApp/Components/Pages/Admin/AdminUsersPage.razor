@@ -102,7 +102,7 @@
     {
         if (!string.Equals(AuthenticationState?.User?.Role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
-            Nav.NavigateTo("/unauthorized", replace: true);
+            Nav.NavigateTo("/admin-login", replace: true);
             return;
         }
 

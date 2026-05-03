@@ -145,12 +145,7 @@ article,
         font-size: 14px;
     }
 
-    .ks-app-shell,
-    .ks-dashboard,
-    .ks-main,
-    .ks-app-content {
-        margin-bottom: 80px;
-    }
+    /* Bottom nav spacing is handled by MainLayout.razor.css via padding */
 }
 
 @media (max-width: 900px) {
@@ -172,16 +167,7 @@ article > * {
     min-width: 0;
 }
 
-/* Override Bootstrap Container Width for Dashboards */
-@media (min-width: 1200px) {
-    .ks-teacher-content,
-    .ks-parent-content,
-    .ks-child-dashboard-body {
-        max-width: 1200px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-}
+/* Dashboard max-width is applied in MainLayout to main.ks-main; avoid duplicating here. */
 
 /* Accessibility: Ensure Focus Visible */
 button, a, input, select, textarea {

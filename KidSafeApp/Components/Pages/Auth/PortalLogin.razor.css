@@ -1,0 +1,125 @@
+﻿/* =============================================
+   PortalLogin.razor.css
+   Place alongside PortalLogin.razor
+   Uses ::deep to pierce into AuthCardShell's
+   card-body, form controls, and buttons
+   ============================================= */
+
+/* ::deep targets child component DOM elements */
+::deep .card-body {
+    padding: 1.75rem 1.75rem 1.5rem !important;
+    background: #fff;
+}
+
+/* ── Form labels ── */
+::deep .form-label {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    color: var(--ks-green-dark, #2d6e66) !important;
+    margin-bottom: 0.35rem !important;
+}
+
+/* ── Inputs ── */
+::deep .form-control {
+    border: 1.5px solid rgba(83, 125, 150, 0.2) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.7rem 0.95rem !important;
+    font-size: 0.92rem !important;
+    color: #13322b !important;
+    background: #fafafa !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s !important;
+}
+
+    ::deep .form-control::placeholder {
+        color: rgba(83, 125, 150, 0.45) !important;
+    }
+
+    ::deep .form-control:focus {
+        border-color: var(--ks-green, #44a194) !important;
+        background: #fff !important;
+        box-shadow: 0 0 0 3px rgba(68, 161, 148, 0.12) !important;
+        outline: none !important;
+    }
+
+/* ── Field spacing ── */
+::deep .mb-3 {
+    margin-bottom: 1rem !important;
+}
+
+/* ── Error alert ── */
+::deep .alert-danger {
+    background: rgba(220, 38, 38, 0.07) !important;
+    border: 1px solid rgba(220, 38, 38, 0.18) !important;
+    color: #b91c1c !important;
+    border-radius: 0.75rem !important;
+    font-size: 0.84rem !important;
+    padding: 0.75rem 0.95rem !important;
+    margin-bottom: 1rem !important;
+}
+
+/* ── Buttons row ── */
+::deep .d-flex.gap-2 {
+    gap: 0.75rem !important;
+    margin-top: 0.5rem;
+}
+
+/* Primary — Sign In */
+::deep .btn-primary {
+    background: linear-gradient(135deg, var(--ks-green, #44a194) 0%, var(--ks-green-dark, #2d6e66) 100%) !important;
+    border: none !important;
+    border-radius: 0.75rem !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    padding: 0.72rem 1.5rem !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(68, 161, 148, 0.28) !important;
+    transition: all 0.2s ease !important;
+    flex: 1;
+}
+
+    ::deep .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(68, 161, 148, 0.36) !important;
+    }
+
+    ::deep .btn-primary:disabled {
+        opacity: 0.7 !important;
+        cursor: not-allowed !important;
+        transform: none !important;
+    }
+
+/* Secondary — Back */
+::deep .btn-outline-secondary {
+    background: rgba(83, 125, 150, 0.07) !important;
+    border: 1.5px solid rgba(83, 125, 150, 0.2) !important;
+    border-radius: 0.75rem !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    padding: 0.72rem 1.25rem !important;
+    color: var(--ks-green-dark, #2d6e66) !important;
+    transition: all 0.2s ease !important;
+}
+
+    ::deep .btn-outline-secondary:hover {
+        background: rgba(83, 125, 150, 0.13) !important;
+        border-color: rgba(83, 125, 150, 0.32) !important;
+    }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    ::deep .card-body {
+        padding: 1.25rem !important;
+    }
+
+    ::deep .d-flex.gap-2 {
+        flex-direction: column-reverse;
+        gap: 0.5rem !important;
+    }
+
+    ::deep .btn-primary,
+    ::deep .btn-outline-secondary {
+        width: 100% !important;
+        flex: unset;
+    }
+}

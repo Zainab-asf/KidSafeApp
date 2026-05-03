@@ -27,6 +27,11 @@ namespace KidSafeApp.Backend.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<User>(e =>
+            {
+                e.HasIndex(u => u.Username).IsUnique();
+            });
+
             modelBuilder.Entity<Message>(e =>
             {
                 e.HasOne(m => m.ToUser).WithMany().OnDelete(DeleteBehavior.NoAction);

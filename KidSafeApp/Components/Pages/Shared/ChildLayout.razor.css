@@ -1,4 +1,5 @@
-.ks-dashboard {
+/* Child portal: shell spans full padded area; main is a centered column (matches letterboxed dashboard) */
+.ks-app-shell.ks-dashboard.ks-child-shell {
     min-height: 0;
     flex: 1;
     display: flex;
@@ -6,12 +7,16 @@
     width: 100%;
 }
 
-.ks-main {
+.ks-app-shell.ks-dashboard.ks-child-shell > main.ks-app-content.ks-main.ks-child-content {
     min-width: 0;
     flex: 1;
     display: flex;
     flex-direction: column;
     width: 100%;
+    max-width: var(--ks-child-column-max-width);
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
 }
 
 :global(.page) {

@@ -10,7 +10,6 @@
     display: grid;
     gap: .85rem;
     align-content: start;
-    padding: var(--ks-page-gutter);
     box-sizing: border-box;
     width: 100%;
     flex: 1;
