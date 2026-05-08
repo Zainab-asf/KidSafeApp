@@ -1,0 +1,86 @@
+@page "/login"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="auth-shell">
+    <div class="auth-hero">
+        <div class="auth-hero-logo">🛡️</div>
+        <div class="auth-hero-title">KidSafe</div>
+        <div class="auth-hero-sub">Protecting young minds online</div>
+    </div>
+
+    <div class="auth-body">
+        <div class="auth-title">Welcome Back!</div>
+        <div class="auth-subtitle">Sign in to your account</div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="msg-error">⚠️ @_error</div>
+        }
+
+        <EditForm Model="_m" OnValidSubmit="Submit">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <InputText class="form-input" @bind-Value="_m.Email"
+                           placeholder="Enter your email" type="email" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <InputText class="form-input" @bind-Value="_m.Password"
+                           placeholder="Enter your password" type="password" />
+            </div>
+            <button class="btn btn-primary" type="submit" disabled="@_busy">
+                @if (_busy)
+                {
+                    <span>Signing in…</span>
+                    <div class="spinner" style="width:18px;height:18px;border-width:2px;margin-left:.5rem"></div>
+                }
+                else
+                {
+                    <span>Sign In 🚀</span>
+                }
+            </button>
+        </EditForm>
+
+        <div class="auth-admin-note">
+            🔐 Accounts are created by your Administrator.<br/>
+            Contact your Admin if you need access.
+        </div>
+    </div>
+</div>
+
+@code {
+    record M { public string Email { get; set; } = ""; public string Password { get; set; } = ""; }
+    M _m = new(); string _error = ""; bool _busy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (AuthState.IsAuthenticated) Redirect();
+    }
+
+    async Task Submit()
+    {
+        _busy = true; _error = "";
+        var r = await Api.LoginAsync(new LoginRequest(_m.Email, _m.Password));
+        if (r == null)
+            _error = "Invalid email or password.";
+        else if (r.Token == "pending")
+            _error = "⏳ Your account is awaiting approval. You'll be notified once activated.";
+        else if (r.Token == "disabled")
+            _error = "🚫 Your account has been disabled. Contact your administrator.";
+        else
+        {
+            await AuthState.SetUserAsync(r);
+            Redirect();
+        }
+        _busy = false;
+    }
+
+    void Redirect() => Nav.NavigateTo(
+        AuthState.CurrentUser?.Role == "Admin"   ? "/admin"     :
+        AuthState.IsChild                        ? "/chat"      :
+        AuthState.CurrentUser?.Role == "Teacher" ? "/teacher"   : "/dashboard");
+}

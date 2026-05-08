@@ -1,6 +1,25 @@
-﻿bin/
+﻿## .NET
+bin/
 obj/
 .vs/
 *.user
 *.suo
+*.db
+*.db-shm
+*.db-wal
+
+## Secrets
+**/firebase-credentials.json
+**/.env
+!**/.env.example
+
+## Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+## OS
+.DS_Store
+Thumbs.db
 

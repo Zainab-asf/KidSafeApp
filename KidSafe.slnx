@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="KidSafe.Backend/KidSafe.Backend.csproj" />
+  <Project Path="KidSafe.MAUI/KidSafe.MAUI.csproj" />
+  <Project Path="KidSafe.Shared/KidSafe.Shared.csproj" />
+</Solution>

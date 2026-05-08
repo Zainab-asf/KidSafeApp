@@ -1,0 +1,28 @@
+@page "/"
+@page "/splash"
+@inject NavigationManager Nav
+@inject AuthStateService AuthState
+
+<div class="splash-shell">
+    <div class="splash-emblem">🛡️</div>
+    <div class="splash-name">KidSafe</div>
+    <div class="splash-tagline">Chat safely, always.</div>
+    <div class="splash-loader">
+        <span></span><span></span><span></span>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        await Task.Delay(1800);
+        Nav.NavigateTo(!AuthState.IsAuthenticated ? "/login" :
+            AuthState.CurrentUser?.Role switch {
+                "Admin"   => "/admin",
+                "Child"   => "/chat",
+                "Teacher" => "/teacher",
+                _         => "/dashboard"
+            });
+    }
+}

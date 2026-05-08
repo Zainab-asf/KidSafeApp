@@ -1,6 +1,0 @@
-@KidSafeApp.Backend_HostAddress = http://localhost:5064
-
-GET {{KidSafeApp.Backend_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

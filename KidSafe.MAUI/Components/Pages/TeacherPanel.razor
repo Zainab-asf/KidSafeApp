@@ -1,0 +1,167 @@
+@page "/teacher"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="app-shell">
+    <div class="topbar">
+        <div class="topbar-logo"><span>🛡️</span>KidSafe</div>
+        <div class="topbar-spacer"></div>
+        <span class="topbar-role">Teacher</span>
+        <button class="btn-icon-circle" @onclick="Logout">🚪</button>
+    </div>
+
+    <div class="page-scroll">
+
+        @if (_stats != null)
+        {
+            <div class="stats-row cols-3" style="margin-top:.25rem">
+                <div class="stat-card warning">
+                    <div class="stat-emoji">👁️</div>
+                    <div class="stat-value" style="color:var(--warning)">@_stats.TotalWatch</div>
+                    <div class="stat-label">Watch</div>
+                </div>
+                <div class="stat-card danger">
+                    <div class="stat-emoji">🚫</div>
+                    <div class="stat-value" style="color:var(--danger)">@_stats.TotalReview</div>
+                    <div class="stat-label">Review</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-emoji">👦</div>
+                    <div class="stat-value">@_stats.TotalChildren</div>
+                    <div class="stat-label">Students</div>
+                </div>
+            </div>
+        }
+
+        <div class="section-header">
+            <span class="section-title">👦 Students at Risk</span>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="loading-overlay"><div class="spinner"></div></div>
+        }
+        else
+        {
+            <div class="risk-grid">
+                @foreach (var c in _children)
+                {
+                    var riskClass = c.FlagCount > 3 ? "high-risk" : c.FlagCount > 0 ? "medium-risk" : "";
+                    var dot       = c.FlagCount > 3 ? "high" : c.FlagCount > 0 ? "medium" : "";
+                    <div class="risk-card @riskClass">
+                        <div class="risk-avatar">@c.Avatar</div>
+                        <div class="risk-name">@c.Name</div>
+                        <div class="risk-stat">
+                            <span class="risk-dot @dot"></span>
+                            @c.FlagCount incident(s)
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="section-header" style="margin-top:1.5rem">
+            <span class="section-title">📊 Recent Incidents</span>
+        </div>
+
+        @if (!_flaggedMessages.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">✅</div>
+                <div class="empty-text">No incidents</div>
+                <div class="empty-sub">Classroom is safe!</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var m in _flaggedMessages.Take(10))
+            {
+                var cls = m.Score >= .8 ? "high" : m.Score >= .5 ? "medium" : "low";
+                <div class="flagged-row @m.Label.ToLower()">
+                    <div class="flagged-top">
+                        <span class="flagged-sender">@m.SenderName</span>
+                        <span class="badge @(m.Label == "Review" ? "badge-red" : "badge-yellow")">@m.Label</span>
+                        <button class="btn btn-sm btn-ghost" style="margin-left:auto"
+                                @onclick="() => FileComplaint(m)">📝 Report</button>
+                    </div>
+                    <div class="flagged-msg">@m.MaskedMessage</div>
+                    <div class="flagged-footer">
+                        <span class="flagged-time">@m.Timestamp.ToLocalTime().ToString("MMM dd, HH:mm")</span>
+                        <div class="score-bar"><div class="score-fill @cls" style="width:@((int)(m.Score*100))%"></div></div>
+                        <span class="score-pct">@m.Score.ToString("P0")</span>
+                    </div>
+                </div>
+            }
+        }
+
+        @if (!string.IsNullOrEmpty(_toast))
+        {
+            <div class="toast safe" style="position:relative;bottom:auto;margin-top:1rem;animation:none">@_toast</div>
+        }
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item active">
+            <span class="nav-icon">🏫</span>Classroom
+            <div class="nav-dot"></div>
+        </button>
+        <button class="nav-item" @onclick="LoadData">
+            <span class="nav-icon">🔄</span>Refresh
+            <div class="nav-dot"></div>
+        </button>
+        <button class="nav-item" @onclick="Logout">
+            <span class="nav-icon">🚪</span>Logout
+            <div class="nav-dot"></div>
+        </button>
+    </div>
+</div>
+
+@code {
+    record ChildSummary(string Name, string Avatar, int FlagCount);
+
+    DashboardStats?          _stats;
+    List<FlaggedMessageItem> _flaggedMessages = new();
+    List<ChildSummary>       _children        = new();
+    bool   _loading = true;
+    string _toast   = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated || AuthState.CurrentUser?.Role != "Teacher")
+        { Nav.NavigateTo("/login"); return; }
+        await LoadData();
+    }
+
+    async Task LoadData()
+    {
+        _loading = true; StateHasChanged();
+        _stats           = await Api.GetDashboardStatsAsync();
+        _flaggedMessages = await Api.GetFlaggedMessagesAsync();
+
+        var avatars = new[] { "😊","🎮","🦄","🌟","🎨","🐼","🦊","🐸","🦁","🐧" };
+        var rng     = new Random(42);
+        _children   = _flaggedMessages
+            .GroupBy(f => f.SenderName)
+            .Select(g => new ChildSummary(g.Key, avatars[rng.Next(avatars.Length)], g.Count()))
+            .OrderByDescending(c => c.FlagCount)
+            .ToList();
+
+        if (!_children.Any())
+            _children.Add(new ChildSummary("No incidents", "✅", 0));
+
+        _loading = false; StateHasChanged();
+    }
+
+    async Task FileComplaint(FlaggedMessageItem m)
+    {
+        var ok = await Api.FileComplaintAsync($"Incident: {m.SenderName} — {m.Label} (score {m.Score:P0})");
+        _toast = ok ? "📝 Complaint filed" : "Failed to file complaint";
+        StateHasChanged();
+        await Task.Delay(3000);
+        _toast = ""; StateHasChanged();
+    }
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+}

@@ -1,0 +1,73 @@
+@page "/rewards"
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="chat-shell">
+    <div class="rewards-hero">
+        <div class="rewards-pts">@_points</div>
+        <div class="rewards-pts-label">Safety Points</div>
+        <div class="pts-bar-wrap">
+            <div class="pts-bar-fill" style="width:@BarWidth%"></div>
+        </div>
+        <div class="pts-next">@PointsToNext pts to next badge</div>
+    </div>
+
+    <div class="page-scroll" style="padding-top:.85rem">
+        <div class="section-header">
+            <span class="section-title">🎖️ Badges</span>
+        </div>
+        <div class="badge-grid">
+            @foreach (var b in _badges)
+            {
+                <div class="reward-badge @(b.Unlocked ? "unlocked" : "locked")">
+                    <div class="badge-icon-lg">@b.Icon</div>
+                    <div class="badge-name">@b.Name</div>
+                    <div class="badge-req">@b.Pts pts</div>
+                    @if (b.Unlocked) { <div class="badge-earned">✓ Earned</div> }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-item" @onclick="NavChat">
+            <span class="nav-icon">💬</span>Chat
+            <div class="nav-dot"></div>
+        </button>
+        <button class="nav-item active">
+            <span class="nav-icon">🏆</span>Rewards
+            <div class="nav-dot"></div>
+        </button>
+        <button class="nav-item" @onclick="NavChat">
+            <span class="nav-icon">🔙</span>Back
+            <div class="nav-dot"></div>
+        </button>
+    </div>
+</div>
+
+@code {
+    int _points;
+    record B(string Icon, string Name, int Pts, bool Unlocked);
+    List<B> _badges = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
+        _points = 0;
+        _badges = new() {
+            new("💬","Safe Chatter",   100,  _points >= 100),
+            new("🌟","Kind Star",      500,  _points >= 500),
+            new("🦸","Cyber Hero",    1000,  _points >= 1000),
+            new("🎓","Chat Scholar",  2000,  _points >= 2000),
+            new("👑","Safety King",   5000,  _points >= 5000),
+            new("🚀","Legend",       10000,  _points >= 10000),
+        };
+    }
+
+    int BarWidth => _badges.FirstOrDefault(b => !b.Unlocked) is { } next
+        ? (int)Math.Min(100, (_points / (double)next.Pts) * 100) : 100;
+    int PointsToNext => Math.Max(0, (_badges.FirstOrDefault(b => !b.Unlocked)?.Pts ?? 0) - _points);
+
+    void NavChat() => Nav.NavigateTo("/chat");
+}

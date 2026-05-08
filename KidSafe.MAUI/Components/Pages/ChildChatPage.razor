@@ -1,0 +1,212 @@
+@page "/chat"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject ChatHubService Hub
+@inject NavigationManager Nav
+@implements IAsyncDisposable
+
+<div class="chat-shell">
+
+    <!-- Top bar -->
+    <div class="chat-topbar">
+        <div class="chat-avatar">😊</div>
+        <div style="flex:1">
+            <div class="chat-name">@AuthState.CurrentUser?.DisplayName</div>
+            <div class="chat-status">
+                <span class="status-dot @(_hubState == HubState.Connected ? "online" : "")"></span>
+                @StatusText
+            </div>
+        </div>
+        <div class="points-pill" @onclick="GoRewards">⭐ @_points pts</div>
+        <button class="btn-icon-circle" @onclick="Logout" title="Logout" style="font-size:.85rem">🚪</button>
+    </div>
+
+    <!-- Toast -->
+    @if (!string.IsNullOrEmpty(_toast))
+    {
+        <div class="toast @_toastClass">@_toast</div>
+    }
+
+    <!-- Messages -->
+    <div class="chat-messages" id="msg-list">
+        @foreach (var msg in _messages)
+        {
+            <div class="msg-row @(msg.SenderId == AuthState.CurrentUser?.UserId ? "mine" : "")">
+                @if (msg.SenderId != AuthState.CurrentUser?.UserId)
+                {
+                    <div class="msg-avatar">😊</div>
+                }
+                <div class="bubble-wrap">
+                    <div class="bubble @BubbleClass(msg)">@msg.Content</div>
+                    <div class="bubble-meta">
+                        <span class="bubble-time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+                        @if (msg.Label is not ("Safe" or "pending"))
+                        {
+                            <span class="bubble-label @msg.Label.ToLower()">@msg.Label</span>
+                        }
+                        @if (msg.SenderId != AuthState.CurrentUser?.UserId)
+                        {
+                            <button class="report-btn" title="Report" @onclick="() => ReportMsg(msg)">🚩</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(_typingUser))
+        {
+            <div class="typing-row">
+                <div class="msg-avatar">😊</div>
+                <span class="typing-text">@_typingUser is typing</span>
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+            </div>
+        }
+    </div>
+
+    <!-- Quick replies -->
+    <div class="quick-replies">
+        @foreach (var r in _quickReplies)
+        {
+            <button class="quick-btn" @onclick="() => _input = r">@r</button>
+        }
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-area">
+        <div class="emoji-bar">
+            @foreach (var e in _emojis)
+            {
+                <button class="emoji-btn" @onclick="() => _input += e">@e</button>
+            }
+        </div>
+        <div class="input-row">
+            <input class="msg-input" @bind="_input" @bind:event="oninput"
+                   @onkeyup="OnKey" placeholder="Type a friendly message 😊" />
+            <button class="send-btn" @onclick="Send" disabled="@_sending">
+                @(_sending ? "⏳" : "➤")
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+        <button class="nav-item active">
+            <span class="nav-icon">💬</span>Chat
+            <div class="nav-dot"></div>
+        </button>
+        <button class="nav-item" @onclick="GoRewards">
+            <span class="nav-icon">🏆</span>Rewards
+            <div class="nav-dot"></div>
+        </button>
+        <button class="nav-item" @onclick="Logout">
+            <span class="nav-icon">🚪</span>Logout
+            <div class="nav-dot"></div>
+        </button>
+    </div>
+</div>
+
+@code {
+    List<ChatMessage> _messages = new();
+    string _input = "", _toast = "", _toastClass = "", _typingUser = "";
+    bool _sending;
+    int _points;
+    HubState _hubState = HubState.Disconnected;
+
+    string StatusText => _hubState switch {
+        HubState.Connected    => "Safe Chat • Online",
+        HubState.Connecting   => "Connecting…",
+        HubState.Reconnecting => "Reconnecting…",
+        _                     => "Offline"
+    };
+
+    static readonly string[] _quickReplies = { "Hello! 👋", "How are you? 😊", "That's cool! 🎉", "Thanks! 🙏", "LOL 😂", "Sure! 👍" };
+    static readonly string[] _emojis       = { "😊","😂","❤️","👍","🎉","🌟","🦄","🎮","🍕","⚽","🌈","🦋" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated || !AuthState.IsChild) { Nav.NavigateTo("/login"); return; }
+        Hub.OnMessageReceived += OnMsg;
+        Hub.OnUserTyping      += OnTyping;
+        Hub.OnStateChanged    += OnHubState;
+        await Hub.StartAsync(AuthState.CurrentUser!.Token);
+    }
+
+    void OnMsg(ChatMessage m)
+    {
+        _messages.Add(m);
+        if (m.Label == "Safe") _points += 10;
+        InvokeAsync(StateHasChanged);
+    }
+
+    void OnHubState(HubState s) { _hubState = s; InvokeAsync(StateHasChanged); }
+
+    void OnTyping(string name)
+    {
+        _typingUser = name;
+        InvokeAsync(StateHasChanged);
+        Task.Delay(3000).ContinueWith(_ => { _typingUser = ""; InvokeAsync(StateHasChanged); });
+    }
+
+    async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") { await Send(); return; }
+        await Hub.SendTypingAsync(0);
+    }
+
+    async Task Send()
+    {
+        if (string.IsNullOrWhiteSpace(_input) || _sending) return;
+        _sending = true;
+        var text = _input; _input = "";
+
+        var local = new ChatMessage { SenderId = AuthState.CurrentUser!.UserId, SenderName = "You", Content = text, Label = "pending" };
+        _messages.Add(local); StateHasChanged();
+
+        var result = await Api.SendMessageAsync(new SendMessageRequest(0, text));
+        _messages.Remove(local);
+
+        if (result != null)
+        {
+            local.Label   = result.Label;
+            local.Content = result.Label == "Watch" ? result.MaskedMessage ?? text : text;
+            _messages.Add(local);
+
+            (_toast, _toastClass) = result.Label switch {
+                "Safe"   => ("✅ Sent! +10 points", "safe"),
+                "Watch"  => ("👁️ Message flagged and masked.", "flagged"),
+                "Review" => ("🚫 Message blocked — please be kind!", "blocked"),
+                _        => ("", "")
+            };
+            if (result.Label == "Safe") _points += 10;
+        }
+
+        _sending = false; StateHasChanged();
+        await Task.Delay(3500);
+        _toast = ""; StateHasChanged();
+    }
+
+    string BubbleClass(ChatMessage m) => m.SenderId == AuthState.CurrentUser?.UserId
+        ? m.Label switch { "Watch" => "flagged", "Review" => "blocked", "pending" => "pending", _ => "" }
+        : "";
+
+    async Task ReportMsg(ChatMessage msg)
+    {
+        var ok = await Api.ReportAbuseAsync($"Reported message from {msg.SenderName}");
+        _toast = ok ? "🚩 Reported. Thank you!" : "Failed to report.";
+        _toastClass = ok ? "safe" : "blocked";
+        StateHasChanged();
+        await Task.Delay(3000);
+        _toast = ""; StateHasChanged();
+    }
+
+    void GoRewards() => Nav.NavigateTo("/rewards");
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+
+    public async ValueTask DisposeAsync()
+    {
+        Hub.OnMessageReceived -= OnMsg;
+        Hub.OnUserTyping      -= OnTyping;
+        Hub.OnStateChanged    -= OnHubState;
+        await Hub.DisposeAsync();
+    }
+}
