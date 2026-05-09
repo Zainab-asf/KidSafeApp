@@ -23,6 +23,7 @@ public class RewardsController : ControllerBase
     }
 
     [HttpGet]
+    [HttpGet("my")]
     public async Task<IActionResult> GetMyRewards()
     {
         var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -30,7 +31,13 @@ public class RewardsController : ControllerBase
         if (reward == null) return NotFound();
 
         var badges = JsonSerializer.Deserialize<List<string>>(reward.Badges) ?? new();
-        return Ok(new { reward.Points, Badges = badges });
+        return Ok(new
+        {
+            reward.Points,
+            reward.BadgeLevel,
+            reward.SafeMessages,
+            Badges = badges
+        });
     }
 
     /// <summary>

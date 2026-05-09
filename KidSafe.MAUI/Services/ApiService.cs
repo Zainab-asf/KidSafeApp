@@ -5,25 +5,19 @@ using KidSafe.Shared.DTOs;
 
 namespace KidSafe.MAUI.Services;
 
+/// <summary>
+/// Typed HTTP client for the KidSafe backend.
+/// Auth header is injected by <see cref="AuthDelegatingHandler"/> — no manual header calls needed.
+/// </summary>
 public class ApiService
 {
     private readonly HttpClient _http;
-    private readonly AuthStateService _auth;
 
-    public ApiService(HttpClient http, AuthStateService auth)
-    {
-        _http = http;
-        _auth = auth;
-    }
+    public ApiService(HttpClient http) => _http = http;
 
-    private void SetAuthHeader()
-    {
-        if (_auth.CurrentUser != null)
-            _http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _auth.CurrentUser.Token);
-    }
+    public string BaseUrl => _http.BaseAddress?.ToString().TrimEnd('/') ?? "http://localhost:5000";
 
-    // ── Auth ─────────────────────────────────────────────────────────
+    // ── Auth ──────────────────────────────────────────────────────────
 
     public async Task<AuthResponse?> RegisterAsync(RegisterRequest req)
     {
@@ -37,57 +31,57 @@ public class ApiService
         return resp.IsSuccessStatusCode ? await resp.Content.ReadFromJsonAsync<AuthResponse>() : null;
     }
 
-    // ── Messages ─────────────────────────────────────────────────────
+    // ── Messages ──────────────────────────────────────────────────────
 
     public async Task<MessageResult?> SendMessageAsync(SendMessageRequest req)
     {
-        SetAuthHeader();
         var resp = await _http.PostAsJsonAsync("messages/send", req);
         return resp.IsSuccessStatusCode ? await resp.Content.ReadFromJsonAsync<MessageResult>() : null;
     }
 
     public async Task<List<FlaggedMessageItem>> GetFlaggedMessagesAsync()
-    {
-        SetAuthHeader();
-        return await _http.GetFromJsonAsync<List<FlaggedMessageItem>>("messages/flagged")
-               ?? new List<FlaggedMessageItem>();
-    }
+        => await _http.GetFromJsonAsync<List<FlaggedMessageItem>>("messages/flagged")
+           ?? new List<FlaggedMessageItem>();
 
-    // ── Dashboard ────────────────────────────────────────────────────
+    // ── Dashboard ─────────────────────────────────────────────────────
 
     public async Task<DashboardStats?> GetDashboardStatsAsync()
-    {
-        SetAuthHeader();
-        return await _http.GetFromJsonAsync<DashboardStats>("dashboard/stats");
-    }
+        => await _http.GetFromJsonAsync<DashboardStats>("dashboard/stats");
 
-    // ── FCM ──────────────────────────────────────────────────────────
+    // ── FCM ───────────────────────────────────────────────────────────
 
     public async Task RegisterFcmTokenAsync(string token)
-    {
-        SetAuthHeader();
-        await _http.PostAsJsonAsync("rewards/fcm-token", new { Token = token });
-    }
+        => await _http.PostAsJsonAsync("rewards/fcm-token", new { Token = token });
 
     // ── Generic helpers ───────────────────────────────────────────────
 
     public async Task<T?> GetAsync<T>(string url)
     {
-        SetAuthHeader();
-        try { return await _http.GetFromJsonAsync<T>(url); }
+        try   { return await _http.GetFromJsonAsync<T>(url); }
         catch { return default; }
     }
 
     public async Task<bool> PostAsync(string url, object body)
     {
-        SetAuthHeader();
         var resp = await _http.PostAsJsonAsync(url, body);
+        return resp.IsSuccessStatusCode;
+    }
+
+    public async Task<T?> PostRawAsync<T>(string url, object body)
+    {
+        var resp = await _http.PostAsJsonAsync(url, body);
+        if (!resp.IsSuccessStatusCode) return default;
+        return await resp.Content.ReadFromJsonAsync<T>();
+    }
+
+    public async Task<bool> DeleteAsync(string url)
+    {
+        var resp = await _http.DeleteAsync(url);
         return resp.IsSuccessStatusCode;
     }
 
     public async Task<bool> PatchAsync(string url, object body)
     {
-        SetAuthHeader();
         var json    = JsonSerializer.Serialize(body);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         var resp    = await _http.PatchAsync(url, content);
@@ -98,7 +92,6 @@ public class ApiService
 
     public async Task<bool> ReportAbuseAsync(string reason, int? flaggedMessageId = null)
     {
-        SetAuthHeader();
         var resp = await _http.PostAsJsonAsync("reports/abuse",
             new { Reason = reason, FlaggedMessageId = flaggedMessageId });
         return resp.IsSuccessStatusCode;
@@ -106,7 +99,6 @@ public class ApiService
 
     public async Task<bool> FileComplaintAsync(string description, int? linkedReportId = null)
     {
-        SetAuthHeader();
         var resp = await _http.PostAsJsonAsync("reports/complaint",
             new { Description = description, LinkedReportId = linkedReportId });
         return resp.IsSuccessStatusCode;

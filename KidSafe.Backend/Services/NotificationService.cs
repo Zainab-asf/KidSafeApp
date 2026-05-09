@@ -1,6 +1,7 @@
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
+using KidSafe.Backend.Common;
 
 namespace KidSafe.Backend.Services;
 
@@ -10,7 +11,7 @@ public class NotificationService : INotificationService
     private readonly bool _enabled;
 
     // FCM topic all parents/teachers subscribe to
-    public const string ParentsTopic = "kidsafe-parents";
+    public const string ParentsTopic = AppConstants.Fcm.ParentsTopic;
 
     public NotificationService(ILogger<NotificationService> logger, IConfiguration config)
     {

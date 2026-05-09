@@ -1,6 +1,6 @@
 """
 Run: pytest tests/ -v
-Uses StubClassifier (no ML needed).
+Forces StubClassifier so tests run without TensorFlow/Keras (no model file needed).
 """
 import pytest
 from httpx import AsyncClient, ASGITransport

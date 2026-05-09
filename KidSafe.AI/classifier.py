@@ -1,33 +1,41 @@
 """
-Model abstraction layer.
-========================
-All classifiers implement BaseClassifier.predict(text) → float [0, 1].
-0.0 = completely safe   |   1.0 = maximally toxic
+KidSafe Classifier — uses the trained BiLSTM/GRU Keras model.
+=============================================================
+Wired to:
+  model/cyberbully_detector_cpu.h5  (85 MB, CPU-optimised)
+  model/tokenizer.pkl               (7.4 MB, fitted Keras Tokenizer)
+  model/config.pkl                  (max_words, max_len, embedding_dim)
 
-To add your own model:
-  1. Create a class that extends BaseClassifier
-  2. Implement async predict(self, text: str) -> float
-  3. Register it in load_classifier() below
-  4. Set MODEL_BACKEND=custom in .env
+predict(text) → float [0.0 = safe … 1.0 = toxic]
 """
 
 import asyncio
 import logging
+import os
+import pickle
 from abc import ABC, abstractmethod
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 logger = logging.getLogger("kidsafe.classifier")
 
+# Path to the trained_models folder (sibling of this file)
+_BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR  = os.path.join(_BASE_DIR, "model")
 
-# ── base ──────────────────────────────────────────────────────────────────────
+
+# ── base contract ─────────────────────────────────────────────────────────────
 
 class BaseClassifier(ABC):
     @abstractmethod
     async def predict(self, text: str) -> float:
-        """Return toxicity probability in [0, 1]."""
+        """Return toxicity probability in [0, 1]. 0 = safe, 1 = toxic."""
         ...
 
 
-# ── stub (no ML deps — always safe, useful for dev/tests) ────────────────────
+# ── stub — always safe (no ML deps, useful for unit tests) ───────────────────
 
 class StubClassifier(BaseClassifier):
     async def predict(self, text: str) -> float:
@@ -35,88 +43,76 @@ class StubClassifier(BaseClassifier):
         return 0.0
 
 
-# ── HuggingFace pipeline backend ─────────────────────────────────────────────
+# ── KidSafe Keras model ───────────────────────────────────────────────────────
 
-class HFPipelineClassifier(BaseClassifier):
-    def __init__(self, model_name: str, max_length: int = 128):
-        from transformers import pipeline
-        logger.info(f"Loading HuggingFace model: {model_name}")
-        self._pipe = pipeline(
-            "text-classification",
-            model=model_name,
-            top_k=1,
-            truncation=True,
-            max_length=max_length,
-        )
-        logger.info("HuggingFace model ready")
+class KidSafeClassifier(BaseClassifier):
+    """
+    Bidirectional LSTM/GRU cyberbullying detector.
+
+    Model files required in model/:
+      cyberbully_detector_cpu.h5  — CPU-optimised Keras model
+      tokenizer.pkl               — fitted Keras Tokenizer
+      config.pkl                  — {'max_words':…, 'max_len':…, 'embedding_dim':…}
+    """
+
+    def __init__(self, model_dir: str = MODEL_DIR):
+        logger.info(f"Loading KidSafe model from: {model_dir}")
+
+        # ── tokenizer ────────────────────────────────────────────
+        tok_path = os.path.join(model_dir, "tokenizer.pkl")
+        with open(tok_path, "rb") as f:
+            self._tokenizer = pickle.load(f)
+        logger.info("  ✓ Tokenizer loaded")
+
+        # ── config ───────────────────────────────────────────────
+        cfg_path = os.path.join(model_dir, "config.pkl")
+        with open(cfg_path, "rb") as f:
+            cfg = pickle.load(f)
+        self._max_len = cfg.get("max_len", 100)
+        logger.info(f"  ✓ Config loaded (max_len={self._max_len})")
+
+        # ── model ────────────────────────────────────────────────
+        model_path = os.path.join(model_dir, "cyberbully_detector_cpu.h5")
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(
+                f"Model file not found: {model_path}"
+            )
+        self._model = tf.keras.models.load_model(model_path)
+        logger.info(f"  ✓ Model loaded from {os.path.basename(model_path)}")
+
+    # ── internal helpers ─────────────────────────────────────────
+
+    def _preprocess(self, text: str) -> np.ndarray:
+        """Tokenise + pad a single message → (1, max_len) array."""
+        seqs   = self._tokenizer.texts_to_sequences([text])
+        padded = pad_sequences(seqs, maxlen=self._max_len, padding="post", truncating="post")
+        return padded
+
+    def _infer(self, text: str) -> float:
+        """Blocking inference — runs inside a thread-pool executor."""
+        padded = self._preprocess(text)
+        prob   = float(self._model.predict(padded, verbose=0)[0][0])
+        return round(prob, 4)
+
+    # ── public API ───────────────────────────────────────────────
 
     async def predict(self, text: str) -> float:
+        """Non-blocking: offloads Keras inference to a thread executor."""
         loop = asyncio.get_event_loop()
-        # Run blocking inference in thread pool
-        results = await loop.run_in_executor(None, self._pipe, text)
-        result  = results[0][0] if isinstance(results[0], list) else results[0]
-        raw_label: str = result["label"].lower()
-        score: float   = result["score"]
-        # toxic-bert: label is "toxic" or "non_toxic"
-        is_toxic = "toxic" in raw_label and "non" not in raw_label
-        return round(score if is_toxic else 0.0, 4)
-
-
-# ── ✏️  YOUR MODEL — plug in here ─────────────────────────────────────────────
-
-class CustomClassifier(BaseClassifier):
-    """
-    Replace this implementation with your own model.
-
-    Contract:
-      - __init__  → load your model weights / tokenizer
-      - predict   → return a float in [0.0, 1.0]
-                    0.0 = safe, 1.0 = toxic
-
-    Example skeleton (PyTorch):
-        def __init__(self):
-            from transformers import AutoTokenizer, AutoModelForSequenceClassification
-            import torch
-            self.tokenizer = AutoTokenizer.from_pretrained("./my_model")
-            self.model     = AutoModelForSequenceClassification.from_pretrained("./my_model")
-            self.model.eval()
-
-        async def predict(self, text: str) -> float:
-            import torch
-            inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
-            with torch.no_grad():
-                logits = self.model(**inputs).logits
-            probs = torch.softmax(logits, dim=-1)
-            # Assume index 1 = toxic
-            return float(probs[0][1].item())
-    """
-
-    def __init__(self):
-        # TODO: load your model here
-        logger.warning("CustomClassifier: no model loaded — returning 0.0 (safe) for all inputs")
-
-    async def predict(self, text: str) -> float:
-        # TODO: replace with your inference logic
-        return 0.0
+        return await loop.run_in_executor(None, self._infer, text)
 
 
 # ── factory ───────────────────────────────────────────────────────────────────
 
 def load_classifier(backend: str) -> BaseClassifier:
-    """
-    Instantiate the classifier for the given backend name.
-    Called once at startup.
-    """
+    """Instantiate the classifier for the given backend name (called once at startup)."""
     match backend.lower():
         case "stub":
             return StubClassifier()
-        case "hf_pipeline":
-            from config import settings
-            return HFPipelineClassifier(settings.hf_model_name, settings.hf_max_length)
-        case "custom":
-            return CustomClassifier()
+        case "custom" | "kidsafe":
+            return KidSafeClassifier()
         case _:
             raise ValueError(
                 f"Unknown model backend '{backend}'. "
-                "Choose from: stub | hf_pipeline | custom"
+                "Choose from: stub | custom"
             )

@@ -13,27 +13,30 @@ namespace KidSafe.Backend.Controllers;
 
 /// <summary>
 /// AI label mapping (SDD §4.1 / SRS FR-CB-01):
-///   Safe  → deliver + award 10 pts
-///   Watch → mask + store + alert  (was "flagged")
-///   Review → block + store + alert (was "blocked")
+///   Safe   → deliver + award 10 pts (side-effected async)
+///   Watch  → mask + persist + alert  (side-effected async)
+///   Review → block + persist + alert (side-effected async)
+///
+/// Flow: await AI (~10-30 ms) → return label to client → enqueue side effects.
+/// DB writes, badge awards, FCM push, and SignalR alerts all run off-thread.
 /// </summary>
 [ApiController]
 [Route("messages")]
 [Authorize]
 public class MessagesController : ControllerBase
 {
-    private readonly AppDbContext _db;
-    private readonly IAIService _ai;
-    private readonly INotificationService _notifications;
+    private readonly AppDbContext          _db;
+    private readonly IAIService            _ai;
+    private readonly ModerationQueue       _queue;
     private readonly IHubContext<ChatHub, IChatClient> _hub;
 
-    public MessagesController(AppDbContext db, IAIService ai,
-        INotificationService notifications, IHubContext<ChatHub, IChatClient> hub)
+    public MessagesController(AppDbContext db, IAIService ai, ModerationQueue queue,
+                              IHubContext<ChatHub, IChatClient> hub)
     {
-        _db            = db;
-        _ai            = ai;
-        _notifications = notifications;
-        _hub           = hub;
+        _db    = db;
+        _ai    = ai;
+        _queue = queue;
+        _hub   = hub;
     }
 
     [HttpPost("send")]
@@ -43,63 +46,23 @@ public class MessagesController : ControllerBase
         var sender   = await _db.Users.FindAsync(senderId);
         if (sender == null) return Unauthorized();
 
+        // 1. Call AI — fast with Keras BiLSTM (~10-30 ms)
         var analysis = await _ai.AnalyzeAsync(dto.Message);
-        var label    = MapLabel(analysis.Label);  // normalise AI output to Safe/Watch/Review
+        var label    = MapLabel(analysis.Label);
         var masked   = _ai.MaskMessage(dto.Message);
 
-        if (label == "Safe")
+        // 2. Enqueue side effects (DB + SignalR + FCM) — runs off this thread
+        await _queue.EnqueueAsync(new ModerationSideEffect(
+            senderId, sender.DisplayName, dto.ReceiverId,
+            dto.Message, masked, label, analysis.Score));
+
+        // 3. Return AI result immediately to client
+        return label switch
         {
-            // Award points (SRS FR-AP-01)
-            var reward = await _db.Rewards.FirstOrDefaultAsync(r => r.UserId == senderId);
-            if (reward != null)
-            {
-                reward.Points += 10;
-                await _db.SaveChangesAsync();
-                await AwardBadgeIfEligible(reward);
-            }
-
-            await _hub.Clients.Group($"user_{dto.ReceiverId}")
-                .ReceiveMessage(senderId, sender.DisplayName, dto.Message, "Safe");
-
-            return Ok(new MessageResultDto("sent", null, "Safe", analysis.Score));
-        }
-
-        // Watch or Review — store in FlaggedMessages (SRS FR-CB-01)
-        var flagged = new FlaggedMessage
-        {
-            SenderId      = senderId,
-            ReceiverId    = dto.ReceiverId,
-            Message       = dto.Message,
-            MaskedMessage = masked,
-            Label         = label,
-            Score         = analysis.Score
+            "Safe"   => Ok(new MessageResultDto("sent",    null,   "Safe",   analysis.Score)),
+            "Watch"  => Ok(new MessageResultDto("masked",  masked, "Watch",  analysis.Score)),
+            _        => Ok(new MessageResultDto("blocked", null,   "Review", analysis.Score))
         };
-        _db.FlaggedMessages.Add(flagged);
-        await _db.SaveChangesAsync();
-
-        // Push to all parents + teachers (SRS FR-NO-01)
-        var parentTokens = await _db.Users
-            .Where(u => (u.Role == "Parent" || u.Role == "Teacher") && u.FcmToken != null)
-            .Select(u => u.FcmToken!)
-            .ToListAsync();
-
-        await _notifications.BroadcastToParentsAsync(
-            sender.DisplayName, label, masked, parentTokens);
-
-        // Real-time dashboard alert
-        await _hub.Clients.Group("parents")
-            .FlaggedMessageAlert(senderId, sender.DisplayName, masked, label, analysis.Score);
-
-        if (label == "Watch")
-        {
-            // Deliver masked version to receiver
-            await _hub.Clients.Group($"user_{dto.ReceiverId}")
-                .ReceiveMessage(senderId, sender.DisplayName, masked, "Watch");
-            return Ok(new MessageResultDto("masked", masked, "Watch", analysis.Score));
-        }
-
-        // Review — blocked, not delivered
-        return Ok(new MessageResultDto("blocked", null, "Review", analysis.Score));
     }
 
     [HttpGet("flagged")]
@@ -125,11 +88,59 @@ public class MessagesController : ControllerBase
         return Ok(messages);
     }
 
-    // -----------------------------------------------------------------
-    // Helpers
-    // -----------------------------------------------------------------
+    // ── POST /messages/class/{classId}/send ──────────────────────
 
-    /// <summary>Normalise AI output → Safe | Watch | Review (SDD §4.1)</summary>
+    [HttpPost("class/{classId:int}/send")]
+    public async Task<IActionResult> SendToClass(int classId, [FromBody] ClassMessageDto dto)
+    {
+        var uid    = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var sender = await _db.Users.FindAsync(uid);
+        if (sender == null) return Unauthorized();
+
+        var analysis = await _ai.AnalyzeAsync(dto.Content);
+        var label    = MapLabel(analysis.Label);
+        var masked   = _ai.MaskMessage(dto.Content);
+
+        // Persist class message
+        var msg = new ChatMessage
+        {
+            ClassId   = classId,
+            SenderId  = uid,
+            Content   = dto.Content,
+            Label     = label,
+            Score     = analysis.Score,
+            Masked    = label == "Watch" ? masked : null
+        };
+        _db.ChatMessages.Add(msg);
+        await _db.SaveChangesAsync();
+
+        var displayContent = label == "Watch"  ? masked
+                           : label == "Review" ? "[Message blocked]"
+                           : dto.Content;
+
+        // Broadcast to class room via SignalR
+        await _hub.Clients.Group($"class_{classId}")
+            .ReceiveClassMessage(classId, uid, sender.DisplayName,
+                sender.AvatarEmoji ?? "😊", displayContent, label, analysis.Score, msg.Timestamp);
+
+        // Escalate Watch/Review to parents/admin via moderation queue
+        if (label != "Safe")
+        {
+            await _queue.EnqueueAsync(new ModerationSideEffect(
+                uid, sender.DisplayName, 0,
+                dto.Content, masked, label, analysis.Score));
+        }
+        else
+        {
+            // Award safe message points
+            await _queue.EnqueueAsync(new ModerationSideEffect(
+                uid, sender.DisplayName, 0,
+                dto.Content, masked, "Safe", analysis.Score));
+        }
+
+        return Ok(new { msg.Id, label, score = analysis.Score, timestamp = msg.Timestamp });
+    }
+
     private static string MapLabel(string raw) => raw.ToLowerInvariant() switch
     {
         "safe"    => "Safe",
@@ -139,28 +150,4 @@ public class MessagesController : ControllerBase
         "blocked" => "Review",
         _         => "Watch"
     };
-
-    private async Task AwardBadgeIfEligible(Reward reward)
-    {
-        var badges = System.Text.Json.JsonSerializer
-            .Deserialize<List<string>>(reward.Badges) ?? new List<string>();
-
-        string? newBadge = reward.Points switch
-        {
-            >= 10000 when !badges.Contains("Legend")        => "Legend",
-            >= 5000  when !badges.Contains("Safety King")   => "Safety King",
-            >= 2000  when !badges.Contains("Chat Scholar")  => "Chat Scholar",
-            >= 1000  when !badges.Contains("Cyber Hero")    => "Cyber Hero",
-            >= 500   when !badges.Contains("Kind Star")     => "Kind Star",
-            >= 100   when !badges.Contains("Safe Chatter")  => "Safe Chatter",
-            _ => null
-        };
-
-        if (newBadge != null)
-        {
-            badges.Add(newBadge);
-            reward.Badges = System.Text.Json.JsonSerializer.Serialize(badges);
-            await _db.SaveChangesAsync();
-        }
-    }
 }

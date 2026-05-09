@@ -5,46 +5,56 @@
 @inject NavigationManager Nav
 @implements IAsyncDisposable
 
-<div class="chat-shell">
+<div class="chat-root">
 
-    <!-- Top bar -->
-    <div class="chat-topbar">
-        <div class="chat-avatar">😊</div>
-        <div style="flex:1">
-            <div class="chat-name">@AuthState.CurrentUser?.DisplayName</div>
-            <div class="chat-status">
-                <span class="status-dot @(_hubState == HubState.Connected ? "online" : "")"></span>
+    <!-- Chat header -->
+    <div class="chat-hd">
+        <div class="chat-hd-av">😊</div>
+        <div class="chat-hd-info">
+            <div class="chat-hd-name">@(AuthState.CurrentUser?.DisplayName ?? "Student")</div>
+            <div class="chat-hd-status">
+                <span class="conn-dot @(_hubState == HubState.Connected ? "on" : "")"></span>
                 @StatusText
             </div>
         </div>
-        <div class="points-pill" @onclick="GoRewards">⭐ @_points pts</div>
-        <button class="btn-icon-circle" @onclick="Logout" title="Logout" style="font-size:.85rem">🚪</button>
+        <div class="chat-pts-pill" @onclick="GoRewards">⭐ @_points pts</div>
+        <button class="chat-hd-btn" @onclick="GoRewards" title="Rewards">🏆</button>
+        <button class="chat-hd-btn" @onclick="Logout" title="Logout">🚪</button>
     </div>
 
     <!-- Toast -->
     @if (!string.IsNullOrEmpty(_toast))
     {
-        <div class="toast @_toastClass">@_toast</div>
+        <div class="chat-toast @_toastClass">@_toast</div>
     }
 
-    <!-- Messages -->
-    <div class="chat-messages" id="msg-list">
+    <!-- Messages area -->
+    <div class="chat-msgs" id="msg-list">
+        @if (!_messages.Any())
+        {
+            <div class="chat-empty">
+                <div class="chat-empty-ico">💬</div>
+                <div class="chat-empty-txt">Say hello to your classmates!</div>
+                <div class="chat-empty-sub">Be kind, be safe 🌟</div>
+            </div>
+        }
         @foreach (var msg in _messages)
         {
-            <div class="msg-row @(msg.SenderId == AuthState.CurrentUser?.UserId ? "mine" : "")">
-                @if (msg.SenderId != AuthState.CurrentUser?.UserId)
+            var mine = msg.SenderId == AuthState.CurrentUser?.UserId;
+            <div class="msg-row @(mine ? "mine" : "")">
+                @if (!mine)
                 {
-                    <div class="msg-avatar">😊</div>
+                    <div class="msg-av">😊</div>
                 }
-                <div class="bubble-wrap">
-                    <div class="bubble @BubbleClass(msg)">@msg.Content</div>
-                    <div class="bubble-meta">
-                        <span class="bubble-time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+                <div class="bbl-wrap">
+                    <div class="bbl @BubbleClass(msg)">@msg.Content</div>
+                    <div class="bbl-meta">
+                        <span class="bbl-time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
                         @if (msg.Label is not ("Safe" or "pending"))
                         {
-                            <span class="bubble-label @msg.Label.ToLower()">@msg.Label</span>
+                            <span class="bbl-badge @msg.Label.ToLower()">@msg.Label</span>
                         }
-                        @if (msg.SenderId != AuthState.CurrentUser?.UserId)
+                        @if (!mine)
                         {
                             <button class="report-btn" title="Report" @onclick="() => ReportMsg(msg)">🚩</button>
                         }
@@ -55,53 +65,47 @@
         @if (!string.IsNullOrEmpty(_typingUser))
         {
             <div class="typing-row">
-                <div class="msg-avatar">😊</div>
-                <span class="typing-text">@_typingUser is typing</span>
+                <div class="msg-av">😊</div>
+                <span class="typing-lbl">@_typingUser is typing</span>
                 <div class="typing-dots"><span></span><span></span><span></span></div>
             </div>
         }
     </div>
 
     <!-- Quick replies -->
-    <div class="quick-replies">
+    <div class="quick-row">
         @foreach (var r in _quickReplies)
         {
-            <button class="quick-btn" @onclick="() => _input = r">@r</button>
+            <button class="quick-chip" @onclick="() => _input = r">@r</button>
         }
     </div>
 
-    <!-- Input -->
-    <div class="chat-input-area">
-        <div class="emoji-bar">
+    <!-- Input area -->
+    <div class="chat-input">
+        <div class="emoji-row">
             @foreach (var e in _emojis)
             {
-                <button class="emoji-btn" @onclick="() => _input += e">@e</button>
+                <button class="emoji-chip" @onclick="() => _input += e">@e</button>
             }
         </div>
         <div class="input-row">
-            <input class="msg-input" @bind="_input" @bind:event="oninput"
+            <input class="msg-field" @bind="_input" @bind:event="oninput"
                    @onkeyup="OnKey" placeholder="Type a friendly message 😊" />
-            <button class="send-btn" @onclick="Send" disabled="@_sending">
+            <button class="send-btn @(_sending ? "busy" : "")" @onclick="Send" disabled="@_sending">
                 @(_sending ? "⏳" : "➤")
             </button>
         </div>
     </div>
 
-    <!-- Bottom nav -->
-    <div class="bottom-nav">
-        <button class="nav-item active">
-            <span class="nav-icon">💬</span>Chat
-            <div class="nav-dot"></div>
-        </button>
-        <button class="nav-item" @onclick="GoRewards">
-            <span class="nav-icon">🏆</span>Rewards
-            <div class="nav-dot"></div>
-        </button>
-        <button class="nav-item" @onclick="Logout">
-            <span class="nav-icon">🚪</span>Logout
-            <div class="nav-dot"></div>
-        </button>
-    </div>
+    <!-- 5-item mobile nav -->
+    <nav class="mobile-nav">
+        <button class="mnav-item active"><span>💬</span><span>Chat</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
+        <button class="mnav-item" @onclick="GoRewards"><span>🏆</span><span>Rewards</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+    </nav>
+
 </div>
 
 @code {
@@ -172,9 +176,9 @@
             _messages.Add(local);
 
             (_toast, _toastClass) = result.Label switch {
-                "Safe"   => ("✅ Sent! +10 points", "safe"),
-                "Watch"  => ("👁️ Message flagged and masked.", "flagged"),
-                "Review" => ("🚫 Message blocked — please be kind!", "blocked"),
+                "Safe"   => ("✅ Sent! +10 points", "t-safe"),
+                "Watch"  => ("👁️ Message flagged and masked.", "t-warn"),
+                "Review" => ("🚫 Message blocked — please be kind!", "t-block"),
                 _        => ("", "")
             };
             if (result.Label == "Safe") _points += 10;
@@ -193,7 +197,7 @@
     {
         var ok = await Api.ReportAbuseAsync($"Reported message from {msg.SenderName}");
         _toast = ok ? "🚩 Reported. Thank you!" : "Failed to report.";
-        _toastClass = ok ? "safe" : "blocked";
+        _toastClass = ok ? "t-safe" : "t-block";
         StateHasChanged();
         await Task.Delay(3000);
         _toast = ""; StateHasChanged();

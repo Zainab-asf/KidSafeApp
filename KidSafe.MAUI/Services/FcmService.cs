@@ -7,7 +7,9 @@ namespace KidSafe.MAUI.Services;
 /// </summary>
 public class FcmService : IDisposable
 {
+#pragma warning disable CS0067
     public event Action<string, string, string>? OnForegroundMessage;
+#pragma warning restore CS0067
 
     public Task InitAsync() => Task.CompletedTask;
 

@@ -1,26 +1,34 @@
 """
 KidSafe AI Moderation Service
 ==============================
-To plug in your own model, implement BaseClassifier and set MODEL_BACKEND
-in config.py (or env var MODEL_BACKEND).
+FastAPI server wrapping the trained BiLSTM/GRU cyberbullying detector.
 
-Current backends:
-  - "stub"       → always returns safe (no dependencies, for testing)
-  - "hf_pipeline"→ HuggingFace pipeline (default until your model is ready)
-  - "custom"     → YOUR MODEL — fill in CustomClassifier.predict()
+Model: trained_models/cyberbully_detector_cpu.h5
+       (custom Keras model trained on cyberbullying datasets)
+
+Endpoints:
+  POST /analyze   → {"message": "..."} → {"label": "Safe|Watch|Review", "score": 0.0-1.0}
+  GET  /health    → service + model status
+  GET  /config    → current thresholds
+  PATCH /config   → update thresholds at runtime
+
+Start:
+  uvicorn main:app --reload --port 8000
 """
 
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from classifier import load_classifier, BaseClassifier
-from models import AnalyzeRequest, AnalyzeResponse, ConfigResponse
+
+from classifier import BaseClassifier, load_classifier
 from config import settings
+from models import AnalyzeRequest, AnalyzeResponse, ConfigResponse
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("kidsafe.ai")
 
@@ -35,9 +43,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"Loading model backend: '{settings.model_backend}'")
     try:
         classifier = load_classifier(settings.model_backend)
-        logger.info("Model loaded ✓")
-    except Exception as e:
-        logger.error(f"Model load failed: {e}")
+        logger.info("Model ready ✓")
+    except Exception as exc:
+        logger.error(f"Model load failed: {exc}")
         classifier = None
     yield
     logger.info("Shutting down.")
@@ -45,8 +53,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="KidSafe AI Moderation",
-    version="1.0.0",
-    description="Toxicity classification: safe | flagged | blocked",
+    version="2.0.0",
+    description="Cyberbullying detection: Safe | Watch | Review",
     lifespan=lifespan,
 )
 
@@ -57,10 +65,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
+    """
+    Classify a message.
+
+    Returns:
+      label  — Safe | Watch | Review
+      score  — toxicity probability [0.0, 1.0]
+    """
     text = req.message.strip()
     if not text:
         return AnalyzeResponse(label="Safe", score=0.0)
@@ -68,17 +84,18 @@ async def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
     if classifier is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    raw_score: float = await classifier.predict(text)   # 0.0 = clean, 1.0 = toxic
+    score: float = await classifier.predict(text)
 
-    # SDD §4.1 labels: Safe | Watch | Review
-    if raw_score < settings.flagged_threshold:
+    # SDD §4.1 label mapping
+    if score < settings.flagged_threshold:
         label = "Safe"
-    elif raw_score >= settings.blocked_threshold:
+    elif score >= settings.blocked_threshold:
         label = "Review"
     else:
         label = "Watch"
 
-    return AnalyzeResponse(label=label, score=round(raw_score, 4))
+    logger.info(f"analyze → score={score:.4f} label={label}")
+    return AnalyzeResponse(label=label, score=round(score, 4))
 
 
 @app.get("/health")
@@ -110,7 +127,7 @@ async def update_config(
     if not (0.0 < ft < bt <= 1.0):
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid thresholds: flagged={ft}, blocked={bt}. Must satisfy 0 < flagged < blocked ≤ 1"
+            detail=f"Invalid thresholds: flagged={ft}, blocked={bt}. Must satisfy 0 < flagged < blocked ≤ 1",
         )
 
     settings.flagged_threshold = ft

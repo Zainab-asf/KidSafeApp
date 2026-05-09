@@ -41,4 +41,7 @@ public class AuthStateService
     public bool IsChild           => CurrentUser?.Role == "Child";
     public bool IsParentOrTeacher => CurrentUser?.Role is "Parent" or "Teacher";
     public bool IsAdmin           => CurrentUser?.Role == "Admin";
+
+    /// <summary>Backend base URL for direct file links (uploads).</summary>
+    public string BackendUrl { get; set; } = "http://localhost:5000";
 }

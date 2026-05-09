@@ -11,9 +11,7 @@ public static class MauiProgram
         builder
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
-            {
-                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-            });
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"));
 
         builder.Services.AddMauiBlazorWebView();
 
@@ -22,14 +20,17 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        // ── HTTP client pointing to local backend ─────────────────────
-        builder.Services.AddHttpClient<ApiService>(c =>
-            c.BaseAddress = new Uri("http://localhost:5000/"));
-
-        // ── App services ──────────────────────────────────────────────
+        // ── Singleton services ────────────────────────────────────────
         builder.Services.AddSingleton<AuthStateService>();
         builder.Services.AddSingleton<ChatHubService>();
         builder.Services.AddSingleton<FcmService>();
+
+        // ── HTTP client with auth delegating handler ──────────────────
+        builder.Services.AddTransient<AuthDelegatingHandler>();
+
+        builder.Services.AddHttpClient<ApiService>(c =>
+                c.BaseAddress = new Uri("http://localhost:5000/"))
+            .AddHttpMessageHandler<AuthDelegatingHandler>();
 
         return builder.Build();
     }

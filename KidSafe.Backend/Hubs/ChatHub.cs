@@ -10,10 +10,14 @@ namespace KidSafe.Backend.Hubs;
 public interface IChatClient
 {
     Task ReceiveMessage(int senderId, string senderName, string message, string label);
+    Task ReceiveClassMessage(int classId, int senderId, string senderName, string senderEmoji,
+                             string content, string label, double score, DateTime timestamp);
     Task UserTyping(string userId, string userName);
+    Task ClassUserTyping(int classId, string userName);
     Task FlaggedMessageAlert(int senderId, string senderName, string maskedMessage, string label, double score);
     Task ConnectionAck(string connectionId, string userId);
     Task UserStatusChanged(string userId, string displayName, bool online);
+    Task NotificationReceived(string title, string body, string type);
 }
 
 [Authorize]
@@ -56,17 +60,28 @@ public class ChatHub : Hub<IChatClient>
 
     // ── client-callable methods ───────────────────────────────
 
-    /// <summary>Parents and teachers call this to receive dashboard alerts.</summary>
+    /// <summary>Parents, teachers, and admins call this to receive dashboard alerts.</summary>
     public async Task JoinParentRoom()
     {
         var role = Role();
-        if (role is "Parent" or "Teacher")
+        if (role is "Parent" or "Teacher" or "Admin")
             await Groups.AddToGroupAsync(Context.ConnectionId, "parents");
     }
 
     public async Task LeaveParentRoom()
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, "parents");
+    }
+
+    /// <summary>Join a class group room.</summary>
+    public async Task JoinClass(int classId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, ClassGroup(classId));
+    }
+
+    public async Task LeaveClass(int classId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, ClassGroup(classId));
     }
 
     /// <summary>Child sends typing indicator to a specific receiver.</summary>
@@ -80,10 +95,20 @@ public class ChatHub : Hub<IChatClient>
                      .UserTyping(userId, name ?? "Someone");
     }
 
+    /// <summary>Typing indicator for class group chat.</summary>
+    public async Task SendClassTypingIndicator(int classId)
+    {
+        var name = DisplayName();
+        if (name == null) return;
+        await Clients.OthersInGroup(ClassGroup(classId))
+                     .ClassUserTyping(classId, name);
+    }
+
     // ── helpers ───────────────────────────────────────────────
 
     private string? UserId()      => Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     private string? DisplayName() => Context.User?.FindFirst("displayName")?.Value;
     private string? Role()        => Context.User?.FindFirst(ClaimTypes.Role)?.Value;
     private static string UserGroup(string userId) => $"user_{userId}";
+    private static string ClassGroup(int classId)  => $"class_{classId}";
 }

@@ -11,11 +11,11 @@ public partial class App : Application
 	{
 		return new Window(new MainPage())
 		{
-			Title   = "KidSafe – Safe Chat",
-			Width   = 430,
-			Height  = 900,
-			MinimumWidth  = 380,
-			MinimumHeight = 700,
+			Title        = "KidSafe – Safe Chat",
+			Width        = 1100,
+			Height       = 720,
+			MinimumWidth  = 600,
+			MinimumHeight = 500,
 		};
 	}
 }

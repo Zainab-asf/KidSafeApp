@@ -2,47 +2,54 @@
 @inject AuthStateService AuthState
 @inject NavigationManager Nav
 
-<div class="chat-shell">
-    <div class="rewards-hero">
-        <div class="rewards-pts">@_points</div>
-        <div class="rewards-pts-label">Safety Points</div>
-        <div class="pts-bar-wrap">
-            <div class="pts-bar-fill" style="width:@BarWidth%"></div>
+<div class="chat-root">
+
+    <!-- Header -->
+    <div class="chat-hd">
+        <button class="chat-hd-btn" @onclick="NavChat" title="Back">←</button>
+        <div style="flex:1;text-align:center">
+            <div class="chat-hd-name">My Rewards</div>
         </div>
-        <div class="pts-next">@PointsToNext pts to next badge</div>
+        <button class="chat-hd-btn" @onclick="NavChat" title="Chat">💬</button>
     </div>
 
-    <div class="page-scroll" style="padding-top:.85rem">
-        <div class="section-header">
-            <span class="section-title">🎖️ Badges</span>
+    <div class="rew-scroll">
+        <!-- Hero points card -->
+        <div class="rew-hero">
+            <div class="rew-pts-lbl">Safety Points</div>
+            <div class="rew-pts">@_points</div>
+            <div class="rew-bar-wrap">
+                <div class="rew-bar-fill" style="width:@BarWidth%"></div>
+            </div>
+            <div class="rew-next">@PointsToNext pts to next badge</div>
         </div>
-        <div class="badge-grid">
+
+        <!-- Badges -->
+        <div style="padding:1rem 1rem 0">
+            <div class="sec-hd"><h2>🎖️ Badges</h2></div>
+        </div>
+        <div class="badge-shelf">
             @foreach (var b in _badges)
             {
-                <div class="reward-badge @(b.Unlocked ? "unlocked" : "locked")">
-                    <div class="badge-icon-lg">@b.Icon</div>
-                    <div class="badge-name">@b.Name</div>
-                    <div class="badge-req">@b.Pts pts</div>
-                    @if (b.Unlocked) { <div class="badge-earned">✓ Earned</div> }
+                <div class="rew-badge @(b.Unlocked ? "unlocked" : "locked")">
+                    <div class="rew-badge-ico">@b.Icon</div>
+                    <div class="rew-badge-name">@b.Name</div>
+                    <div class="rew-badge-pts">@b.Pts pts</div>
+                    @if (b.Unlocked) { <div class="rew-badge-earned">✓ Earned</div> }
                 </div>
             }
         </div>
     </div>
 
-    <div class="bottom-nav">
-        <button class="nav-item" @onclick="NavChat">
-            <span class="nav-icon">💬</span>Chat
-            <div class="nav-dot"></div>
-        </button>
-        <button class="nav-item active">
-            <span class="nav-icon">🏆</span>Rewards
-            <div class="nav-dot"></div>
-        </button>
-        <button class="nav-item" @onclick="NavChat">
-            <span class="nav-icon">🔙</span>Back
-            <div class="nav-dot"></div>
-        </button>
-    </div>
+    <!-- 5-item mobile nav -->
+    <nav class="mobile-nav">
+        <button class="mnav-item" @onclick="NavChat"><span>💬</span><span>Chat</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
+        <button class="mnav-item active"><span>🏆</span><span>Rewards</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+    </nav>
+
 </div>
 
 @code {

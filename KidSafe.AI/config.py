@@ -1,10 +1,11 @@
 """
-Runtime configuration — override any value via environment variable.
+Runtime configuration — override any value via environment variable or .env file.
 
 Examples:
-  MODEL_BACKEND=custom          → use your own model
-  FLAGGED_THRESHOLD=0.4
-  BLOCKED_THRESHOLD=0.75
+  MODEL_BACKEND=custom           (default — uses trained BiLSTM Keras model)
+  MODEL_BACKEND=stub             (testing — no ML, always returns Safe)
+  FLAGGED_THRESHOLD=0.5
+  BLOCKED_THRESHOLD=0.8
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,15 +14,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # ── model ─────────────────────────────────────────────────
-    # Options: "stub" | "hf_pipeline" | "custom"
-    model_backend: str = "hf_pipeline"
+    # Model backend: "custom" (KidSafe Keras model) | "stub" (testing)
+    model_backend: str = "custom"
 
-    # HuggingFace pipeline model name (only used when backend = hf_pipeline)
-    hf_model_name: str = "unitary/toxic-bert"
-    hf_max_length: int = 128
-
-    # ── thresholds (mutable at runtime via PATCH /config) ─────
+    # Thresholds — mutable at runtime via PATCH /config
+    # score < flagged              → Safe
+    # flagged ≤ score < blocked   → Watch  (message masked)
+    # score ≥ blocked             → Review (message blocked)
     flagged_threshold: float = 0.5
     blocked_threshold: float = 0.8
 

@@ -3,57 +3,128 @@
 @inject AuthStateService AuthState
 @inject NavigationManager Nav
 
-<div class="auth-shell">
-    <div class="auth-hero">
-        <div class="auth-hero-logo">🛡️</div>
-        <div class="auth-hero-title">KidSafe</div>
-        <div class="auth-hero-sub">Protecting young minds online</div>
+<div class="login-root">
+
+    <!-- ── Left branding panel ── -->
+    <div class="login-left">
+        <div class="login-left-inner">
+            <div class="login-brand-mark">🛡️</div>
+            <div class="login-brand-name">KidSafe</div>
+            <div class="login-brand-tag">AI-Powered Safe Learning Platform</div>
+
+            <div class="login-feats">
+                <div class="login-feat"><span class="lf-ico">🤖</span><div><div class="lf-ttl">AI Moderation</div><div class="lf-sub">Real-time content scanning</div></div></div>
+                <div class="login-feat"><span class="lf-ico">👨‍👩‍👦</span><div><div class="lf-ttl">Family Connected</div><div class="lf-sub">Parent &amp; teacher oversight</div></div></div>
+                <div class="login-feat"><span class="lf-ico">🏆</span><div><div class="lf-ttl">Reward System</div><div class="lf-sub">Badges for good behaviour</div></div></div>
+                <div class="login-feat"><span class="lf-ico">🔒</span><div><div class="lf-ttl">Secure &amp; Private</div><div class="lf-sub">End-to-end safe messaging</div></div></div>
+            </div>
+        </div>
     </div>
 
-    <div class="auth-body">
-        <div class="auth-title">Welcome Back!</div>
-        <div class="auth-subtitle">Sign in to your account</div>
+    <!-- ── Right form panel ── -->
+    <div class="login-right">
+        <div class="login-box">
 
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="msg-error">⚠️ @_error</div>
-        }
-
-        <EditForm Model="_m" OnValidSubmit="Submit">
-            <DataAnnotationsValidator />
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <InputText class="form-input" @bind-Value="_m.Email"
-                           placeholder="Enter your email" type="email" />
+            <!-- Header -->
+            <div class="login-box-hd">
+                <div class="login-box-ico">👋</div>
+                <h1 class="login-box-title">Welcome Back</h1>
+                <p class="login-box-sub">Select your role or enter your credentials</p>
             </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <InputText class="form-input" @bind-Value="_m.Password"
-                           placeholder="Enter your password" type="password" />
-            </div>
-            <button class="btn btn-primary" type="submit" disabled="@_busy">
-                @if (_busy)
-                {
-                    <span>Signing in…</span>
-                    <div class="spinner" style="width:18px;height:18px;border-width:2px;margin-left:.5rem"></div>
-                }
-                else
-                {
-                    <span>Sign In 🚀</span>
-                }
-            </button>
-        </EditForm>
 
-        <div class="auth-admin-note">
-            🔐 Accounts are created by your Administrator.<br/>
-            Contact your Admin if you need access.
+            <!-- Role cards -->
+            <div class="role-cards">
+                @foreach (var r in _roleOptions)
+                {
+                    var isActive = _selectedRole == r.Role;
+                    <button class="role-card @(isActive ? "active" : "") rc-@r.Role.ToLower()"
+                            type="button"
+                            @onclick="() => SelectRole(r)">
+                        <span class="rc-ico">@r.Emoji</span>
+                        <span class="rc-lbl">@r.Label</span>
+                        @if (isActive)
+                        {
+                            <span class="rc-check">✓</span>
+                        }
+                    </button>
+                }
+            </div>
+
+            <!-- Demo hint -->
+            @if (_selectedRole != null)
+            {
+                <div class="demo-hint">
+                    <span class="demo-dot">🎯</span>
+                    <span>Demo credentials filled — click <strong>Sign In</strong> to try the @_selectedRole portal</span>
+                </div>
+            }
+
+            <!-- Error -->
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="auth-error">⚠️ @_error</div>
+            }
+
+            <!-- Form -->
+            <div class="login-form">
+                <div class="field">
+                    <label class="field-label">Email address</label>
+                    <div class="field-wrap">
+                        <span class="field-icon">✉️</span>
+                        <input class="field-input" type="email" @bind="_email" @bind:event="oninput"
+                               placeholder="your@email.com" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label">Password</label>
+                    <div class="field-wrap">
+                        <span class="field-icon">🔑</span>
+                        <input class="field-input" type="@(_showPwd ? "text" : "password")"
+                               @bind="_password" @bind:event="oninput"
+                               placeholder="••••••••" />
+                        <button type="button" class="pwd-toggle" @onclick="() => _showPwd = !_showPwd"
+                                title="@(_showPwd ? "Hide" : "Show")">
+                            @(_showPwd ? "🙈" : "👁️")
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block login-btn" type="button"
+                        @onclick="Submit" disabled="@_busy">
+                    @if (_busy)
+                    {
+                        <div class="spinner-sm"></div>
+                        <span>Signing in…</span>
+                    }
+                    else
+                    {
+                        <span>Sign In →</span>
+                    }
+                </button>
+            </div>
+
+            <div class="auth-note">
+                🔐 Accounts are created by your Administrator.<br />
+                Contact your Admin if you need access.
+            </div>
+
         </div>
     </div>
 </div>
 
 @code {
-    record M { public string Email { get; set; } = ""; public string Password { get; set; } = ""; }
-    M _m = new(); string _error = ""; bool _busy;
+    record RoleOption(string Role, string Label, string Emoji, string Email, string Password);
+
+    static readonly RoleOption[] _roleOptions =
+    [
+        new("Admin",   "Admin",    "🛡️", "admin@kidsafe.app",  "Admin@123!"),
+        new("Teacher", "Teacher",  "👩‍🏫", "teacher@demo.com",   "Demo@123!"),
+        new("Parent",  "Parent",   "👨‍👩‍👦", "parent@demo.com",    "Demo@123!"),
+        new("Child",   "Student",  "👦", "student@demo.com",   "Demo@123!"),
+    ];
+
+    string _email = "", _password = "", _error = "";
+    bool   _busy, _showPwd;
+    string? _selectedRole;
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,14 +132,26 @@
         if (AuthState.IsAuthenticated) Redirect();
     }
 
+    void SelectRole(RoleOption r)
+    {
+        _selectedRole = r.Role;
+        _email        = r.Email;
+        _password     = r.Password;
+        _error        = "";
+    }
+
     async Task Submit()
     {
+        if (string.IsNullOrWhiteSpace(_email) || string.IsNullOrWhiteSpace(_password))
+        { _error = "Email and password are required."; return; }
+
         _busy = true; _error = "";
-        var r = await Api.LoginAsync(new LoginRequest(_m.Email, _m.Password));
+        var r = await Api.LoginAsync(new LoginRequest(_email, _password));
+
         if (r == null)
             _error = "Invalid email or password.";
         else if (r.Token == "pending")
-            _error = "⏳ Your account is awaiting approval. You'll be notified once activated.";
+            _error = "⏳ Your account is awaiting approval.";
         else if (r.Token == "disabled")
             _error = "🚫 Your account has been disabled. Contact your administrator.";
         else
@@ -80,7 +163,8 @@
     }
 
     void Redirect() => Nav.NavigateTo(
-        AuthState.CurrentUser?.Role == "Admin"   ? "/admin"     :
-        AuthState.IsChild                        ? "/chat"      :
-        AuthState.CurrentUser?.Role == "Teacher" ? "/teacher"   : "/dashboard");
+        AuthState.CurrentUser?.Role == "Admin"   ? "/admin"    :
+        AuthState.IsChild                        ? "/chat"     :
+        AuthState.CurrentUser?.Role == "Teacher" ? "/teacher"  : "/dashboard",
+        replace: true);
 }

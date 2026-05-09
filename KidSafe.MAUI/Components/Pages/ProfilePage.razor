@@ -1,0 +1,177 @@
+@page "/profile"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="@(IsDesktop ? "app-root" : "mobile-root")">
+
+    @if (IsDesktop)
+    {
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon">🛡️</span>
+                <span>KidSafe</span>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">Navigation</div>
+                <button class="nav-item" @onclick="GoBack"><span class="ni">←</span><span>Back</span></button>
+                <button class="nav-item active"><span class="ni">👤</span><span>Profile</span></button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                    <div>
+                        <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
+                        <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
+                    </div>
+                    <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                </div>
+            </div>
+        </aside>
+    }
+
+    <div class="@(IsDesktop ? "main-area" : "")">
+        @if (!IsDesktop)
+        {
+            <div class="mobile-header">
+                <div class="mh-title">👤 Profile</div>
+            </div>
+        }
+        else
+        {
+            <div class="top-header">
+                <div class="header-title">👤 My Profile</div>
+            </div>
+        }
+
+        <div class="@(IsDesktop ? "page-content" : "mobile-content")">
+
+            <!-- Profile hero -->
+            <div class="profile-hero">
+                <div class="profile-av-wrap">
+                    <div class="profile-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                </div>
+                <div class="profile-name">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
+                <div class="profile-email">@(AuthState.CurrentUser?.Email ?? "")</div>
+                <div class="profile-role-pill @RolePillClass()">@AuthState.CurrentUser?.Role</div>
+            </div>
+
+            <!-- Stats (child only) -->
+            @if (IsChild && _reward != null)
+            {
+                <div class="card" style="margin-bottom:1rem">
+                    <div style="font-weight:700;margin-bottom:.75rem">⭐ My Progress</div>
+                    <div class="grid-3">
+                        <div class="mini-stat">
+                            <div class="mini-stat-val">@_reward.Points</div>
+                            <div class="mini-stat-label">Points</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-val">@_reward.BadgeLevel</div>
+                            <div class="mini-stat-label">Badge</div>
+                        </div>
+                        <div class="mini-stat">
+                            <div class="mini-stat-val">@_reward.SafeMessages</div>
+                            <div class="mini-stat-label">Safe msgs</div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Avatar picker -->
+            <div class="card" style="margin-bottom:1rem">
+                <div style="font-weight:700;margin-bottom:.75rem">🎨 Avatar</div>
+                <div class="avatar-grid">
+                    @foreach (var e in _avatarOptions)
+                    {
+                        <button class="av-opt @(_selectedAvatar == e ? "selected" : "")"
+                                @onclick="() => _selectedAvatar = e">@e</button>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(_avatarMsg))
+                {
+                    <div class="@(_avatarOk ? "alert-ok" : "alert-err")" style="margin-top:.5rem">@_avatarMsg</div>
+                }
+                <button class="btn btn-primary" style="margin-top:.75rem" @onclick="SaveAvatar">Save Avatar</button>
+            </div>
+
+            <!-- Account actions -->
+            <div class="card">
+                <div style="font-weight:700;margin-bottom:.75rem">⚙️ Account</div>
+                <div class="profile-actions">
+                    @if (IsChild)
+                    {
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>🏆 My Rewards</button>
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/classes")'>📚 My Classes</button>
+                    }
+                    <button class="btn btn-danger-o" @onclick="Logout">🚪 Logout</button>
+                </div>
+            </div>
+        </div>
+
+        @if (!IsDesktop)
+        {
+            <nav class="mobile-nav">
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><span>🏆</span><span>Rewards</span></button>
+                <button class="mnav-item active"><span>👤</span><span>Profile</span></button>
+            </nav>
+        }
+    </div>
+</div>
+
+@code {
+    RewardData? _reward;
+    string _selectedAvatar = "😊";
+    string _avatarMsg = "";
+    bool _avatarOk;
+
+    static readonly string[] _avatarOptions =
+    {
+        "😊","😎","🦄","🐱","🐶","🦊","🐼","🐸","🦋","🌟","🎮","🚀",
+        "🎵","🌈","🎨","⚽","🏀","🎯","🍕","🍦","🌺","🦁","🐢","🦖"
+    };
+
+    bool IsDesktop => AuthState.CurrentUser?.Role is "Teacher" or "Admin" or "Parent";
+    bool IsChild   => AuthState.CurrentUser?.Role == "Child";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
+        _selectedAvatar = AuthState.CurrentUser?.AvatarEmoji ?? "😊";
+        if (IsChild) _reward = await Api.GetAsync<RewardData>("rewards/my");
+    }
+
+    async Task SaveAvatar()
+    {
+        var ok = await Api.PatchAsync("auth/avatar", new { Emoji = _selectedAvatar });
+        _avatarOk  = ok;
+        _avatarMsg = ok ? "✅ Avatar updated!" : "❌ Failed to update.";
+        StateHasChanged();
+        await Task.Delay(2500);
+        _avatarMsg = ""; StateHasChanged();
+    }
+
+    string RolePillClass() => AuthState.CurrentUser?.Role switch
+    {
+        "Admin"   => "pill-admin",
+        "Teacher" => "pill-teacher",
+        "Parent"  => "pill-parent",
+        _         => "pill-child"
+    };
+
+    void GoBack() => Nav.NavigateTo(AuthState.CurrentUser?.Role switch
+    {
+        "Admin"   => "/admin",
+        "Teacher" => "/teacher",
+        "Parent"  => "/parent",
+        _         => "/chat"
+    });
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+
+    record RewardData(int Points, string BadgeLevel, int SafeMessages);
+}
