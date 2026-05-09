@@ -7,13 +7,18 @@
 
     <!-- Top bar -->
     <div class="ch-topbar">
-        <div class="ch-logo"><span>🛡️</span> KidSafe</div>
+        <div class="ch-logo">
+            <i class="bi bi-shield-check-fill ks-logo-icon"></i>
+            <span>KidSafe</span>
+        </div>
         <div class="ch-topbar-right">
             <button class="ch-icon-btn" @onclick='() => Nav.NavigateTo("/notifications")'>
-                🔔
+                <i class="bi bi-bell-fill"></i>
                 @if (_unreadCount > 0) { <span class="ch-notif-dot">@_unreadCount</span> }
             </button>
-            <button class="ch-icon-btn" @onclick="Logout">🚪</button>
+            <button class="ch-icon-btn" @onclick="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
         </div>
     </div>
 
@@ -24,7 +29,7 @@
             <div class="ch-hero-content">
                 <div class="ch-hero-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")</div>
                 <div class="ch-hero-text">
-                    <div class="ch-hero-greet">@Greeting 🌟</div>
+                    <div class="ch-hero-greet">@Greeting</div>
                     <div class="ch-hero-name">Hi, @FirstName!</div>
                     <div class="ch-hero-sub">
                         @if (!string.IsNullOrEmpty(_className))
@@ -32,27 +37,38 @@
                             @_className
                             @if (!string.IsNullOrEmpty(_section)) { <text> · Section @_section</text> }
                         }
-                        @if (_streak > 0) { <text> · 🔥 @(_streak)-day safe streak</text> }
+                        @if (_streak > 0)
+                        {
+                            <text> · <i class="bi bi-fire"></i> @(_streak)-day streak</text>
+                        }
                     </div>
                 </div>
             </div>
-            <div class="ch-hero-badge">🛡️</div>
+            <div class="ch-hero-badge">
+                <i class="bi bi-shield-check-fill" style="font-size:2rem;opacity:.55;color:white"></i>
+            </div>
         </div>
 
         <!-- Stats row -->
         <div class="ch-stats">
             <div class="ch-stat-card">
-                <div class="ch-stat-ico green-ico">💬</div>
+                <div class="ch-stat-ico green-ico">
+                    <i class="bi bi-chat-dots-fill ico-green"></i>
+                </div>
                 <div class="ch-stat-num">@(_reward?.SafeMessages ?? 0)</div>
-                <div class="ch-stat-lbl">Total Chats</div>
+                <div class="ch-stat-lbl">Safe Chats</div>
             </div>
             <div class="ch-stat-card">
-                <div class="ch-stat-ico blue-ico">🛡️</div>
+                <div class="ch-stat-ico blue-ico">
+                    <i class="bi bi-star-fill ico-blue"></i>
+                </div>
                 <div class="ch-stat-num">@(_reward?.Points ?? 0)</div>
-                <div class="ch-stat-lbl">Stars Earned</div>
+                <div class="ch-stat-lbl">Stars</div>
             </div>
             <div class="ch-stat-card">
-                <div class="ch-stat-ico gold-ico">🏆</div>
+                <div class="ch-stat-ico gold-ico">
+                    <i class="bi bi-award-fill ico-gold"></i>
+                </div>
                 <div class="ch-stat-num">@EarnedBadgeCount</div>
                 <div class="ch-stat-lbl">Badges</div>
             </div>
@@ -63,7 +79,9 @@
         {
             <div class="ch-card">
                 <div class="ch-card-header">
-                    <span class="ch-card-title">⭐ Stars Progress</span>
+                    <span class="ch-card-title">
+                        <i class="bi bi-star-fill" style="color:var(--warning)"></i> Stars Progress
+                    </span>
                     <span class="ch-pts-badge">@_reward.Points / @NextMilestone</span>
                 </div>
                 <div class="ch-progress">
@@ -74,16 +92,20 @@
         }
 
         <!-- Start chatting CTA -->
-        <div class="ch-cta" @onclick='() => Nav.NavigateTo("/chat")'>
+        <button class="ch-cta" @onclick='() => Nav.NavigateTo("/chat")'>
             <div class="ch-cta-left">
-                <div class="ch-cta-ico">💬</div>
+                <div class="ch-cta-ico">
+                    <i class="bi bi-chat-dots-fill" style="font-size:1.8rem"></i>
+                </div>
                 <div>
                     <div class="ch-cta-title">Start Chatting!</div>
-                    <div class="ch-cta-sub">Safe &amp; fun with AI protection 🛡️</div>
+                    <div class="ch-cta-sub">Safe &amp; fun with AI protection
+                        <i class="bi bi-shield-check-fill"></i>
+                    </div>
                 </div>
             </div>
-            <div class="ch-cta-arrow">→</div>
-        </div>
+            <i class="bi bi-arrow-right-circle-fill ch-cta-arrow"></i>
+        </button>
 
         <!-- My Badges -->
         <div class="ch-card">
@@ -95,7 +117,9 @@
                 @foreach (var b in _badges.Where(x => !x.Locked).Take(4))
                 {
                     <div class="ch-badge">
-                        <div class="ch-badge-circle" style="background:@b.BgColor">@b.Icon</div>
+                        <div class="ch-badge-circle" style="background:@b.BgColor">
+                            <i class="bi @b.IconClass" style="color:@b.Color;font-size:1.2rem"></i>
+                        </div>
                         <div class="ch-badge-name">@b.Name</div>
                     </div>
                 }
@@ -104,9 +128,11 @@
 
         <!-- Tip of the day -->
         <div class="ch-tip">
-            <div class="ch-tip-ico">💡</div>
+            <div class="ch-tip-ico">
+                <i class="bi bi-lightbulb-fill" style="color:var(--warning)"></i>
+            </div>
             <div>
-                <div class="ch-tip-head">Tip of the Day 💡</div>
+                <div class="ch-tip-head">Tip of the Day</div>
                 <div class="ch-tip-body">@CurrentTip</div>
             </div>
         </div>
@@ -116,20 +142,26 @@
 
     <!-- Bottom nav -->
     <nav class="mobile-nav">
-        <button class="mnav-item active"><span>🏠</span><span>Home</span></button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
+        <button class="mnav-item active">
+            <i class="bi bi-house-fill"></i><span>Home</span>
+        </button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'>
+            <i class="bi bi-chat-fill"></i><span>Chat</span>
+        </button>
         <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
-            <span>🔔</span><span>Alerts</span>
+            <i class="bi bi-bell-fill"></i><span>Alerts</span>
             @if (_unreadCount > 0) { <span class="mnav-dot">@_unreadCount</span> }
         </button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'>
+            <i class="bi bi-person-circle"></i><span>Profile</span>
+        </button>
     </nav>
 </div>
 
 @code {
     record RewardDto(int Points, string BadgeLevel, int SafeMessages, string? Badges);
     record ClassmatesResponse(string? ClassName, string? Section, object[]? Classmates);
-    record BadgeDef(string Icon, string Name, string BgColor, bool Locked);
+    record BadgeDef(string IconClass, string Color, string Name, string BgColor, bool Locked);
 
     RewardDto? _reward;
     string _className = "", _section = "";
@@ -137,15 +169,15 @@
 
     static readonly BadgeDef[] _badges =
     [
-        new("❤️", "Kind Communicator", "#FFE4E8", false),
-        new("🛡️", "Safe Chatter",      "#D4EFDF", false),
-        new("⭐", "Star Student",       "#FEF9E7", false),
-        new("😊", "Emoji Master",       "#D6EAF8", false),
-        new("🔥", "Streak Champion",    "#FDEBD0", false),
-        new("🤝", "Helpful Friend",     "#E8DAEF", false),
-        new("🕊️", "Peacemaker",        "#D5F5E3", false),
-        new("🦸", "Super Communicator","#EAECEE", true),
-        new("🦾", "Digital Hero",      "#EAECEE", true),
+        new("bi-heart-fill",         "#E74C3C", "Kind Communicator", "#FFE4E8", false),
+        new("bi-shield-check-fill",  "#27AE60", "Safe Chatter",      "#D4EFDF", false),
+        new("bi-star-fill",          "#F1C40F", "Star Student",      "#FEF9E7", false),
+        new("bi-emoji-smile-fill",   "#2980B9", "Emoji Master",      "#D6EAF8", false),
+        new("bi-fire",               "#E67E22", "Streak Champion",   "#FDEBD0", false),
+        new("bi-hand-thumbs-up-fill","#8E44AD", "Helpful Friend",    "#E8DAEF", false),
+        new("bi-feather",            "#1ABC9C", "Peacemaker",        "#D5F5E3", false),
+        new("bi-lightning-fill",     "#5D6D7E", "Super Communicator","#EAECEE", true),
+        new("bi-cpu-fill",           "#5D6D7E", "Digital Hero",      "#EAECEE", true),
     ];
 
     static readonly string[] _tips =

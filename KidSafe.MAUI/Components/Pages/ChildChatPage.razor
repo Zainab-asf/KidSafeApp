@@ -9,8 +9,10 @@
 
     <!-- Chat header -->
     <div class="chat-hd">
-        <button class="chat-back-btn" @onclick='() => Nav.NavigateTo("/child-home")'>←</button>
-        <div class="chat-hd-av">@(_selectedClassmate?.Avatar ?? (AuthState.CurrentUser?.AvatarEmoji ?? "😊"))</div>
+        <button class="chat-back-btn" @onclick='() => Nav.NavigateTo("/child-home")'>
+            <i class="bi bi-arrow-left"></i>
+        </button>
+        <div class="chat-hd-av">@(_selectedClassmate?.Avatar ?? (AuthState.CurrentUser?.AvatarEmoji ?? "🧒"))</div>
         <div class="chat-hd-info">
             <div class="chat-hd-name">@(_selectedClassmate?.DisplayName ?? (_className.Length > 0 ? _className : "Class Chat"))</div>
             <div class="chat-hd-status">
@@ -18,7 +20,9 @@
                 Online · AI Protected
             </div>
         </div>
-        <div class="chat-shield-pill">🛡️ AI Shield ON</div>
+        <div class="chat-shield-pill">
+            <i class="bi bi-shield-check-fill"></i> AI Shield ON
+        </div>
     </div>
 
     <!-- Classmates row -->
@@ -44,7 +48,9 @@
     else
     {
         <div class="classmates-row">
-            <div class="cm-loading">No classmates yet — ask admin to enroll you in a class</div>
+            <div class="cm-loading">
+                <i class="bi bi-info-circle"></i> No classmates yet — ask admin to enroll you in a class
+            </div>
         </div>
     }
 
@@ -59,13 +65,15 @@
         @if (!_messages.Any())
         {
             <div class="chat-empty">
-                <div class="chat-empty-ico">💬</div>
+                <div class="chat-empty-ico">
+                    <i class="bi bi-chat-heart-fill" style="font-size:2.5rem;color:var(--green-mid)"></i>
+                </div>
                 <div class="chat-empty-txt">
                     @(_selectedClassmate != null
                         ? $"Say hi to {ShortName(_selectedClassmate.DisplayName)}!"
                         : "Say hello to your classmates!")
                 </div>
-                <div class="chat-empty-sub">Be kind, be safe 🌟</div>
+                <div class="chat-empty-sub">Be kind, be safe</div>
             </div>
         }
         @foreach (var msg in _messages)
@@ -74,12 +82,14 @@
             <div class="msg-row @(mine ? "mine" : "")">
                 @if (!mine)
                 {
-                    <div class="msg-av">@(_selectedClassmate?.Avatar ?? "😊")</div>
+                    <div class="msg-av">@(_selectedClassmate?.Avatar ?? "🧒")</div>
                 }
                 <div class="bbl-wrap">
                     @if (msg.Label == "Review")
                     {
-                        <div class="bbl blocked-msg">★★★ This message was blocked for safety ★★★</div>
+                        <div class="bbl blocked-msg">
+                            <i class="bi bi-shield-x-fill"></i> This message was blocked for safety
+                        </div>
                     }
                     else
                     {
@@ -89,19 +99,25 @@
                         <span class="bbl-time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
                         @if (msg.Label == "Safe" && mine)
                         {
-                            <span class="bbl-safe">🛡️ Safe</span>
+                            <span class="bbl-safe"><i class="bi bi-shield-check-fill"></i> Safe</span>
                         }
                         @if (msg.Label == "Review")
                         {
-                            <span class="bbl-badge blocked">🚫 Blocked</span>
+                            <span class="bbl-badge blocked">
+                                <i class="bi bi-x-circle-fill"></i> Blocked
+                            </span>
                         }
                         @if (msg.Label == "Watch")
                         {
-                            <span class="bbl-badge watch">👁️ Watch</span>
+                            <span class="bbl-badge watch">
+                                <i class="bi bi-eye-fill"></i> Watch
+                            </span>
                         }
                         @if (!mine)
                         {
-                            <button class="report-btn" title="Report" @onclick="() => ReportMsg(msg)">🚩</button>
+                            <button class="report-btn" title="Report" @onclick="() => ReportMsg(msg)">
+                                <i class="bi bi-flag-fill"></i>
+                            </button>
                         }
                     </div>
                 </div>
@@ -110,7 +126,7 @@
         @if (!string.IsNullOrEmpty(_typingUser))
         {
             <div class="typing-row">
-                <div class="msg-av">😊</div>
+                <div class="msg-av">🧒</div>
                 <span class="typing-lbl">@_typingUser is typing</span>
                 <div class="typing-dots"><span></span><span></span><span></span></div>
             </div>
@@ -137,17 +153,32 @@
             <input class="msg-field" @bind="_input" @bind:event="oninput"
                    @onkeyup="OnKey" placeholder="Type a kind message…" />
             <button class="send-btn @(_sending ? "busy" : "")" @onclick="Send" disabled="@_sending">
-                @(_sending ? "⏳" : "➤")
+                @if (_sending)
+                {
+                    <i class="bi bi-hourglass-split"></i>
+                }
+                else
+                {
+                    <i class="bi bi-send-fill"></i>
+                }
             </button>
         </div>
     </div>
 
     <!-- Bottom nav -->
     <nav class="mobile-nav">
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/child-home")'><span>🏠</span><span>Home</span></button>
-        <button class="mnav-item active"><span>💬</span><span>Chat</span></button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/child-home")'>
+            <i class="bi bi-house-fill"></i><span>Home</span>
+        </button>
+        <button class="mnav-item active">
+            <i class="bi bi-chat-fill"></i><span>Chat</span>
+        </button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
+            <i class="bi bi-bell-fill"></i><span>Alerts</span>
+        </button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'>
+            <i class="bi bi-person-circle"></i><span>Profile</span>
+        </button>
     </nav>
 </div>
 
@@ -163,7 +194,7 @@
     bool               _sending, _loadingClassmates = true;
     HubState           _hubState          = HubState.Disconnected;
 
-    static readonly string[] _quickReplies = { "That's great! 😊", "Sure, let's do it! 👍", "I agree with you!", "Thanks for sharing!" };
+    static readonly string[] _quickReplies = { "That's great!", "Sure, let's do it!", "I agree with you!", "Thanks for sharing!" };
     static readonly string[] _emojis       = { "😊","😂","❤️","👍","🎉","🌟","🦄","🎮","🍕","⚽","🌈","🦋" };
 
     protected override async Task OnInitializedAsync()
@@ -176,7 +207,6 @@
         Hub.OnStateChanged    += OnHubState;
         await Hub.StartAsync(AuthState.CurrentUser!.Token);
 
-        // Load classmates (same class/section only)
         var resp = await Api.GetAsync<ClassmatesResponse>("classes/classmates");
         _classmates = resp?.Classmates ?? new();
         _className  = resp?.ClassName ?? "";
@@ -192,14 +222,8 @@
         StateHasChanged();
     }
 
-    void OnMsg(ChatMessage m)
-    {
-        _messages.Add(m);
-        InvokeAsync(StateHasChanged);
-    }
-
-    void OnHubState(HubState s) { _hubState = s; InvokeAsync(StateHasChanged); }
-
+    void OnMsg(ChatMessage m)     { _messages.Add(m); InvokeAsync(StateHasChanged); }
+    void OnHubState(HubState s)   { _hubState = s; InvokeAsync(StateHasChanged); }
     void OnTyping(string name)
     {
         _typingUser = name;
@@ -241,9 +265,9 @@
 
             (_toast, _toastClass) = result.Label switch
             {
-                "Safe"   => ("✅ Sent! +10 points", "t-safe"),
-                "Watch"  => ("👁️ Message flagged and masked.", "t-warn"),
-                "Review" => ("🚫 Message blocked — please be kind!", "t-block"),
+                "Safe"   => ("Sent! +10 points", "t-safe"),
+                "Watch"  => ("Message flagged and masked.", "t-warn"),
+                "Review" => ("Message blocked — please be kind!", "t-block"),
                 _        => ("", "")
             };
         }
@@ -260,7 +284,7 @@
     async Task ReportMsg(ChatMessage msg)
     {
         var ok = await Api.ReportAbuseAsync($"Reported message from {msg.SenderName}");
-        _toast = ok ? "🚩 Reported. Thank you!" : "Failed to report.";
+        _toast = ok ? "Reported. Thank you!" : "Failed to report.";
         _toastClass = ok ? "t-safe" : "t-block";
         StateHasChanged();
         await Task.Delay(3000);

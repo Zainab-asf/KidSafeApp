@@ -8,54 +8,52 @@
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <span class="logo-icon">🛡️</span>
+            <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
         </div>
         <nav class="sidebar-nav">
             <div class="sidebar-section">Classroom</div>
             <button class="nav-item active">
-                <span class="ni">🏫</span><span>Overview</span>
+                <span class="ni"><i class="bi bi-grid-fill"></i></span><span>Overview</span>
             </button>
             <button class="nav-item" @onclick="LoadData">
-                <span class="ni">🔄</span><span>Refresh</span>
+                <span class="ni"><i class="bi bi-arrow-clockwise"></i></span><span>Refresh</span>
             </button>
             <div class="sidebar-divider"></div>
             <div class="sidebar-section">Classroom</div>
             <button class="nav-item" @onclick='() => Nav.NavigateTo("/classes")'>
-                <span class="ni">📚</span><span>My Classes</span>
+                <span class="ni"><i class="bi bi-journal-bookmark-fill"></i></span><span>My Classes</span>
             </button>
             <div class="sidebar-divider"></div>
             <div class="sidebar-section">Monitoring</div>
             <button class="nav-item">
-                <span class="ni">👦</span><span>Students</span>
-                @if (_children.Count > 0)
-                {
-                    <span class="nb">@_children.Count</span>
-                }
+                <span class="ni"><i class="bi bi-person-fill"></i></span><span>Students</span>
+                @if (_children.Count > 0) { <span class="nb">@_children.Count</span> }
             </button>
             <button class="nav-item">
-                <span class="ni">⚠️</span><span>Incidents</span>
-                @if (_flaggedMessages.Count > 0)
-                {
-                    <span class="nb">@_flaggedMessages.Count</span>
-                }
+                <span class="ni"><i class="bi bi-exclamation-triangle-fill"></i></span><span>Incidents</span>
+                @if (_flaggedMessages.Count > 0) { <span class="nb">@_flaggedMessages.Count</span> }
             </button>
             <div class="sidebar-divider"></div>
             <button class="nav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
-                <span class="ni">🔔</span><span>Notifications</span>
+                <span class="ni"><i class="bi bi-bell-fill"></i></span><span>Notifications</span>
             </button>
             <button class="nav-item" @onclick='() => Nav.NavigateTo("/profile")'>
-                <span class="ni">👤</span><span>Profile</span>
+                <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
             </button>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
-                <div class="sidebar-avatar">👩‍🏫</div>
+                <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
+                    <i class="bi bi-mortarboard-fill" style="color:var(--green)"></i>
+                </div>
                 <div>
                     <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Teacher")</div>
                     <div class="sidebar-urole">Teacher</div>
                 </div>
-                <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
             </div>
         </div>
     </aside>
@@ -104,21 +102,21 @@
             {
                 <div class="grid-3" style="margin-bottom:1.5rem">
                     <div class="stat-card">
-                        <div class="stat-icon green">👦</div>
+                        <div class="stat-icon green"><i class="bi bi-person-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val">@_stats.TotalChildren</div>
                             <div class="stat-label">Students</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon gold">👁️</div>
+                        <div class="stat-icon gold"><i class="bi bi-eye-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--warning)">@_stats.TotalWatch</div>
                             <div class="stat-label">Under Watch</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon coral">🚫</div>
+                        <div class="stat-icon coral"><i class="bi bi-slash-circle-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--danger)">@_stats.TotalReview</div>
                             <div class="stat-label">For Review</div>
@@ -135,7 +133,7 @@
             {
 
             <!-- Students at risk -->
-            <div class="sec-hd"><h2>👦 Students at Risk</h2></div>
+            <div class="sec-hd"><h2><i class="bi bi-person-fill"></i> Students at Risk</h2></div>
             <div class="risk-grid" style="margin-bottom:1.5rem">
                 @foreach (var c in _children)
                 {
@@ -149,11 +147,11 @@
             </div>
 
             <!-- Incidents table -->
-            <div class="sec-hd"><h2>📊 Recent Incidents</h2></div>
+            <div class="sec-hd"><h2><i class="bi bi-bar-chart-fill"></i> Recent Incidents</h2></div>
             @if (!_flaggedMessages.Any())
             {
                 <div class="empty-block">
-                    <div class="empty-ico">✅</div>
+                    <div class="empty-ico"><i class="bi bi-shield-check-fill" style="font-size:2rem;color:var(--green)"></i></div>
                     <div class="empty-txt">No incidents</div>
                     <div class="empty-sub">Classroom is safe!</div>
                 </div>
@@ -190,7 +188,7 @@
                                     </td>
                                     <td style="font-size:.72rem;color:var(--text-m)">@m.Timestamp.ToLocalTime().ToString("MMM dd, HH:mm")</td>
                                     <td>
-                                        <button class="btn btn-sm btn-ghost" @onclick="() => FileComplaint(m)">📝 Report</button>
+                                        <button class="btn btn-sm btn-ghost" @onclick="() => FileComplaint(m)"><i class="bi bi-file-text-fill"></i> Report</button>
                                     </td>
                                 </tr>
                             }
@@ -212,9 +210,9 @@
 
 <!-- Mobile bottom nav -->
 <nav class="mobile-nav" style="display:none">
-    <button class="mnav-item active"><span>🏫</span><span>Classroom</span></button>
-    <button class="mnav-item" @onclick="LoadData"><span>🔄</span><span>Refresh</span></button>
-    <button class="mnav-item" @onclick="Logout"><span>🚪</span><span>Logout</span></button>
+    <button class="mnav-item active"><i class="bi bi-grid-fill"></i><span>Classroom</span></button>
+    <button class="mnav-item" @onclick="LoadData"><i class="bi bi-arrow-clockwise"></i><span>Refresh</span></button>
+    <button class="mnav-item" @onclick="Logout"><i class="bi bi-box-arrow-right"></i><span>Logout</span></button>
 </nav>
 
 @code {

@@ -9,22 +9,30 @@
     {
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <span class="logo-icon">🛡️</span>
+                <i class="bi bi-shield-check-fill ks-logo-icon"></i>
                 <span>KidSafe</span>
             </div>
             <nav class="sidebar-nav">
                 <div class="sidebar-section">Navigation</div>
-                <button class="nav-item" @onclick="GoBack"><span class="ni">← </span><span>Back</span></button>
-                <button class="nav-item active"><span class="ni">🔔</span><span>Notifications</span></button>
+                <button class="nav-item" @onclick="GoBack">
+                    <span class="ni"><i class="bi bi-arrow-left"></i></span><span>Back</span>
+                </button>
+                <button class="nav-item active">
+                    <span class="ni"><i class="bi bi-bell-fill"></i></span><span>Notifications</span>
+                </button>
             </nav>
             <div class="sidebar-footer">
                 <div class="sidebar-user">
-                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                    <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
+                        <i class="bi bi-person-circle" style="color:var(--green)"></i>
+                    </div>
                     <div>
                         <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
                         <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
                     </div>
-                    <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                    <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -34,20 +42,22 @@
         @if (IsDesktop)
         {
             <div class="top-header">
-                <div class="header-title">🔔 Notifications</div>
+                <div class="header-title"><i class="bi bi-bell-fill"></i> Notifications</div>
                 <div class="header-actions">
                     @if (_notifications.Any(n => !n.IsRead))
                     {
                         <button class="btn-sm btn-outline" @onclick="MarkAllRead">Mark all read</button>
                     }
-                    <button class="header-btn" @onclick="Load" title="Refresh">🔄</button>
+                    <button class="header-btn" @onclick="Load" title="Refresh">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
                 </div>
             </div>
         }
         else
         {
             <div class="mobile-header">
-                <div class="mh-title">🔔 Notifications</div>
+                <div class="mh-title"><i class="bi bi-bell-fill"></i> Notifications</div>
                 @if (_notifications.Any(n => !n.IsRead))
                 {
                     <button class="btn-sm btn-outline" @onclick="MarkAllRead">Mark all read</button>
@@ -66,7 +76,7 @@
             else if (!_notifications.Any())
             {
                 <div class="empty-block">
-                    <div style="font-size:3rem">🔔</div>
+                    <div><i class="bi bi-bell-fill" style="font-size:3rem;color:var(--text-m)"></i></div>
                     <div>No notifications</div>
                     <div style="font-size:.83rem;color:var(--text-m)">You're all caught up!</div>
                 </div>
@@ -76,7 +86,7 @@
                 @foreach (var n in _notifications)
                 {
                     <div class="notif-row @(n.IsRead ? "" : "unread")" @onclick="() => ReadNote(n)">
-                        <div class="notif-icon @n.Type">@NoteIcon(n.Type)</div>
+                        <div class="notif-icon @n.Type"><i class="bi @NoteIcon(n.Type)"></i></div>
                         <div class="notif-body">
                             <div class="notif-title">@n.Title</div>
                             <div class="notif-text">@n.Body</div>
@@ -94,11 +104,11 @@
         @if (!IsDesktop)
         {
             <nav class="mobile-nav">
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
-                <button class="mnav-item active"><span>🔔</span><span>Alerts</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><span>🏆</span><span>Rewards</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><i class="bi bi-chat-fill"></i><span>Chat</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><i class="bi bi-journal-bookmark-fill"></i><span>Classes</span></button>
+                <button class="mnav-item active"><i class="bi bi-bell-fill"></i><span>Alerts</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><i class="bi bi-trophy-fill"></i><span>Rewards</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><i class="bi bi-person-circle"></i><span>Profile</span></button>
             </nav>
         }
     </div>
@@ -142,10 +152,10 @@
 
     static string NoteIcon(string type) => type switch
     {
-        "alert"      => "⚠️",
-        "assignment" => "📝",
-        "badge"      => "🏆",
-        _            => "ℹ️"
+        "alert"      => "bi-exclamation-triangle-fill",
+        "assignment" => "bi-file-text-fill",
+        "badge"      => "bi-trophy-fill",
+        _            => "bi-info-circle-fill"
     };
 
     static string TimeAgo(DateTime dt)
@@ -161,8 +171,8 @@
     {
         "Admin"   => "/admin",
         "Teacher" => "/teacher",
-        "Parent"  => "/parent",
-        _         => "/chat"
+        "Parent"  => "/dashboard",
+        _         => "/child-home"
     });
 
     async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }

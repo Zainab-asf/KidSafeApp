@@ -8,17 +8,17 @@
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <span class="logo-icon">🛡️</span>
+            <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
         </div>
         <nav class="sidebar-nav">
             <div class="sidebar-section">Management</div>
-            @foreach (var (tab, icon, label) in _tabs)
+            @foreach (var (tab, iconClass, label) in _tabs)
             {
                 var hasBadge = tab == "Pending" && _pendingUsers.Count > 0;
                 <button class="nav-item @(_activeTab == tab ? "active" : "")"
                         @onclick="() => SetTab(tab)">
-                    <span class="ni">@icon</span>
+                    <span class="ni"><i class="bi @iconClass"></i></span>
                     <span>@label</span>
                     @if (hasBadge) { <span class="nb">@_pendingUsers.Count</span> }
                 </button>
@@ -26,12 +26,16 @@
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
-                <div class="sidebar-avatar">🛡️</div>
+                <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
+                    <i class="bi bi-shield-fill" style="color:var(--green)"></i>
+                </div>
                 <div>
                     <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Admin")</div>
                     <div class="sidebar-urole">Administrator</div>
                 </div>
-                <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
             </div>
         </div>
     </aside>
@@ -41,13 +45,17 @@
         <!-- Top header -->
         <header class="top-header">
             <div class="header-search">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon"><i class="bi bi-search"></i></span>
                 <input type="text" placeholder="Search users, complaints…" />
             </div>
             <div class="header-actions">
-                <button class="header-btn" @onclick="LoadData" title="Refresh">🔄</button>
+                <button class="header-btn" @onclick="LoadData" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
                 <div class="header-profile">
-                    <div class="hp-avatar">🛡️</div>
+                    <div class="hp-avatar" style="font-size:1.2rem;display:flex;align-items:center;justify-content:center">
+                        <i class="bi bi-shield-fill" style="color:var(--green)"></i>
+                    </div>
                     <div>
                         <div class="hp-name">Admin</div>
                         <div class="hp-role">KidSafe</div>
@@ -61,15 +69,17 @@
 
             <!-- Profile card -->
             <div class="dash-profile-card" style="margin-bottom:1.25rem">
-                <div class="dpc-avatar">🛡️</div>
+                <div class="dpc-avatar" style="font-size:2rem;display:flex;align-items:center;justify-content:center">
+                    <i class="bi bi-shield-fill" style="color:var(--green)"></i>
+                </div>
                 <div class="dpc-info">
                     <div class="dpc-name">@(AuthState.CurrentUser?.DisplayName ?? "Administrator")</div>
                     <div class="dpc-role">System Administrator</div>
                     <div class="dpc-meta">@_allUsers.Count users · @_classes.Count classes · @_parentLinks.Count parent links</div>
                 </div>
                 <div class="dpc-actions">
-                    <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/profile")'>👤 Profile</button>
-                    <button class="btn btn-sm btn-outline" @onclick='() => SetTab("Classes")'>📚 Classes</button>
+                    <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/profile")'><i class="bi bi-person-circle"></i> Profile</button>
+                    <button class="btn btn-sm btn-outline" @onclick='() => SetTab("Classes")'><i class="bi bi-journal-bookmark-fill"></i> Classes</button>
                 </div>
             </div>
 
@@ -84,28 +94,28 @@
             {
                 <div class="grid-4" style="margin-bottom:1.5rem">
                     <div class="stat-card">
-                        <div class="stat-icon green">👥</div>
+                        <div class="stat-icon green"><i class="bi bi-people-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val">@_allUsers.Count</div>
                             <div class="stat-label">Total Users</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon gold">⏳</div>
+                        <div class="stat-icon gold"><i class="bi bi-hourglass-split"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--warning)">@_stats.PendingTeachers</div>
                             <div class="stat-label">Pending</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon coral">🚫</div>
+                        <div class="stat-icon coral"><i class="bi bi-slash-circle-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--danger)">@_stats.TotalReview</div>
                             <div class="stat-label">Blocked</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon purple">📋</div>
+                        <div class="stat-icon purple"><i class="bi bi-clipboard2-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--purple)">@_stats.TotalComplaints</div>
                             <div class="stat-label">Complaints</div>
@@ -116,10 +126,12 @@
 
             <!-- Tabs -->
             <div class="page-tabs" style="margin-bottom:1.25rem">
-                @foreach (var (tab, icon, label) in _tabs)
+                @foreach (var (tab, iconCls, label) in _tabs)
                 {
                     <button class="ptab @(_activeTab == tab ? "active" : "")"
-                            @onclick="() => SetTab(tab)">@icon @label</button>
+                            @onclick="() => SetTab(tab)">
+                        <i class="bi @iconCls"></i> @label
+                    </button>
                 }
             </div>
 
@@ -146,14 +158,14 @@
                     @foreach (var u in _pendingUsers)
                     {
                         <div class="user-row">
-                            <div class="user-av">@RoleEmoji(u.Role)</div>
+                            <div class="user-av" style="font-size:1.2rem;display:flex;align-items:center;justify-content:center"><i class="bi @RoleIconClass(u.Role)"></i></div>
                             <div class="user-info">
                                 <div class="user-name">@u.DisplayName</div>
                                 <div class="user-email">@u.Email · @u.Role</div>
                             </div>
                             <div class="user-acts">
-                                <button class="btn btn-sm btn-ghost" @onclick="() => Approve(u.Id)">✅ Approve</button>
-                                <button class="btn btn-sm btn-danger-o" @onclick="() => Disable(u.Id)">🚫 Reject</button>
+                                <button class="btn btn-sm btn-ghost" @onclick="() => Approve(u.Id)"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> Approve</button>
+                                <button class="btn btn-sm btn-danger-o" @onclick="() => Disable(u.Id)"><i class="bi bi-x-circle-fill"></i> Reject</button>
                             </div>
                         </div>
                     }
@@ -164,14 +176,14 @@
             @if (_activeTab == "Students")
             {
                 <div class="sec-hd">
-                    <h2>👦 Students</h2>
+                    <h2><i class="bi bi-person-fill"></i> Students</h2>
                     <button class="btn btn-sm btn-primary" @onclick="OpenCreateChild">+ Add Student</button>
                 </div>
                 @foreach (var u in _allUsers.Where(u => u.Role == "Child")) { @UserRow(u) }
                 @if (!_allUsers.Any(u => u.Role == "Child"))
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">👦</div>
+                        <div class="empty-ico"><i class="bi bi-person-fill" style="font-size:2rem"></i></div>
                         <div class="empty-txt">No students yet</div>
                     </div>
                 }
@@ -181,14 +193,14 @@
             @if (_activeTab == "Teachers")
             {
                 <div class="sec-hd">
-                    <h2>👩‍🏫 Teachers</h2>
+                    <h2><i class="bi bi-mortarboard-fill"></i> Teachers</h2>
                     <button class="btn btn-sm btn-primary" @onclick="OpenCreateTeacher">+ Add Teacher</button>
                 </div>
                 @foreach (var u in _allUsers.Where(u => u.Role == "Teacher")) { @UserRow(u) }
                 @if (!_allUsers.Any(u => u.Role == "Teacher"))
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">👩‍🏫</div>
+                        <div class="empty-ico"><i class="bi bi-mortarboard-fill" style="font-size:2rem"></i></div>
                         <div class="empty-txt">No teachers yet</div>
                     </div>
                 }
@@ -198,14 +210,14 @@
             @if (_activeTab == "Parents")
             {
                 <div class="sec-hd">
-                    <h2>👨‍👩‍👦 Parents</h2>
+                    <h2><i class="bi bi-people-fill"></i> Parents</h2>
                     <button class="btn btn-sm btn-primary" @onclick="OpenCreateParent">+ Add Parent</button>
                 </div>
                 @foreach (var u in _allUsers.Where(u => u.Role == "Parent")) { @UserRow(u) }
                 @if (!_allUsers.Any(u => u.Role == "Parent"))
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">👨‍👩‍👦</div>
+                        <div class="empty-ico"><i class="bi bi-people-fill" style="font-size:2rem"></i></div>
                         <div class="empty-txt">No parents yet</div>
                     </div>
                 }
@@ -214,11 +226,11 @@
             <!-- ── FLAGGED ── -->
             @if (_activeTab == "Flagged")
             {
-                <div class="sec-hd"><h2>⚠️ Flagged Messages</h2></div>
+                <div class="sec-hd"><h2><i class="bi bi-exclamation-triangle-fill"></i> Flagged Messages</h2></div>
                 @if (!_flaggedMessages.Any())
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">✅</div>
+                        <div class="empty-ico"><i class="bi bi-shield-check-fill" style="font-size:2rem;color:var(--green)"></i></div>
                         <div class="empty-txt">No flagged messages</div>
                         <div class="empty-sub">Classroom is safe!</div>
                     </div>
@@ -266,11 +278,11 @@
             <!-- ── COMPLAINTS ── -->
             @if (_activeTab == "Complaints")
             {
-                <div class="sec-hd"><h2>📋 Complaints</h2></div>
+                <div class="sec-hd"><h2><i class="bi bi-clipboard2-fill"></i> Complaints</h2></div>
                 @if (!_complaints.Any())
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">📭</div>
+                        <div class="empty-ico"><i class="bi bi-inbox-fill" style="font-size:2rem"></i></div>
                         <div class="empty-txt">No complaints filed</div>
                     </div>
                 }
@@ -290,7 +302,7 @@
                             {
                                 <div style="display:flex;gap:.5rem;margin-top:.75rem">
                                     <button class="btn btn-sm btn-outline" @onclick="() => MarkUnderReview(c.Id)">Under Review</button>
-                                    <button class="btn btn-sm btn-ghost" @onclick="() => MarkResolved(c.Id)">✅ Resolve</button>
+                                    <button class="btn btn-sm btn-ghost" @onclick="() => MarkResolved(c.Id)"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> Resolve</button>
                                 </div>
                             }
                         </div>
@@ -302,13 +314,13 @@
             @if (_activeTab == "Classes")
             {
                 <div class="sec-hd">
-                    <h2>📚 Classes</h2>
+                    <h2><i class="bi bi-journal-bookmark-fill"></i> Classes</h2>
                     <button class="btn btn-sm btn-primary" @onclick="OpenCreateClass">+ New Class</button>
                 </div>
                 @if (!_classes.Any())
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">📚</div>
+                        <div class="empty-ico"><i class="bi bi-journal-bookmark-fill" style="font-size:2rem"></i></div>
                         <div class="empty-txt">No classes yet</div>
                     </div>
                 }
@@ -329,9 +341,9 @@
                                         <td>@(cl.Teacher ?? "—")</td>
                                         <td>@cl.StudentCount</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline" @onclick="() => ManageClass(cl)">⚙ Manage</button>
+                                            <button class="btn btn-sm btn-outline" @onclick="() => ManageClass(cl)"><i class="bi bi-gear-fill"></i> Manage</button>
                                             <button class="btn btn-sm btn-danger-o" style="margin-left:.3rem"
-                                                    @onclick="() => DeleteClass(cl.Id)">🗑</button>
+                                                    @onclick="() => DeleteClass(cl.Id)"><i class="bi bi-trash-fill"></i></button>
                                         </td>
                                     </tr>
                                 }
@@ -370,13 +382,13 @@
             @if (_activeTab == "Links")
             {
                 <div class="sec-hd">
-                    <h2>🔗 Parent-Child Links</h2>
+                    <h2><i class="bi bi-link-45deg"></i> Parent-Child Links</h2>
                     <button class="btn btn-sm btn-primary" @onclick="() => _showLinkModal = true">+ New Link</button>
                 </div>
                 @if (!_parentLinks.Any())
                 {
                     <div class="empty-block">
-                        <div class="empty-ico">🔗</div>
+                        <div class="empty-ico"><i class="bi bi-link-45deg" style="font-size:2rem"></i></div>
                         <div class="empty-txt">No parent-child links</div>
                     </div>
                 }
@@ -394,7 +406,7 @@
                                         <td style="font-size:.72rem;color:var(--text-m)">@lk.LinkedAt.ToLocalTime().ToString("MMM dd")</td>
                                         <td>
                                             <button class="btn btn-sm btn-danger-o"
-                                                    @onclick="() => UnlinkParentChild(lk.ParentId, lk.ChildId)">🗑 Unlink</button>
+                                                    @onclick="() => UnlinkParentChild(lk.ParentId, lk.ChildId)"><i class="bi bi-trash-fill"></i> Unlink</button>
                                         </td>
                                     </tr>
                                 }
@@ -417,11 +429,11 @@
 
 <!-- Mobile bottom nav -->
 <nav class="mobile-nav" style="display:none">
-    @foreach (var (tab, icon, label) in _tabs)
+    @foreach (var (tab, iconCls, label) in _tabs)
     {
         <button class="mnav-item @(_activeTab == tab ? "active" : "")"
                 @onclick="() => SetTab(tab)">
-            <span>@icon</span>
+            <i class="bi @iconCls"></i>
             <span>@label</span>
         </button>
     }
@@ -433,7 +445,7 @@
     <div class="modal-overlay" @onclick="() => _showCreateClass = false">
         <div class="modal-box" @onclick:stopPropagation>
             <div class="modal-head">
-                <div class="modal-title">📚 New Class</div>
+                <div class="modal-title"><i class="bi bi-journal-bookmark-fill"></i> New Class</div>
                 <button class="modal-close" @onclick="() => _showCreateClass = false">✕</button>
             </div>
             <div class="form-group">
@@ -480,7 +492,7 @@
     <div class="modal-overlay" @onclick="() => _showLinkModal = false">
         <div class="modal-box" @onclick:stopPropagation>
             <div class="modal-head">
-                <div class="modal-title">🔗 Link Parent ↔ Child</div>
+                <div class="modal-title"><i class="bi bi-link-45deg"></i> Link Parent ↔ Child</div>
                 <button class="modal-close" @onclick="() => _showLinkModal = false">✕</button>
             </div>
             <div class="form-group">
@@ -523,28 +535,28 @@
     <div class="modal-overlay" @onclick="CloseCreate">
         <div class="modal-box" @onclick:stopPropagation>
             <div class="modal-head">
-                <div class="modal-title">➕ Create Account</div>
+                <div class="modal-title"><i class="bi bi-person-plus-fill"></i> Create Account</div>
                 <button class="modal-close" @onclick="CloseCreate">✕</button>
             </div>
 
             @if (!string.IsNullOrEmpty(_createError))
             {
-                <div class="auth-error" style="margin-bottom:.85rem">⚠️ @_createError</div>
+                <div class="auth-error" style="margin-bottom:.85rem"><i class="bi bi-exclamation-triangle-fill"></i> @_createError</div>
             }
             @if (_createDone)
             {
-                <div class="auth-success" style="margin-bottom:.85rem">✅ Account created successfully!</div>
+                <div class="auth-success" style="margin-bottom:.85rem"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> Account created successfully!</div>
             }
 
             <!-- Role selector -->
             <div class="field">
                 <label class="field-label">Account Type</label>
                 <div class="role-pick">
-                    @foreach (var (role, icon, lbl) in _roles)
+                    @foreach (var (role, iconCls, lbl) in _roles)
                     {
                         <div class="role-tile @(_createRole == role ? "selected" : "")"
                              @onclick="() => _createRole = role">
-                            <span class="rt-icon">@icon</span>
+                            <span class="rt-icon"><i class="bi @iconCls"></i></span>
                             <span class="rt-lbl">@lbl</span>
                         </div>
                     }
@@ -554,21 +566,21 @@
             <div class="field">
                 <label class="field-label">Display Name</label>
                 <div class="field-wrap">
-                    <span class="field-icon">👤</span>
+                    <span class="field-icon"><i class="bi bi-person-fill"></i></span>
                     <input class="field-input" @bind="_createName" placeholder="Full name" />
                 </div>
             </div>
             <div class="field">
                 <label class="field-label">Email</label>
                 <div class="field-wrap">
-                    <span class="field-icon">✉️</span>
+                    <span class="field-icon"><i class="bi bi-envelope-fill"></i></span>
                     <input class="field-input" @bind="_createEmail" placeholder="email@example.com" type="email" />
                 </div>
             </div>
             <div class="field">
                 <label class="field-label">Temporary Password</label>
                 <div class="field-wrap">
-                    <span class="field-icon">🔑</span>
+                    <span class="field-icon"><i class="bi bi-key-fill"></i></span>
                     <input class="field-input" @bind="_createPassword" placeholder="••••••••" type="password" />
                 </div>
             </div>
@@ -615,9 +627,14 @@
     string _toast = "";
 
     static readonly (string tab, string icon, string label)[] _tabs = {
-        ("Pending","⏳","Pending"), ("Students","👦","Students"), ("Teachers","👩‍🏫","Teachers"),
-        ("Parents","👨‍👩‍👦","Parents"), ("Flagged","⚠️","Flagged"), ("Complaints","📋","Complaints"),
-        ("Classes","📚","Classes"), ("Links","🔗","Links")
+        ("Pending","bi-hourglass-split","Pending"),
+        ("Students","bi-person-fill","Students"),
+        ("Teachers","bi-mortarboard-fill","Teachers"),
+        ("Parents","bi-people-fill","Parents"),
+        ("Flagged","bi-exclamation-triangle-fill","Flagged"),
+        ("Complaints","bi-clipboard2-fill","Complaints"),
+        ("Classes","bi-journal-bookmark-fill","Classes"),
+        ("Links","bi-link-45deg","Links")
     };
 
     // Create user modal
@@ -626,7 +643,7 @@
     int    _createClassId;
 
     static readonly (string role, string icon, string label)[] _roles = {
-        ("Child","👦","Student"), ("Parent","👨‍👩‍👦","Parent"), ("Teacher","👩‍🏫","Teacher")
+        ("Child","bi-person-fill","Student"), ("Parent","bi-people-fill","Parent"), ("Teacher","bi-mortarboard-fill","Teacher")
     };
 
     // Create class modal
@@ -787,13 +804,20 @@
 
     void ShowToast() { StateHasChanged(); Task.Delay(3000).ContinueWith(_ => { _toast = ""; InvokeAsync(StateHasChanged); }); }
 
-    static string RoleEmoji(string role) => role switch { "Child" => "👦", "Parent" => "👨‍👩‍👦", "Teacher" => "👩‍🏫", "Admin" => "🛡️", _ => "👤" };
+    static string RoleIconClass(string role) => role switch
+    {
+        "Child"   => "bi-person-fill",
+        "Parent"  => "bi-people-fill",
+        "Teacher" => "bi-mortarboard-fill",
+        "Admin"   => "bi-shield-fill",
+        _         => "bi-person-circle"
+    };
     static string StatusBadge(string s)  => s switch { "resolved" => "badge-green", "underReview" => "badge-gold", _ => "badge-blue" };
 
     RenderFragment UserRow(UserDto u) => __builder =>
     {
         <div class="user-row">
-            <div class="user-av">@RoleEmoji(u.Role)</div>
+            <div class="user-av" style="font-size:1.2rem;display:flex;align-items:center;justify-content:center"><i class="bi @RoleIconClass(u.Role)"></i></div>
             <div class="user-info">
                 <div class="user-name">@u.DisplayName</div>
                 <div class="user-email">@u.Email</div>

@@ -12,33 +12,37 @@
         <!-- Sidebar for teacher/admin -->
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <span class="logo-icon">🛡️</span>
+                <i class="bi bi-shield-check-fill ks-logo-icon"></i>
                 <span>KidSafe</span>
             </div>
             <nav class="sidebar-nav">
                 <div class="sidebar-section">Navigation</div>
                 <button class="nav-item" @onclick='() => Nav.NavigateTo("/")'>
-                    <span class="ni">🏠</span><span>Dashboard</span>
+                    <span class="ni"><i class="bi bi-house-fill"></i></span><span>Dashboard</span>
                 </button>
                 <button class="nav-item active">
-                    <span class="ni">📚</span><span>Classes</span>
+                    <span class="ni"><i class="bi bi-journal-bookmark-fill"></i></span><span>Classes</span>
                 </button>
                 <button class="nav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
-                    <span class="ni">🔔</span><span>Notifications</span>
+                    <span class="ni"><i class="bi bi-bell-fill"></i></span><span>Notifications</span>
                     @if (_unreadCount > 0) { <span class="nb">@_unreadCount</span> }
                 </button>
                 <button class="nav-item" @onclick='() => Nav.NavigateTo("/profile")'>
-                    <span class="ni">👤</span><span>Profile</span>
+                    <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
                 </button>
             </nav>
             <div class="sidebar-footer">
                 <div class="sidebar-user">
-                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                    <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
+                        <i class="bi bi-person-circle" style="color:var(--green)"></i>
+                    </div>
                     <div>
                         <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
                         <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
                     </div>
-                    <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                    <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -49,9 +53,9 @@
         @if (IsDesktop)
         {
             <div class="top-header">
-                <div class="header-title">📚 My Classes</div>
+                <div class="header-title"><i class="bi bi-journal-bookmark-fill"></i> My Classes</div>
                 <div class="header-actions">
-                    <button class="header-btn" @onclick="LoadClasses" title="Refresh">🔄</button>
+                    <button class="header-btn" @onclick="LoadClasses" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
                 </div>
             </div>
         }
@@ -68,7 +72,7 @@
             else if (_classes.Count == 0)
             {
                 <div class="empty-block">
-                    <div style="font-size:3rem">📚</div>
+                    <div><i class="bi bi-journal-bookmark-fill" style="font-size:3rem;color:var(--text-m)"></i></div>
                     <div>No classes yet</div>
                     <div style="font-size:.83rem;color:var(--text-m)">You are not enrolled in any classes</div>
                 </div>
@@ -84,16 +88,16 @@
                     @foreach (var cls in _classes)
                     {
                         <div class="class-card" @onclick="() => OpenClass(cls)">
-                            <div class="class-card-icon">📖</div>
+                            <div class="class-card-icon"><i class="bi bi-book-fill" style="font-size:1.6rem;color:var(--blue)"></i></div>
                             <div class="class-card-name">@cls.Name</div>
                             <div class="class-card-sub">@cls.Subject • @cls.Section</div>
                             @if (!string.IsNullOrEmpty(cls.Teacher))
                             {
-                                <div class="class-card-teacher">👩‍🏫 @cls.Teacher</div>
+                                <div class="class-card-teacher"><i class="bi bi-mortarboard-fill"></i> @cls.Teacher</div>
                             }
                             <div class="class-card-stats">
-                                <span>👥 @cls.StudentCount</span>
-                                @if (cls.ContentCount > 0) { <span>📄 @cls.ContentCount</span> }
+                                <span><i class="bi bi-people-fill"></i> @cls.StudentCount</span>
+                                @if (cls.ContentCount > 0) { <span><i class="bi bi-file-text-fill"></i> @cls.ContentCount</span> }
                             </div>
                         </div>
                     }
@@ -103,18 +107,18 @@
             {
                 <!-- Class detail: tab bar + content/chat -->
                 <div class="cls-detail-header">
-                    <button class="cls-back-btn" @onclick="BackToClasses">← Classes</button>
+                    <button class="cls-back-btn" @onclick="BackToClasses"><i class="bi bi-arrow-left"></i> Classes</button>
                     <div class="cls-detail-name">@_activeClass.Name</div>
                     <div class="cls-detail-sub">@_activeClass.Subject • @_activeClass.Section</div>
                 </div>
 
                 <div class="cls-tabs">
-                    <button class="cls-tab @(_tab == "chat" ? "active" : "")" @onclick='() => SetTab("chat")'>💬 Chat</button>
-                    <button class="cls-tab @(_tab == "content" ? "active" : "")" @onclick='() => SetTab("content")'>📄 Content</button>
-                    <button class="cls-tab @(_tab == "members" ? "active" : "")" @onclick='() => SetTab("members")'>👥 Members</button>
+                    <button class="cls-tab @(_tab == "chat" ? "active" : "")" @onclick='() => SetTab("chat")'><i class="bi bi-chat-fill"></i> Chat</button>
+                    <button class="cls-tab @(_tab == "content" ? "active" : "")" @onclick='() => SetTab("content")'><i class="bi bi-file-text-fill"></i> Content</button>
+                    <button class="cls-tab @(_tab == "members" ? "active" : "")" @onclick='() => SetTab("members")'><i class="bi bi-people-fill"></i> Members</button>
                     @if (IsTeacher)
                     {
-                        <button class="cls-tab @(_tab == "upload" ? "active" : "")" @onclick='() => SetTab("upload")'>⬆️ Upload</button>
+                        <button class="cls-tab @(_tab == "upload" ? "active" : "")" @onclick='() => SetTab("upload")'><i class="bi bi-cloud-upload-fill"></i> Upload</button>
                     }
                 </div>
 
@@ -126,7 +130,7 @@
                             @if (!_classMsgs.Any())
                             {
                                 <div class="chat-empty">
-                                    <div class="chat-empty-ico">💬</div>
+                                    <div class="chat-empty-ico"><i class="bi bi-chat-heart-fill" style="font-size:2rem;color:var(--text-m)"></i></div>
                                     <div class="chat-empty-txt">No messages yet. Say hi!</div>
                                 </div>
                             }
@@ -157,7 +161,7 @@
                             @if (!string.IsNullOrEmpty(_typingUser))
                             {
                                 <div class="typing-row">
-                                    <div class="msg-av">😊</div>
+                                    <div class="msg-av"><i class="bi bi-person-circle" style="font-size:1.3rem"></i></div>
                                     <span class="typing-lbl">@_typingUser is typing</span>
                                     <div class="typing-dots"><span></span><span></span><span></span></div>
                                 </div>
@@ -174,7 +178,7 @@
                                    @onkeyup="OnChatKey" placeholder="Message @_activeClass.Name…" />
                             <button class="send-btn @(_chatSending ? "busy" : "")"
                                     @onclick="SendClassMsg" disabled="@_chatSending">
-                                @(_chatSending ? "⏳" : "➤")
+                                <i class="bi @(_chatSending ? "bi-hourglass-split" : "bi-send-fill")"></i>
                             </button>
                         </div>
                     </div>
@@ -191,7 +195,7 @@
                         else if (!_contentItems.Any())
                         {
                             <div class="empty-block">
-                                <div style="font-size:2rem">📄</div>
+                                <div><i class="bi bi-file-text-fill" style="font-size:2rem;color:var(--text-m)"></i></div>
                                 <div>No content uploaded yet</div>
                             </div>
                         }
@@ -200,7 +204,7 @@
                             @foreach (var item in _contentItems)
                             {
                                 <div class="content-card">
-                                    <div class="content-card-icon">@ContentIcon(item.Type)</div>
+                                    <div class="content-card-icon"><i class="bi @ContentIcon(item.Type)" style="font-size:1.4rem"></i></div>
                                     <div class="content-card-body">
                                         <div class="content-card-title">@item.Title</div>
                                         <div class="content-card-meta">
@@ -216,7 +220,7 @@
                                     <div class="content-card-actions">
                                         @if (!string.IsNullOrEmpty(item.FilePath))
                                         {
-                                            <a class="btn-sm btn-primary" href="@(GetBaseUrl() + item.FilePath)" target="_blank">⬇ Download</a>
+                                            <a class="btn-sm btn-primary" href="@(GetBaseUrl() + item.FilePath)" target="_blank"><i class="bi bi-download"></i> Download</a>
                                         }
                                     </div>
                                 </div>
@@ -232,7 +236,7 @@
                         @if (_activeClass.Teacher != null)
                         {
                             <div class="member-row teacher-row">
-                                <div class="member-av">👩‍🏫</div>
+                                <div class="member-av"><i class="bi bi-mortarboard-fill" style="font-size:1.3rem;color:var(--green)"></i></div>
                                 <div>
                                     <div class="member-name">@_activeClass.Teacher</div>
                                     <div class="member-role">Teacher</div>
@@ -242,7 +246,7 @@
                         @foreach (var s in _activeClass.Students ?? new())
                         {
                             <div class="member-row">
-                                <div class="member-av">😊</div>
+                                <div class="member-av"><i class="bi bi-person-circle" style="font-size:1.3rem"></i></div>
                                 <div>
                                     <div class="member-name">@s.DisplayName</div>
                                     <div class="member-role">Student</div>
@@ -300,7 +304,7 @@
                             <div class="@(_uploadOk ? "alert-ok" : "alert-err")">@_uploadMsg</div>
                         }
                         <button class="btn btn-primary" @onclick="UploadContent" disabled="@_uploading">
-                            @(_uploading ? "Uploading…" : "⬆ Upload")
+                            @if (_uploading) { <text>Uploading…</text> } else { <i class="bi bi-cloud-upload-fill"></i><text> Upload</text> }
                         </button>
                     </div>
                 }
@@ -311,11 +315,11 @@
         @if (!IsDesktop)
         {
             <nav class="mobile-nav">
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
-                <button class="mnav-item active"><span>📚</span><span>Classes</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><span>🏆</span><span>Rewards</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><i class="bi bi-chat-fill"></i><span>Chat</span></button>
+                <button class="mnav-item active"><i class="bi bi-journal-bookmark-fill"></i><span>Classes</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><i class="bi bi-bell-fill"></i><span>Alerts</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><i class="bi bi-trophy-fill"></i><span>Rewards</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><i class="bi bi-person-circle"></i><span>Profile</span></button>
             </nav>
         }
     </div>
@@ -454,9 +458,9 @@
 
             (_chatToast, _chatToastClass) = resp.Label switch
             {
-                "Safe"   => ("✅ Sent!", "t-safe"),
-                "Watch"  => ("👁️ Flagged and masked.", "t-warn"),
-                "Review" => ("🚫 Blocked — please be kind!", "t-block"),
+                "Safe"   => ("Sent!", "t-safe"),
+                "Watch"  => ("Flagged and masked.", "t-warn"),
+                "Review" => ("Blocked — please be kind!", "t-block"),
                 _        => ("", "")
             };
         }
@@ -485,7 +489,7 @@
         });
 
         _uploadOk  = ok;
-        _uploadMsg = ok ? "✅ Uploaded!" : "❌ Upload failed.";
+        _uploadMsg = ok ? "Uploaded successfully!" : "Upload failed.";
         _uploading = false;
         if (ok) { _uploadTitle = ""; _uploadDesc = ""; _uploadUrl = ""; }
         StateHasChanged();
@@ -498,11 +502,11 @@
 
     static string ContentIcon(string type) => type switch
     {
-        "PDF"          => "📄",
-        "Assignment"   => "📝",
-        "Announcement" => "📢",
-        "Link"         => "🔗",
-        _              => "📋"
+        "PDF"          => "bi-file-pdf-fill",
+        "Assignment"   => "bi-file-text-fill",
+        "Announcement" => "bi-megaphone-fill",
+        "Link"         => "bi-link-45deg",
+        _              => "bi-clipboard2-fill"
     };
 
     string GetBaseUrl() => AuthState.BackendUrl ?? "http://localhost:5000";

@@ -9,22 +9,28 @@
     {
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <span class="logo-icon">🛡️</span>
+                <i class="bi bi-shield-check-fill ks-logo-icon"></i>
                 <span>KidSafe</span>
             </div>
             <nav class="sidebar-nav">
                 <div class="sidebar-section">Navigation</div>
-                <button class="nav-item" @onclick="GoBack"><span class="ni">←</span><span>Back</span></button>
-                <button class="nav-item active"><span class="ni">👤</span><span>Profile</span></button>
+                <button class="nav-item" @onclick="GoBack">
+                    <span class="ni"><i class="bi bi-arrow-left"></i></span><span>Back</span>
+                </button>
+                <button class="nav-item active">
+                    <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
+                </button>
             </nav>
             <div class="sidebar-footer">
                 <div class="sidebar-user">
-                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")</div>
                     <div>
                         <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
                         <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
                     </div>
-                    <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                    <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -35,14 +41,16 @@
         @if (!IsDesktop)
         {
             <div class="mobile-header">
-                <button class="mobile-back" @onclick="GoBack">←</button>
-                <div class="mh-title">👤 Profile</div>
+                <button class="mobile-back" @onclick="GoBack">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <div class="mh-title">Profile</div>
             </div>
         }
         else
         {
             <div class="top-header">
-                <div class="header-title">👤 My Profile</div>
+                <div class="header-title">My Profile</div>
             </div>
         }
 
@@ -51,9 +59,9 @@
             <!-- ── Profile hero card ── -->
             <div class="profile-hero-v2">
                 <div class="phv2-gradient">
-                    <div class="phv2-av-wrap" @onclick="ScrollToAvatarPicker">
-                        <div class="phv2-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
-                        @if (IsChild) { <div class="phv2-edit-badge">✏️</div> }
+                    <div class="phv2-av-wrap">
+                        <div class="phv2-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")</div>
+                        @if (IsChild) { <div class="phv2-edit-badge"><i class="bi bi-pencil-fill"></i></div> }
                     </div>
                     <div class="phv2-info">
                         <div class="phv2-name">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
@@ -68,15 +76,15 @@
                         <div class="phv2-quick-stats">
                             <div class="phv2-qs">
                                 <div class="phv2-qs-val">@_reward.Points</div>
-                                <div class="phv2-qs-lbl">⭐ Stars</div>
+                                <div class="phv2-qs-lbl"><i class="bi bi-star-fill"></i> Stars</div>
                             </div>
                             <div class="phv2-qs">
                                 <div class="phv2-qs-val">@EarnedBadges</div>
-                                <div class="phv2-qs-lbl">🏆 Badges</div>
+                                <div class="phv2-qs-lbl"><i class="bi bi-award-fill"></i> Badges</div>
                             </div>
                             <div class="phv2-qs">
                                 <div class="phv2-qs-val">@_reward.SafeMessages</div>
-                                <div class="phv2-qs-lbl">✅ Safe</div>
+                                <div class="phv2-qs-lbl"><i class="bi bi-shield-check-fill"></i> Safe</div>
                             </div>
                         </div>
                     }
@@ -85,11 +93,14 @@
 
             @if (!IsChild)
             {
-                <!-- Non-child: compact stats -->
                 <div class="card" style="margin-bottom:1rem">
                     <div class="profile-actions">
-                        <button class="btn btn-outline" @onclick="GoBack">← Back</button>
-                        <button class="btn btn-danger-o" @onclick="Logout">🚪 Logout</button>
+                        <button class="btn btn-outline" @onclick="GoBack">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-danger-o" @onclick="Logout">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
                     </div>
                 </div>
             }
@@ -99,14 +110,21 @@
                 <!-- ── All Badges grid ── -->
                 <div class="card" style="margin-bottom:1rem" id="badges-section">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
-                        <div style="font-weight:800;font-size:.92rem">All Badges (@EarnedBadges/@_allBadges.Length)</div>
-                        <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>⭐ Rewards</button>
+                        <div style="font-weight:800;font-size:.92rem">
+                            <i class="bi bi-award-fill" style="color:var(--warning)"></i>
+                            All Badges (@EarnedBadges/@_allBadges.Length)
+                        </div>
+                        <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>
+                            <i class="bi bi-star-fill"></i> Rewards
+                        </button>
                     </div>
                     <div class="badges-grid">
                         @foreach (var b in _allBadges.Where(x => !x.Locked))
                         {
                             <div class="badge-tile earned">
-                                <div class="badge-tile-ico" style="background:@b.BgColor;border-radius:50%;width:3rem;height:3rem;display:flex;align-items:center;justify-content:center;margin:0 auto .35rem;font-size:1.4rem">@b.Icon</div>
+                                <div style="width:3rem;height:3rem;background:@b.BgColor;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .35rem">
+                                    <i class="bi @b.IconClass" style="color:@b.Color;font-size:1.35rem"></i>
+                                </div>
                                 <div class="badge-tile-name">@b.Name</div>
                                 <div class="badge-tile-desc">@b.Desc</div>
                             </div>
@@ -119,8 +137,10 @@
                             @foreach (var b in _allBadges.Where(x => x.Locked))
                             {
                                 <div class="badge-tile locked">
-                                    <span class="lock-ico">🔒</span>
-                                    <div class="badge-tile-ico" style="font-size:1.4rem;margin-bottom:.35rem">@b.Icon</div>
+                                    <span class="lock-ico"><i class="bi bi-lock-fill"></i></span>
+                                    <div style="font-size:1.35rem;margin-bottom:.35rem;opacity:.4">
+                                        <i class="bi @b.IconClass"></i>
+                                    </div>
                                     <div class="badge-tile-name">@b.Name</div>
                                     <div class="badge-tile-desc">@b.Desc</div>
                                 </div>
@@ -131,7 +151,9 @@
 
                 <!-- ── Privacy Settings ── -->
                 <div class="card" style="margin-bottom:1rem">
-                    <div style="font-weight:800;font-size:.92rem;margin-bottom:.75rem">🔒 Privacy Settings</div>
+                    <div style="font-weight:800;font-size:.92rem;margin-bottom:.75rem">
+                        <i class="bi bi-lock-fill" style="color:var(--green)"></i> Privacy Settings
+                    </div>
                     <div class="privacy-row">
                         <div>
                             <div class="privacy-label">Show Online Status</div>
@@ -166,7 +188,9 @@
 
                 <!-- ── Avatar picker ── -->
                 <div class="card" id="avatar-section" style="margin-bottom:1rem">
-                    <div style="font-weight:700;margin-bottom:.75rem">🎨 Change Avatar</div>
+                    <div style="font-weight:700;margin-bottom:.75rem">
+                        <i class="bi bi-palette-fill" style="color:var(--purple)"></i> Change Avatar
+                    </div>
                     <div class="avatar-grid">
                         @foreach (var e in _avatarOptions)
                         {
@@ -178,30 +202,50 @@
                     {
                         <div class="@(_avatarOk ? "alert-ok" : "alert-err")" style="margin-top:.5rem">@_avatarMsg</div>
                     }
-                    <button class="btn btn-primary" style="margin-top:.75rem;width:100%" @onclick="SaveAvatar">Save Avatar</button>
+                    <button class="btn btn-primary" style="margin-top:.75rem;width:100%" @onclick="SaveAvatar">
+                        Save Avatar
+                    </button>
                 </div>
 
                 <!-- ── Quick actions ── -->
                 <div class="card">
-                    <div style="font-weight:700;margin-bottom:.75rem">⚙️ Quick Actions</div>
+                    <div style="font-weight:700;margin-bottom:.75rem">
+                        <i class="bi bi-grid-fill" style="color:var(--blue)"></i> Quick Actions
+                    </div>
                     <div class="profile-actions">
-                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/child-home")'>🏠 Home</button>
-                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/chat")'>💬 Chat</button>
-                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>🏆 Rewards</button>
-                        <button class="btn btn-danger-o" @onclick="Logout">🚪 Logout</button>
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/child-home")'>
+                            <i class="bi bi-house-fill"></i> Home
+                        </button>
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/chat")'>
+                            <i class="bi bi-chat-fill"></i> Chat
+                        </button>
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>
+                            <i class="bi bi-trophy-fill"></i> Rewards
+                        </button>
+                        <button class="btn btn-danger-o" @onclick="Logout">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
                     </div>
                 </div>
             }
 
-        </div><!-- /content -->
+        </div>
 
         @if (!IsDesktop)
         {
             <nav class="mobile-nav">
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/child-home")'><span>🏠</span><span>Home</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
-                <button class="mnav-item active"><span>👤</span><span>Profile</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/child-home")'>
+                    <i class="bi bi-house-fill"></i><span>Home</span>
+                </button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'>
+                    <i class="bi bi-chat-fill"></i><span>Chat</span>
+                </button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
+                    <i class="bi bi-bell-fill"></i><span>Alerts</span>
+                </button>
+                <button class="mnav-item active">
+                    <i class="bi bi-person-circle"></i><span>Profile</span>
+                </button>
             </nav>
         }
     </div>
@@ -210,25 +254,25 @@
 @code {
     record RewardData(int Points, string BadgeLevel, int SafeMessages);
     record ClassmatesResp(string? ClassName, string? Section, object[]? Classmates);
-    record BadgeDef(string Icon, string Name, string Desc, string BgColor, bool Locked);
+    record BadgeDef(string IconClass, string Color, string Name, string Desc, string BgColor, bool Locked);
 
     RewardData? _reward;
-    string _selectedAvatar = "😊";
+    string _selectedAvatar = "🧒";
     string _className = "", _section = "";
     string _avatarMsg = "";
     bool   _avatarOk, _showOnline = true, _allowMessages = true, _shareProgress;
 
     static readonly BadgeDef[] _allBadges =
     [
-        new("❤️","Kind Communicator","Send 30 kind messages",  "#FFE4E8", false),
-        new("🛡️","Safe Chatter",     "7 days of safe chatting","#D4EFDF", false),
-        new("⭐","Star Student",      "Earned 100 stars",       "#FEF9E7", false),
-        new("😊","Emoji Master",      "Used 20 positive emojis","#D6EAF8", false),
-        new("🔥","Streak Champion",   "5-day safe streak",      "#FDEBD0", false),
-        new("🤝","Helpful Friend",    "Helped 2 classmates",    "#E8DAEF", false),
-        new("🕊️","Peacemaker",       "Resolved a conflict kindly","#D5F5E3", false),
-        new("🦸","Super Communicator","Send 200 safe messages", "#EAECEE", true),
-        new("🦾","Digital Hero",      "30-day safe streak",     "#EAECEE", true),
+        new("bi-heart-fill",          "#E74C3C", "Kind Communicator", "Send 30 kind messages",         "#FFE4E8", false),
+        new("bi-shield-check-fill",   "#27AE60", "Safe Chatter",      "7 days of safe chatting",       "#D4EFDF", false),
+        new("bi-star-fill",           "#F1C40F", "Star Student",      "Earned 100 stars",              "#FEF9E7", false),
+        new("bi-emoji-smile-fill",    "#2980B9", "Emoji Master",      "Used 20 positive emojis",       "#D6EAF8", false),
+        new("bi-fire",                "#E67E22", "Streak Champion",   "5-day safe streak",             "#FDEBD0", false),
+        new("bi-hand-thumbs-up-fill", "#8E44AD", "Helpful Friend",    "Helped 2 classmates",           "#E8DAEF", false),
+        new("bi-feather",             "#1ABC9C", "Peacemaker",        "Resolved a conflict kindly",    "#D5F5E3", false),
+        new("bi-lightning-fill",      "#5D6D7E", "Super Communicator","Send 200 safe messages",        "#EAECEE", true),
+        new("bi-cpu-fill",            "#5D6D7E", "Digital Hero",      "30-day safe streak",            "#EAECEE", true),
     ];
 
     static readonly string[] _avatarOptions =
@@ -245,7 +289,7 @@
     {
         await AuthState.InitAsync();
         if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
-        _selectedAvatar = AuthState.CurrentUser?.AvatarEmoji ?? "😊";
+        _selectedAvatar = AuthState.CurrentUser?.AvatarEmoji ?? "🧒";
         if (IsChild)
         {
             _reward = await Api.GetAsync<RewardData>("rewards/my");
@@ -259,13 +303,11 @@
     {
         var ok = await Api.PatchAsync("auth/avatar", new { Emoji = _selectedAvatar });
         _avatarOk  = ok;
-        _avatarMsg = ok ? "✅ Avatar updated!" : "❌ Failed to update.";
+        _avatarMsg = ok ? "Avatar updated!" : "Failed to update.";
         StateHasChanged();
         await Task.Delay(2500);
         _avatarMsg = ""; StateHasChanged();
     }
-
-    void ScrollToAvatarPicker() { /* JS interop if needed; for now just a visual cue */ }
 
     void GoBack() => Nav.NavigateTo(AuthState.CurrentUser?.Role switch
     {

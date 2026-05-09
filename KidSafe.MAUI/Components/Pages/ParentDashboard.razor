@@ -11,16 +11,16 @@
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <span class="logo-icon">🛡️</span>
+            <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
         </div>
         <nav class="sidebar-nav">
             <div class="sidebar-section">Overview</div>
             <button class="nav-item active">
-                <span class="ni">📊</span><span>Dashboard</span>
+                <span class="ni"><i class="bi bi-bar-chart-fill"></i></span><span>Dashboard</span>
             </button>
             <button class="nav-item" @onclick="LoadData">
-                <span class="ni">🔄</span><span>Refresh</span>
+                <span class="ni"><i class="bi bi-arrow-clockwise"></i></span><span>Refresh</span>
             </button>
             <div class="sidebar-divider"></div>
             <div class="sidebar-section">Children</div>
@@ -28,41 +28,42 @@
             {
                 <button class="nav-item @(_selectedChildId == child.ChildId ? "active" : "")"
                         @onclick="() => SelectChild(child.ChildId)">
-                    <span class="ni">@(child.Avatar ?? "👦")</span>
+                    <span class="ni">@(child.Avatar ?? "🧒")</span>
                     <span>@child.Name</span>
                 </button>
             }
             <div class="sidebar-divider"></div>
             <div class="sidebar-section">Alerts</div>
             <button class="nav-item @(_selectedChildId == 0 ? "active" : "")" @onclick="ShowAllChildren">
-                <span class="ni">⚠️</span><span>All Flags</span>
-                @if (_flaggedMessages.Count > 0)
-                {
-                    <span class="nb">@_flaggedMessages.Count</span>
-                }
+                <span class="ni"><i class="bi bi-exclamation-triangle-fill"></i></span><span>All Flags</span>
+                @if (_flaggedMessages.Count > 0) { <span class="nb">@_flaggedMessages.Count</span> }
             </button>
             <button class="nav-item" @onclick="ShowWatch">
-                <span class="ni">👁️</span><span>Watch</span>
+                <span class="ni"><i class="bi bi-eye-fill"></i></span><span>Watch</span>
             </button>
             <button class="nav-item" @onclick="ShowReview">
-                <span class="ni">🚫</span><span>Review</span>
+                <span class="ni"><i class="bi bi-x-circle-fill"></i></span><span>Review</span>
             </button>
             <div class="sidebar-divider"></div>
             <button class="nav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
-                <span class="ni">🔔</span><span>Notifications</span>
+                <span class="ni"><i class="bi bi-bell-fill"></i></span><span>Notifications</span>
             </button>
             <button class="nav-item" @onclick='() => Nav.NavigateTo("/profile")'>
-                <span class="ni">👤</span><span>Profile</span>
+                <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
             </button>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
-                <div class="sidebar-avatar">👨‍👩‍👦</div>
+                <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
+                    <i class="bi bi-people-fill" style="color:var(--green)"></i>
+                </div>
                 <div>
                     <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Parent")</div>
                     <div class="sidebar-urole">Parent</div>
                 </div>
-                <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
             </div>
         </div>
     </aside>
@@ -109,7 +110,7 @@
             @if (_stats != null)
             {
                 var heroClass = _stats.TotalReview > 5 ? "coral" : _stats.TotalWatch > 10 ? "" : "";
-                var heroIcon  = _stats.TotalReview > 5 ? "🚨" : _stats.TotalWatch > 10 ? "⚠️" : "✅";
+                var heroIcon  = _stats.TotalReview > 5 ? "bi-exclamation-octagon-fill" : _stats.TotalWatch > 10 ? "bi-exclamation-triangle-fill" : "bi-shield-check-fill";
                 var heroTitle = _stats.TotalReview > 5 ? "High Risk Activity Detected" : _stats.TotalWatch > 10 ? "Some Activity to Review" : "All Clear — Classroom Safe";
                 var heroSub   = _stats.TotalReview > 5 ? "Multiple flagged messages need your attention." : _stats.TotalWatch > 10 ? "Some messages are under watch." : "No concerning activity found today.";
                 <div class="hero-banner @heroClass">
@@ -117,32 +118,32 @@
                         <div class="hero-title">@heroTitle</div>
                         <div class="hero-sub">@heroSub</div>
                         <div class="hero-chips">
-                            <div class="hero-chip">👁️ @_stats.TotalWatch Watch</div>
-                            <div class="hero-chip">🚫 @_stats.TotalReview Review</div>
-                            <div class="hero-chip">📊 @_stats.TotalFlagged Total Flags</div>
+                            <div class="hero-chip"><i class="bi bi-eye-fill"></i> @_stats.TotalWatch Watch</div>
+                            <div class="hero-chip"><i class="bi bi-slash-circle-fill"></i> @_stats.TotalReview Review</div>
+                            <div class="hero-chip"><i class="bi bi-bar-chart-fill"></i> @_stats.TotalFlagged Total Flags</div>
                         </div>
                     </div>
-                    <div class="hero-emoji">@heroIcon</div>
+                    <div class="hero-emoji"><i class="bi @heroIcon" style="font-size:2.5rem"></i></div>
                 </div>
 
                 <!-- Stats -->
                 <div class="grid-3" style="margin-bottom:1.5rem">
                     <div class="stat-card">
-                        <div class="stat-icon green">✅</div>
+                        <div class="stat-icon green"><i class="bi bi-shield-check-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--green)">@(_stats.TotalFlagged == 0 ? "All" : "—")</div>
                             <div class="stat-label">Safe</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon gold">👁️</div>
+                        <div class="stat-icon gold"><i class="bi bi-eye-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--warning)">@_stats.TotalWatch</div>
                             <div class="stat-label">Watch</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon coral">🚫</div>
+                        <div class="stat-icon coral"><i class="bi bi-slash-circle-fill"></i></div>
                         <div class="stat-body">
                             <div class="stat-val" style="color:var(--danger)">@_stats.TotalReview</div>
                             <div class="stat-label">Review</div>
@@ -154,7 +155,7 @@
             <!-- Live alerts -->
             @if (_liveAlerts.Any())
             {
-                <div class="sec-hd"><h2><span class="live-dot"></span> Live Alerts</h2></div>
+                <div class="sec-hd"><h2><span class="live-dot"></span><i class="bi bi-bell-fill" style="margin-left:.35rem"></i> Live Alerts</h2></div>
                 @foreach (var a in _liveAlerts.AsEnumerable().Reverse().Take(5))
                 {
                     <div class="alert-row @(a.Label == "Review" ? "alert-danger" : "alert-warn")">
@@ -175,7 +176,7 @@
             <!-- My Children -->
             @if (_children.Any())
             {
-                <div class="sec-hd" style="margin-bottom:.75rem"><h2>👨‍👩‍👧 My Children</h2></div>
+                <div class="sec-hd" style="margin-bottom:.75rem"><h2><i class="bi bi-people-fill"></i> My Children</h2></div>
                 <div class="grid-auto" style="margin-bottom:1.5rem">
                     @foreach (var child in _children)
                     {
@@ -259,9 +260,9 @@
 
 <!-- Mobile bottom nav -->
 <nav class="mobile-nav" style="display:none">
-    <button class="mnav-item active"><span>📊</span><span>Dashboard</span></button>
-    <button class="mnav-item" @onclick="LoadData"><span>🔄</span><span>Refresh</span></button>
-    <button class="mnav-item" @onclick="Logout"><span>🚪</span><span>Logout</span></button>
+    <button class="mnav-item active"><i class="bi bi-bar-chart-fill"></i><span>Dashboard</span></button>
+    <button class="mnav-item" @onclick="LoadData"><i class="bi bi-arrow-clockwise"></i><span>Refresh</span></button>
+    <button class="mnav-item" @onclick="Logout"><i class="bi bi-box-arrow-right"></i><span>Logout</span></button>
 </nav>
 
 @code {

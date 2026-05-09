@@ -62,6 +62,37 @@
   --tr:       .18s cubic-bezier(.4,0,.2,1);
 }
 
+/* ══ BOOTSTRAP ICONS — sizing & colour helpers ═══════════════ */
+.bi { line-height: 1; vertical-align: -0.125em; }
+/* nav icon */
+.ni > .bi, .mnav-item .bi { font-size: 1.15rem; }
+/* stat card icon */
+.stat-icon .bi { font-size: 1.1rem; }
+/* logo icon */
+.ks-logo-icon  { font-size: 1.5rem; color: var(--green); }
+/* logo icon large (splash/login) */
+.ks-logo-lg    { font-size: 4.5rem; color: var(--green); display:block; line-height:1; }
+/* icon colour utilities */
+.ico-green  { color: var(--green); }
+.ico-blue   { color: var(--blue); }
+.ico-gold   { color: var(--warning); }
+.ico-coral  { color: var(--coral); }
+.ico-purple { color: var(--purple); }
+.ico-white  { color: white; }
+.ico-muted  { color: var(--text-m); }
+/* role card icon */
+.rc-ico > .bi { font-size: 1.6rem; display: block; }
+/* field icon */
+.field-icon .bi { font-size: 1rem; }
+/* chat header back/action */
+.chat-back-btn .bi { font-size: 1.1rem; }
+/* badge icon in badge tiles / ch-badge-circle */
+.badge-icon-wrap .bi { font-size: 1.35rem; }
+/* send button */
+.send-btn .bi { font-size: 1rem; }
+/* feature icon in login panel */
+.lf-ico .bi { font-size: 1.25rem; }
+
 /* ── Reset ────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { font-family: var(--font); background: var(--bg); color: var(--text);
