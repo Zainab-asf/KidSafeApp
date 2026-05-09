@@ -1,0 +1,540 @@
+@page "/classes"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject ChatHubService Hub
+@inject NavigationManager Nav
+@implements IAsyncDisposable
+
+<div class="@(IsDesktop ? "app-root" : "mobile-root")">
+
+    @if (IsDesktop)
+    {
+        <!-- Sidebar for teacher/admin -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon">🛡️</span>
+                <span>KidSafe</span>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">Navigation</div>
+                <button class="nav-item" @onclick='() => Nav.NavigateTo("/")'>
+                    <span class="ni">🏠</span><span>Dashboard</span>
+                </button>
+                <button class="nav-item active">
+                    <span class="ni">📚</span><span>Classes</span>
+                </button>
+                <button class="nav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
+                    <span class="ni">🔔</span><span>Notifications</span>
+                    @if (_unreadCount > 0) { <span class="nb">@_unreadCount</span> }
+                </button>
+                <button class="nav-item" @onclick='() => Nav.NavigateTo("/profile")'>
+                    <span class="ni">👤</span><span>Profile</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                    <div>
+                        <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
+                        <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
+                    </div>
+                    <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                </div>
+            </div>
+        </aside>
+    }
+
+    <div class="@(IsDesktop ? "main-area" : "")">
+
+        @if (IsDesktop)
+        {
+            <div class="top-header">
+                <div class="header-title">📚 My Classes</div>
+                <div class="header-actions">
+                    <button class="header-btn" @onclick="LoadClasses" title="Refresh">🔄</button>
+                </div>
+            </div>
+        }
+
+        <div class="@(IsDesktop ? "page-content" : "mobile-content")">
+
+            @if (_loading)
+            {
+                <div class="loading-block">
+                    <div class="spin-ring"></div>
+                    <div>Loading classes…</div>
+                </div>
+            }
+            else if (_classes.Count == 0)
+            {
+                <div class="empty-block">
+                    <div style="font-size:3rem">📚</div>
+                    <div>No classes yet</div>
+                    <div style="font-size:.83rem;color:var(--text-m)">You are not enrolled in any classes</div>
+                </div>
+            }
+            else if (_activeClass == null)
+            {
+                <!-- Class grid -->
+                <div class="page-head">
+                    <h1>My Classes</h1>
+                    <p>Select a class to view content and chat</p>
+                </div>
+                <div class="grid-auto">
+                    @foreach (var cls in _classes)
+                    {
+                        <div class="class-card" @onclick="() => OpenClass(cls)">
+                            <div class="class-card-icon">📖</div>
+                            <div class="class-card-name">@cls.Name</div>
+                            <div class="class-card-sub">@cls.Subject • @cls.Section</div>
+                            @if (!string.IsNullOrEmpty(cls.Teacher))
+                            {
+                                <div class="class-card-teacher">👩‍🏫 @cls.Teacher</div>
+                            }
+                            <div class="class-card-stats">
+                                <span>👥 @cls.StudentCount</span>
+                                @if (cls.ContentCount > 0) { <span>📄 @cls.ContentCount</span> }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Class detail: tab bar + content/chat -->
+                <div class="cls-detail-header">
+                    <button class="cls-back-btn" @onclick="BackToClasses">← Classes</button>
+                    <div class="cls-detail-name">@_activeClass.Name</div>
+                    <div class="cls-detail-sub">@_activeClass.Subject • @_activeClass.Section</div>
+                </div>
+
+                <div class="cls-tabs">
+                    <button class="cls-tab @(_tab == "chat" ? "active" : "")" @onclick='() => SetTab("chat")'>💬 Chat</button>
+                    <button class="cls-tab @(_tab == "content" ? "active" : "")" @onclick='() => SetTab("content")'>📄 Content</button>
+                    <button class="cls-tab @(_tab == "members" ? "active" : "")" @onclick='() => SetTab("members")'>👥 Members</button>
+                    @if (IsTeacher)
+                    {
+                        <button class="cls-tab @(_tab == "upload" ? "active" : "")" @onclick='() => SetTab("upload")'>⬆️ Upload</button>
+                    }
+                </div>
+
+                <!-- CHAT TAB -->
+                @if (_tab == "chat")
+                {
+                    <div class="cls-chat-area">
+                        <div class="cls-chat-msgs" id="cls-msg-list">
+                            @if (!_classMsgs.Any())
+                            {
+                                <div class="chat-empty">
+                                    <div class="chat-empty-ico">💬</div>
+                                    <div class="chat-empty-txt">No messages yet. Say hi!</div>
+                                </div>
+                            }
+                            @foreach (var msg in _classMsgs)
+                            {
+                                var mine = msg.SenderId == AuthState.CurrentUser?.UserId;
+                                <div class="msg-row @(mine ? "mine" : "")">
+                                    @if (!mine)
+                                    {
+                                        <div class="msg-av">@msg.SenderEmoji</div>
+                                    }
+                                    <div class="bbl-wrap">
+                                        @if (!mine)
+                                        {
+                                            <div class="bbl-sender">@msg.SenderName</div>
+                                        }
+                                        <div class="bbl @BubbleClass(msg)">@msg.Content</div>
+                                        <div class="bbl-meta">
+                                            <span class="bbl-time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
+                                            @if (msg.Label is not ("Safe" or "pending"))
+                                            {
+                                                <span class="bbl-badge @msg.Label.ToLower()">@msg.Label</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(_typingUser))
+                            {
+                                <div class="typing-row">
+                                    <div class="msg-av">😊</div>
+                                    <span class="typing-lbl">@_typingUser is typing</span>
+                                    <div class="typing-dots"><span></span><span></span><span></span></div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(_chatToast))
+                        {
+                            <div class="chat-toast @_chatToastClass">@_chatToast</div>
+                        }
+
+                        <div class="cls-chat-input">
+                            <input class="msg-field" @bind="_chatInput" @bind:event="oninput"
+                                   @onkeyup="OnChatKey" placeholder="Message @_activeClass.Name…" />
+                            <button class="send-btn @(_chatSending ? "busy" : "")"
+                                    @onclick="SendClassMsg" disabled="@_chatSending">
+                                @(_chatSending ? "⏳" : "➤")
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <!-- CONTENT TAB -->
+                @if (_tab == "content")
+                {
+                    <div class="cls-content-list">
+                        @if (_contentLoading)
+                        {
+                            <div class="loading-block"><div class="spin-ring"></div><div>Loading…</div></div>
+                        }
+                        else if (!_contentItems.Any())
+                        {
+                            <div class="empty-block">
+                                <div style="font-size:2rem">📄</div>
+                                <div>No content uploaded yet</div>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var item in _contentItems)
+                            {
+                                <div class="content-card">
+                                    <div class="content-card-icon">@ContentIcon(item.Type)</div>
+                                    <div class="content-card-body">
+                                        <div class="content-card-title">@item.Title</div>
+                                        <div class="content-card-meta">
+                                            @item.Type
+                                            @if (item.DueDate.HasValue) { <span> • Due @item.DueDate.Value.ToLocalTime().ToString("MMM d")</span> }
+                                            @if (item.MaxPoints > 0) { <span> • @item.MaxPoints pts</span> }
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(item.Description))
+                                        {
+                                            <div class="content-card-desc">@item.Description</div>
+                                        }
+                                    </div>
+                                    <div class="content-card-actions">
+                                        @if (!string.IsNullOrEmpty(item.FilePath))
+                                        {
+                                            <a class="btn-sm btn-primary" href="@(GetBaseUrl() + item.FilePath)" target="_blank">⬇ Download</a>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+
+                <!-- MEMBERS TAB -->
+                @if (_tab == "members")
+                {
+                    <div class="cls-members">
+                        @if (_activeClass.Teacher != null)
+                        {
+                            <div class="member-row teacher-row">
+                                <div class="member-av">👩‍🏫</div>
+                                <div>
+                                    <div class="member-name">@_activeClass.Teacher</div>
+                                    <div class="member-role">Teacher</div>
+                                </div>
+                            </div>
+                        }
+                        @foreach (var s in _activeClass.Students ?? new())
+                        {
+                            <div class="member-row">
+                                <div class="member-av">😊</div>
+                                <div>
+                                    <div class="member-name">@s.DisplayName</div>
+                                    <div class="member-role">Student</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- UPLOAD TAB (Teacher) -->
+                @if (_tab == "upload" && IsTeacher)
+                {
+                    <div class="upload-form card">
+                        <div class="page-head"><h1>Upload Content</h1></div>
+                        <div class="form-group">
+                            <label class="form-label">Title</label>
+                            <input class="form-input" @bind="_uploadTitle" placeholder="Content title" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <select class="form-input" @bind="_uploadType">
+                                <option>Note</option>
+                                <option>PDF</option>
+                                <option>Assignment</option>
+                                <option>Announcement</option>
+                                <option>Link</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-input" @bind="_uploadDesc" rows="3" placeholder="Optional description"></textarea>
+                        </div>
+                        @if (_uploadType == "Link")
+                        {
+                            <div class="form-group">
+                                <label class="form-label">URL</label>
+                                <input class="form-input" @bind="_uploadUrl" placeholder="https://" />
+                            </div>
+                        }
+                        @if (_uploadType == "Assignment")
+                        {
+                            <div class="form-row">
+                                <div class="form-group" style="flex:1">
+                                    <label class="form-label">Due Date</label>
+                                    <input class="form-input" type="date" @bind="_uploadDue" />
+                                </div>
+                                <div class="form-group" style="flex:1">
+                                    <label class="form-label">Max Points</label>
+                                    <input class="form-input" type="number" @bind="_uploadMaxPts" />
+                                </div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(_uploadMsg))
+                        {
+                            <div class="@(_uploadOk ? "alert-ok" : "alert-err")">@_uploadMsg</div>
+                        }
+                        <button class="btn btn-primary" @onclick="UploadContent" disabled="@_uploading">
+                            @(_uploading ? "Uploading…" : "⬆ Upload")
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Mobile bottom nav (child only) -->
+        @if (!IsDesktop)
+        {
+            <nav class="mobile-nav">
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
+                <button class="mnav-item active"><span>📚</span><span>Classes</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><span>🏆</span><span>Rewards</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+            </nav>
+        }
+    </div>
+</div>
+
+@code {
+    // ── State ────────────────────────────────────────────────────
+    bool _loading = true;
+    List<ClassItem> _classes = new();
+    ClassDetail? _activeClass;
+    string _tab = "chat";
+    int _unreadCount;
+
+    // Chat
+    List<ClassChatMessage> _classMsgs = new();
+    string _chatInput = "", _chatToast = "", _chatToastClass = "", _typingUser = "";
+    bool _chatSending;
+
+    // Content
+    List<ContentItem> _contentItems = new();
+    bool _contentLoading;
+
+    // Upload (teacher)
+    string _uploadTitle = "", _uploadDesc = "", _uploadType = "Note",
+           _uploadUrl = "", _uploadMsg = "";
+    DateTime? _uploadDue;
+    int _uploadMaxPts = 100;
+    bool _uploading, _uploadOk;
+
+    bool IsDesktop  => AuthState.CurrentUser?.Role is "Teacher" or "Admin" or "Parent";
+    bool IsTeacher  => AuthState.CurrentUser?.Role == "Teacher";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
+
+        Hub.OnClassMessageReceived += OnClassMsg;
+        Hub.OnClassUserTyping      += OnClassTyping;
+        Hub.OnStateChanged         += s => InvokeAsync(StateHasChanged);
+        await Hub.StartAsync(AuthState.CurrentUser!.Token);
+
+        await LoadClasses();
+    }
+
+    async Task LoadClasses()
+    {
+        _loading = true; StateHasChanged();
+        _classes      = await Api.GetAsync<List<ClassItem>>("classes") ?? new();
+        _unreadCount  = (await Api.GetAsync<UnreadCount>("notifications/unread-count"))?.Count ?? 0;
+        _loading = false; StateHasChanged();
+    }
+
+    async Task OpenClass(ClassItem cls)
+    {
+        _activeClass   = await Api.GetAsync<ClassDetail>($"classes/{cls.Id}");
+        _tab           = "chat";
+        _classMsgs     = await Api.GetAsync<List<ClassChatMessage>>(
+                            $"classes/{cls.Id}/messages?take=50") ?? new();
+        await Hub.JoinClassAsync(cls.Id);
+        StateHasChanged();
+    }
+
+    async Task BackToClasses()
+    {
+        if (_activeClass != null) await Hub.LeaveClassAsync(_activeClass.Id);
+        _activeClass = null; StateHasChanged();
+    }
+
+    async Task SetTab(string tab)
+    {
+        _tab = tab;
+        if (tab == "content" && _activeClass != null)
+        {
+            _contentLoading = true; StateHasChanged();
+            _contentItems = await Api.GetAsync<List<ContentItem>>(
+                $"content/class/{_activeClass.Id}") ?? new();
+            _contentLoading = false;
+        }
+        StateHasChanged();
+    }
+
+    // ── Chat ─────────────────────────────────────────────────────
+
+    void OnClassMsg(ClassChatMessage m)
+    {
+        if (_activeClass != null && m.ClassId == _activeClass.Id)
+        {
+            _classMsgs.Add(m);
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    void OnClassTyping(int classId, string name)
+    {
+        if (_activeClass?.Id != classId) return;
+        _typingUser = name;
+        InvokeAsync(StateHasChanged);
+        Task.Delay(3000).ContinueWith(_ => { _typingUser = ""; InvokeAsync(StateHasChanged); });
+    }
+
+    async Task OnChatKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") { await SendClassMsg(); return; }
+        if (_activeClass != null) await Hub.SendClassTypingAsync(_activeClass.Id);
+    }
+
+    async Task SendClassMsg()
+    {
+        if (string.IsNullOrWhiteSpace(_chatInput) || _chatSending || _activeClass == null) return;
+        _chatSending = true;
+        var text = _chatInput; _chatInput = "";
+
+        // Optimistic local message
+        var local = new ClassChatMessage
+        {
+            ClassId    = _activeClass.Id,
+            SenderId   = AuthState.CurrentUser!.UserId,
+            SenderName = AuthState.CurrentUser.DisplayName,
+            SenderEmoji = AuthState.CurrentUser.AvatarEmoji ?? "😊",
+            Content    = text, Label = "pending"
+        };
+        _classMsgs.Add(local); StateHasChanged();
+
+        var resp = await Api.PostRawAsync<ClassSendResult>(
+            $"messages/class/{_activeClass.Id}/send", new { Content = text });
+
+        _classMsgs.Remove(local);
+        if (resp != null)
+        {
+            local.Label   = resp.Label;
+            local.Content = resp.Label == "Watch" ? "[Message masked]"
+                          : resp.Label == "Review" ? "[Message blocked]"
+                          : text;
+            _classMsgs.Add(local);
+
+            (_chatToast, _chatToastClass) = resp.Label switch
+            {
+                "Safe"   => ("✅ Sent!", "t-safe"),
+                "Watch"  => ("👁️ Flagged and masked.", "t-warn"),
+                "Review" => ("🚫 Blocked — please be kind!", "t-block"),
+                _        => ("", "")
+            };
+        }
+
+        _chatSending = false; StateHasChanged();
+        await Task.Delay(3000);
+        _chatToast = ""; StateHasChanged();
+    }
+
+    // ── Upload ───────────────────────────────────────────────────
+
+    async Task UploadContent()
+    {
+        if (_activeClass == null || string.IsNullOrWhiteSpace(_uploadTitle)) return;
+        _uploading = true; _uploadMsg = ""; StateHasChanged();
+
+        var ok = await Api.PostAsync("content", new
+        {
+            ClassId     = _activeClass.Id,
+            Title       = _uploadTitle,
+            Description = _uploadDesc,
+            Type        = _uploadType,
+            LinkUrl     = _uploadUrl,
+            DueDate     = _uploadDue,
+            MaxPoints   = _uploadMaxPts
+        });
+
+        _uploadOk  = ok;
+        _uploadMsg = ok ? "✅ Uploaded!" : "❌ Upload failed.";
+        _uploading = false;
+        if (ok) { _uploadTitle = ""; _uploadDesc = ""; _uploadUrl = ""; }
+        StateHasChanged();
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────
+
+    string BubbleClass(ClassChatMessage m) =>
+        m.Label switch { "Watch" => "flagged", "Review" => "blocked", "pending" => "pending", _ => "" };
+
+    static string ContentIcon(string type) => type switch
+    {
+        "PDF"          => "📄",
+        "Assignment"   => "📝",
+        "Announcement" => "📢",
+        "Link"         => "🔗",
+        _              => "📋"
+    };
+
+    string GetBaseUrl() => AuthState.BackendUrl ?? "http://localhost:5000";
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+
+    public async ValueTask DisposeAsync()
+    {
+        Hub.OnClassMessageReceived -= OnClassMsg;
+        Hub.OnClassUserTyping      -= OnClassTyping;
+        if (_activeClass != null) await Hub.LeaveClassAsync(_activeClass.Id);
+    }
+
+    // ── Local models ─────────────────────────────────────────────
+
+    record ClassItem(int Id, string Name, string Section, string Subject,
+                     string? Teacher, int TeacherId, int StudentCount,
+                     int ContentCount, DateTime CreatedAt);
+
+    class ClassDetail
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Section { get; set; } = "";
+        public string Subject { get; set; } = "";
+        public string? Teacher { get; set; }
+        public int TeacherId { get; set; }
+        public List<StudentItem> Students { get; set; } = new();
+    }
+    record StudentItem(int Id, string DisplayName, string Email);
+    record ContentItem(int Id, string Title, string? Description, string Type,
+                       string? FilePath, DateTime? DueDate, int MaxPoints, DateTime CreatedAt);
+    record ClassSendResult(int Id, string Label, double Score, DateTime Timestamp);
+    record UnreadCount(int Count);
+}

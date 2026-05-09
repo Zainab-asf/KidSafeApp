@@ -1,0 +1,789 @@
+@page "/admin"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="app-root portal-admin">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon">🛡️</span>
+            <span>KidSafe</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">Management</div>
+            @foreach (var (tab, icon, label) in _tabs)
+            {
+                var hasBadge = tab == "Pending" && _pendingUsers.Count > 0;
+                <button class="nav-item @(_activeTab == tab ? "active" : "")"
+                        @onclick="() => SetTab(tab)">
+                    <span class="ni">@icon</span>
+                    <span>@label</span>
+                    @if (hasBadge) { <span class="nb">@_pendingUsers.Count</span> }
+                </button>
+            }
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">🛡️</div>
+                <div>
+                    <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Admin")</div>
+                    <div class="sidebar-urole">Administrator</div>
+                </div>
+                <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── Main area ── -->
+    <div class="main-area">
+        <!-- Top header -->
+        <header class="top-header">
+            <div class="header-search">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Search users, complaints…" />
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" @onclick="LoadData" title="Refresh">🔄</button>
+                <div class="header-profile">
+                    <div class="hp-avatar">🛡️</div>
+                    <div>
+                        <div class="hp-name">Admin</div>
+                        <div class="hp-role">KidSafe</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <div class="page-content">
+
+            <!-- Page heading -->
+            <div class="page-head">
+                <h1>Admin Dashboard</h1>
+                <p>Manage users, review flagged content, and handle complaints</p>
+            </div>
+
+            <!-- Stats row -->
+            @if (_stats != null)
+            {
+                <div class="grid-4" style="margin-bottom:1.5rem">
+                    <div class="stat-card">
+                        <div class="stat-icon green">👥</div>
+                        <div class="stat-body">
+                            <div class="stat-val">@_allUsers.Count</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon gold">⏳</div>
+                        <div class="stat-body">
+                            <div class="stat-val" style="color:var(--warning)">@_stats.PendingTeachers</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon coral">🚫</div>
+                        <div class="stat-body">
+                            <div class="stat-val" style="color:var(--danger)">@_stats.TotalReview</div>
+                            <div class="stat-label">Blocked</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple">📋</div>
+                        <div class="stat-body">
+                            <div class="stat-val" style="color:var(--purple)">@_stats.TotalComplaints</div>
+                            <div class="stat-label">Complaints</div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Tabs -->
+            <div class="page-tabs" style="margin-bottom:1.25rem">
+                @foreach (var (tab, icon, label) in _tabs)
+                {
+                    <button class="ptab @(_activeTab == tab ? "active" : "")"
+                            @onclick="() => SetTab(tab)">@icon @label</button>
+                }
+            </div>
+
+            @if (_loading)
+            {
+                <div class="loading-block"><div class="spinner"></div></div>
+            }
+            else
+            {
+
+            <!-- ── PENDING ── -->
+            @if (_activeTab == "Pending")
+            {
+                @if (!_pendingUsers.Any())
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">✅</div>
+                        <div class="empty-txt">No pending approvals</div>
+                        <div class="empty-sub">All accounts are reviewed</div>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var u in _pendingUsers)
+                    {
+                        <div class="user-row">
+                            <div class="user-av">@RoleEmoji(u.Role)</div>
+                            <div class="user-info">
+                                <div class="user-name">@u.DisplayName</div>
+                                <div class="user-email">@u.Email · @u.Role</div>
+                            </div>
+                            <div class="user-acts">
+                                <button class="btn btn-sm btn-ghost" @onclick="() => Approve(u.Id)">✅ Approve</button>
+                                <button class="btn btn-sm btn-danger-o" @onclick="() => Disable(u.Id)">🚫 Reject</button>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+
+            <!-- ── STUDENTS ── -->
+            @if (_activeTab == "Students")
+            {
+                <div class="sec-hd">
+                    <h2>👦 Students</h2>
+                    <button class="btn btn-sm btn-primary" @onclick="OpenCreateChild">+ Add Student</button>
+                </div>
+                @foreach (var u in _allUsers.Where(u => u.Role == "Child")) { @UserRow(u) }
+                @if (!_allUsers.Any(u => u.Role == "Child"))
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">👦</div>
+                        <div class="empty-txt">No students yet</div>
+                    </div>
+                }
+            }
+
+            <!-- ── TEACHERS ── -->
+            @if (_activeTab == "Teachers")
+            {
+                <div class="sec-hd">
+                    <h2>👩‍🏫 Teachers</h2>
+                    <button class="btn btn-sm btn-primary" @onclick="OpenCreateTeacher">+ Add Teacher</button>
+                </div>
+                @foreach (var u in _allUsers.Where(u => u.Role == "Teacher")) { @UserRow(u) }
+                @if (!_allUsers.Any(u => u.Role == "Teacher"))
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">👩‍🏫</div>
+                        <div class="empty-txt">No teachers yet</div>
+                    </div>
+                }
+            }
+
+            <!-- ── PARENTS ── -->
+            @if (_activeTab == "Parents")
+            {
+                <div class="sec-hd">
+                    <h2>👨‍👩‍👦 Parents</h2>
+                    <button class="btn btn-sm btn-primary" @onclick="OpenCreateParent">+ Add Parent</button>
+                </div>
+                @foreach (var u in _allUsers.Where(u => u.Role == "Parent")) { @UserRow(u) }
+                @if (!_allUsers.Any(u => u.Role == "Parent"))
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">👨‍👩‍👦</div>
+                        <div class="empty-txt">No parents yet</div>
+                    </div>
+                }
+            }
+
+            <!-- ── FLAGGED ── -->
+            @if (_activeTab == "Flagged")
+            {
+                <div class="sec-hd"><h2>⚠️ Flagged Messages</h2></div>
+                @if (!_flaggedMessages.Any())
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">✅</div>
+                        <div class="empty-txt">No flagged messages</div>
+                        <div class="empty-sub">Classroom is safe!</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="tbl-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Message</th>
+                                    <th>Label</th>
+                                    <th>Score</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var m in _flaggedMessages)
+                                {
+                                    <tr>
+                                        <td><span style="font-weight:600">@m.SenderName</span></td>
+                                        <td style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@m.MaskedMessage</td>
+                                        <td>
+                                            <span class="badge @(m.Label == "Review" ? "badge-red" : "badge-gold")">@m.Label</span>
+                                        </td>
+                                        <td>
+                                            <div style="display:flex;align-items:center;gap:.5rem">
+                                                <div class="score-bar-mini">
+                                                    <div class="score-fill-mini @(m.Score>=.8?"hi":m.Score>=.5?"md":"lo")"
+                                                         style="width:@((int)(m.Score*100))%"></div>
+                                                </div>
+                                                <span style="font-size:.72rem;font-weight:700">@m.Score.ToString("P0")</span>
+                                            </div>
+                                        </td>
+                                        <td style="font-size:.72rem;color:var(--text-m)">@m.Timestamp.ToLocalTime().ToString("MMM dd, HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+
+            <!-- ── COMPLAINTS ── -->
+            @if (_activeTab == "Complaints")
+            {
+                <div class="sec-hd"><h2>📋 Complaints</h2></div>
+                @if (!_complaints.Any())
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">📭</div>
+                        <div class="empty-txt">No complaints filed</div>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var c in _complaints)
+                    {
+                        <div class="card card-flat card-sm" style="margin-bottom:.65rem">
+                            <div style="display:flex;align-items:flex-start;gap:.75rem">
+                                <div style="flex:1">
+                                    <div style="font-weight:700;font-size:.85rem;margin-bottom:.25rem">@c.Description</div>
+                                    <div style="font-size:.72rem;color:var(--text-m)">@c.Timestamp.ToLocalTime().ToString("MMM dd, HH:mm")</div>
+                                </div>
+                                <span class="badge @StatusBadge(c.Status)">@c.Status</span>
+                            </div>
+                            @if (c.Status == "submitted")
+                            {
+                                <div style="display:flex;gap:.5rem;margin-top:.75rem">
+                                    <button class="btn btn-sm btn-outline" @onclick="() => MarkUnderReview(c.Id)">Under Review</button>
+                                    <button class="btn btn-sm btn-ghost" @onclick="() => MarkResolved(c.Id)">✅ Resolve</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            }
+
+            <!-- ── CLASSES ── -->
+            @if (_activeTab == "Classes")
+            {
+                <div class="sec-hd">
+                    <h2>📚 Classes</h2>
+                    <button class="btn btn-sm btn-primary" @onclick="OpenCreateClass">+ New Class</button>
+                </div>
+                @if (!_classes.Any())
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">📚</div>
+                        <div class="empty-txt">No classes yet</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="tbl-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Name</th><th>Subject</th><th>Section</th><th>Teacher</th><th>Students</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var cl in _classes)
+                                {
+                                    <tr>
+                                        <td style="font-weight:600">@cl.Name</td>
+                                        <td>@cl.Subject</td>
+                                        <td>@cl.Section</td>
+                                        <td>@(cl.Teacher ?? "—")</td>
+                                        <td>@cl.StudentCount</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline" @onclick="() => ManageClass(cl)">⚙ Manage</button>
+                                            <button class="btn btn-sm btn-danger-o" style="margin-left:.3rem"
+                                                    @onclick="() => DeleteClass(cl.Id)">🗑</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                @if (_manageClass != null)
+                {
+                    <div class="card" style="margin-top:1.25rem">
+                        <div style="font-weight:800;font-size:.95rem;margin-bottom:.85rem">
+                            Manage: @_manageClass.Name
+                            <button class="btn btn-sm btn-ghost" style="margin-left:.5rem;font-size:.7rem"
+                                    @onclick="() => _manageClass = null">✕ Close</button>
+                        </div>
+                        <div style="display:flex;gap:.65rem;margin-bottom:.65rem;flex-wrap:wrap">
+                            <select class="form-input" style="flex:1;min-width:160px" @bind="_addStudentId">
+                                <option value="0">Select student…</option>
+                                @foreach (var u in _allUsers.Where(u => u.Role == "Child"))
+                                {
+                                    <option value="@u.Id">@u.DisplayName</option>
+                                }
+                            </select>
+                            <button class="btn btn-sm btn-primary" @onclick="AddStudentToClass">+ Add Student</button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_classMsg))
+                        {
+                            <div class="alert-ok">@_classMsg</div>
+                        }
+                    </div>
+                }
+            }
+
+            <!-- ── LINKS (Parent-Child) ── -->
+            @if (_activeTab == "Links")
+            {
+                <div class="sec-hd">
+                    <h2>🔗 Parent-Child Links</h2>
+                    <button class="btn btn-sm btn-primary" @onclick="() => _showLinkModal = true">+ New Link</button>
+                </div>
+                @if (!_parentLinks.Any())
+                {
+                    <div class="empty-block">
+                        <div class="empty-ico">🔗</div>
+                        <div class="empty-txt">No parent-child links</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="tbl-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>Parent</th><th>Child</th><th>Linked</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var lk in _parentLinks)
+                                {
+                                    <tr>
+                                        <td>@lk.ParentName<br/><span style="font-size:.68rem;color:var(--text-m)">@lk.ParentEmail</span></td>
+                                        <td>@lk.ChildName<br/><span style="font-size:.68rem;color:var(--text-m)">@lk.ChildEmail</span></td>
+                                        <td style="font-size:.72rem;color:var(--text-m)">@lk.LinkedAt.ToLocalTime().ToString("MMM dd")</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger-o"
+                                                    @onclick="() => UnlinkParentChild(lk.ParentId, lk.ChildId)">🗑 Unlink</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            }
+
+            } <!-- end !_loading -->
+
+            @if (!string.IsNullOrEmpty(_toast))
+            {
+                <div class="toast-bar">@_toast</div>
+            }
+
+        </div><!-- /page-content -->
+    </div><!-- /main-area -->
+</div><!-- /app-root -->
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-nav" style="display:none">
+    @foreach (var (tab, icon, label) in _tabs)
+    {
+        <button class="mnav-item @(_activeTab == tab ? "active" : "")"
+                @onclick="() => SetTab(tab)">
+            <span>@icon</span>
+            <span>@label</span>
+        </button>
+    }
+</nav>
+
+<!-- ── Create class modal ── -->
+@if (_showCreateClass)
+{
+    <div class="modal-overlay" @onclick="() => _showCreateClass = false">
+        <div class="modal-box" @onclick:stopPropagation>
+            <div class="modal-head">
+                <div class="modal-title">📚 New Class</div>
+                <button class="modal-close" @onclick="() => _showCreateClass = false">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Class Name</label>
+                <input class="form-input" @bind="_clsName" placeholder="e.g. Class 5A" />
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Section</label>
+                    <input class="form-input" @bind="_clsSection" placeholder="A" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject</label>
+                    <input class="form-input" @bind="_clsSubject" placeholder="Mathematics" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Assign Teacher</label>
+                <select class="form-input" @bind="_clsTeacherId">
+                    <option value="0">— No teacher —</option>
+                    @foreach (var t in _allUsers.Where(u => u.Role == "Teacher"))
+                    {
+                        <option value="@t.Id">@t.DisplayName</option>
+                    }
+                </select>
+            </div>
+            @if (!string.IsNullOrEmpty(_clsMsg))
+            {
+                <div class="@(_clsOk ? "alert-ok" : "alert-err")" style="margin-bottom:.75rem">@_clsMsg</div>
+            }
+            <div style="display:flex;gap:.65rem">
+                <button class="btn btn-outline" @onclick="() => _showCreateClass = false" style="flex:1">Cancel</button>
+                <button class="btn btn-primary" @onclick="CreateClass" disabled="@_clsBusy" style="flex:2">
+                    @(_clsBusy ? "Creating…" : "Create Class")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Link parent-child modal ── -->
+@if (_showLinkModal)
+{
+    <div class="modal-overlay" @onclick="() => _showLinkModal = false">
+        <div class="modal-box" @onclick:stopPropagation>
+            <div class="modal-head">
+                <div class="modal-title">🔗 Link Parent ↔ Child</div>
+                <button class="modal-close" @onclick="() => _showLinkModal = false">✕</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Parent</label>
+                <select class="form-input" @bind="_linkParentId">
+                    <option value="0">Select parent…</option>
+                    @foreach (var p in _allUsers.Where(u => u.Role == "Parent"))
+                    {
+                        <option value="@p.Id">@p.DisplayName (@p.Email)</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Child</label>
+                <select class="form-input" @bind="_linkChildId">
+                    <option value="0">Select child…</option>
+                    @foreach (var c in _allUsers.Where(u => u.Role == "Child"))
+                    {
+                        <option value="@c.Id">@c.DisplayName (@c.Email)</option>
+                    }
+                </select>
+            </div>
+            @if (!string.IsNullOrEmpty(_linkMsg))
+            {
+                <div class="@(_linkOk ? "alert-ok" : "alert-err")" style="margin-bottom:.75rem">@_linkMsg</div>
+            }
+            <div style="display:flex;gap:.65rem">
+                <button class="btn btn-outline" @onclick="() => _showLinkModal = false" style="flex:1">Cancel</button>
+                <button class="btn btn-primary" @onclick="LinkParentChild" disabled="@_linkBusy" style="flex:2">
+                    @(_linkBusy ? "Linking…" : "Link")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Create user modal ── -->
+@if (_showCreate)
+{
+    <div class="modal-overlay" @onclick="CloseCreate">
+        <div class="modal-box" @onclick:stopPropagation>
+            <div class="modal-head">
+                <div class="modal-title">➕ Create Account</div>
+                <button class="modal-close" @onclick="CloseCreate">✕</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_createError))
+            {
+                <div class="auth-error" style="margin-bottom:.85rem">⚠️ @_createError</div>
+            }
+            @if (_createDone)
+            {
+                <div class="auth-success" style="margin-bottom:.85rem">✅ Account created successfully!</div>
+            }
+
+            <!-- Role selector -->
+            <div class="field">
+                <label class="field-label">Account Type</label>
+                <div class="role-pick">
+                    @foreach (var (role, icon, lbl) in _roles)
+                    {
+                        <div class="role-tile @(_createRole == role ? "selected" : "")"
+                             @onclick="() => _createRole = role">
+                            <span class="rt-icon">@icon</span>
+                            <span class="rt-lbl">@lbl</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="field-label">Display Name</label>
+                <div class="field-wrap">
+                    <span class="field-icon">👤</span>
+                    <input class="field-input" @bind="_createName" placeholder="Full name" />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">Email</label>
+                <div class="field-wrap">
+                    <span class="field-icon">✉️</span>
+                    <input class="field-input" @bind="_createEmail" placeholder="email@example.com" type="email" />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">Temporary Password</label>
+                <div class="field-wrap">
+                    <span class="field-icon">🔑</span>
+                    <input class="field-input" @bind="_createPassword" placeholder="••••••••" type="password" />
+                </div>
+            </div>
+            <div style="display:flex;gap:.65rem;margin-top:.25rem">
+                <button class="btn btn-outline" @onclick="CloseCreate" style="flex:1">Cancel</button>
+                <button class="btn btn-primary" @onclick="CreateUser" disabled="@_createBusy" style="flex:2">
+                    @(_createBusy ? "Creating…" : "Create Account")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    record UserDto(int Id, string DisplayName, string Email, string Role, string Status);
+    record ComplaintDto(int Id, string Description, string Status, DateTime Timestamp);
+    record ClassDto(int Id, string Name, string Section, string Subject, string? Teacher, int TeacherId, int StudentCount);
+    record ClassDetail(int Id, string Name);
+    record ParentLinkDto(int ParentId, string ParentName, string ParentEmail,
+                         int ChildId,  string ChildName,  string ChildEmail, DateTime LinkedAt);
+
+    DashboardStats?          _stats;
+    List<UserDto>            _allUsers        = new();
+    List<UserDto>            _pendingUsers    = new();
+    List<FlaggedMessageItem> _flaggedMessages = new();
+    List<ComplaintDto>       _complaints      = new();
+    List<ClassDto>           _classes         = new();
+    List<ParentLinkDto>      _parentLinks     = new();
+    bool   _loading = true;
+    string _activeTab = "Pending";
+    string _toast = "";
+
+    static readonly (string tab, string icon, string label)[] _tabs = {
+        ("Pending","⏳","Pending"), ("Students","👦","Students"), ("Teachers","👩‍🏫","Teachers"),
+        ("Parents","👨‍👩‍👦","Parents"), ("Flagged","⚠️","Flagged"), ("Complaints","📋","Complaints"),
+        ("Classes","📚","Classes"), ("Links","🔗","Links")
+    };
+
+    // Create user modal
+    bool   _showCreate, _createBusy, _createDone;
+    string _createRole = "Child", _createName = "", _createEmail = "", _createPassword = "", _createError = "";
+
+    static readonly (string role, string icon, string label)[] _roles = {
+        ("Child","👦","Student"), ("Parent","👨‍👩‍👦","Parent"), ("Teacher","👩‍🏫","Teacher")
+    };
+
+    // Create class modal
+    bool   _showCreateClass, _clsBusy, _clsOk;
+    string _clsName = "", _clsSection = "", _clsSubject = "", _clsMsg = "";
+    int    _clsTeacherId;
+
+    // Manage class
+    ClassDto? _manageClass;
+    int       _addStudentId;
+    string    _classMsg = "";
+
+    // Parent-child link modal
+    bool   _showLinkModal, _linkBusy, _linkOk;
+    int    _linkParentId, _linkChildId;
+    string _linkMsg = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated || !AuthState.IsAdmin) { Nav.NavigateTo("/login"); return; }
+        await LoadData();
+    }
+
+    async Task LoadData()
+    {
+        _loading = true; StateHasChanged();
+        _stats           = await Api.GetDashboardStatsAsync();
+        _allUsers        = await Api.GetAsync<List<UserDto>>("admin/users") ?? new();
+        _pendingUsers    = await Api.GetAsync<List<UserDto>>("admin/users/pending") ?? new();
+        _flaggedMessages = await Api.GetFlaggedMessagesAsync();
+        _complaints      = await Api.GetAsync<List<ComplaintDto>>("reports/complaint") ?? new();
+        _classes         = await Api.GetAsync<List<ClassDto>>("classes") ?? new();
+        _parentLinks     = await Api.GetAsync<List<ParentLinkDto>>("admin/parent-links") ?? new();
+        _loading = false; StateHasChanged();
+    }
+
+    async Task SetTab(string tab)
+    {
+        _activeTab = tab;
+        if (_allUsers.Count == 0) await LoadData();
+        else StateHasChanged();
+    }
+
+    // ── Class management ──────────────────────────────────────
+
+    void OpenCreateClass() { _clsName = _clsSection = _clsSubject = _clsMsg = ""; _clsTeacherId = 0; _showCreateClass = true; }
+
+    async Task CreateClass()
+    {
+        if (string.IsNullOrWhiteSpace(_clsName)) { _clsMsg = "Name required."; _clsOk = false; return; }
+        _clsBusy = true; StateHasChanged();
+        var ok = await Api.PostAsync("classes", new
+        {
+            Name      = _clsName,
+            Section   = _clsSection,
+            Subject   = _clsSubject,
+            TeacherId = _clsTeacherId == 0 ? (int?)null : _clsTeacherId
+        });
+        _clsBusy = false;
+        _clsOk   = ok;
+        _clsMsg  = ok ? "✅ Class created!" : "❌ Failed to create class.";
+        if (ok) { await LoadData(); await Task.Delay(1500); _showCreateClass = false; }
+        StateHasChanged();
+    }
+
+    async Task DeleteClass(int id)
+    {
+        if (await Api.DeleteAsync($"classes/{id}")) { _toast = "🗑 Class deleted."; await LoadData(); ShowToast(); }
+    }
+
+    void ManageClass(ClassDto cl) { _manageClass = cl; _addStudentId = 0; _classMsg = ""; }
+
+    async Task AddStudentToClass()
+    {
+        if (_manageClass == null || _addStudentId == 0) return;
+        var ok = await Api.PostAsync($"classes/{_manageClass.Id}/students", new { StudentId = _addStudentId });
+        _classMsg = ok ? "✅ Student added!" : "❌ Already enrolled or failed.";
+        if (ok) await LoadData();
+        StateHasChanged();
+    }
+
+    // ── Parent-child links ────────────────────────────────────
+
+    async Task LinkParentChild()
+    {
+        if (_linkParentId == 0 || _linkChildId == 0) { _linkMsg = "Select both users."; _linkOk = false; return; }
+        _linkBusy = true; StateHasChanged();
+        var ok = await Api.PostAsync("admin/parent-links", new { ParentId = _linkParentId, ChildId = _linkChildId });
+        _linkBusy = false;
+        _linkOk   = ok;
+        _linkMsg  = ok ? "✅ Linked!" : "❌ Already linked or invalid.";
+        if (ok) { await LoadData(); await Task.Delay(1500); _showLinkModal = false; }
+        StateHasChanged();
+    }
+
+    async Task UnlinkParentChild(int parentId, int childId)
+    {
+        if (await Api.DeleteAsync($"admin/parent-links/{parentId}/{childId}"))
+        { _toast = "🔗 Link removed."; await LoadData(); ShowToast(); }
+    }
+
+    async Task Approve(int id)
+    {
+        if (await Api.PostAsync($"admin/users/{id}/approve", new { }))
+        { _toast = "✅ Account approved"; await LoadData(); }
+        ShowToast();
+    }
+
+    async Task Disable(int id)
+    {
+        if (await Api.PostAsync($"admin/users/{id}/disable", new { }))
+        { _toast = "🚫 Account disabled"; await LoadData(); }
+        ShowToast();
+    }
+
+    async Task UpdateComplaint(int id, string status)
+    {
+        await Api.PatchAsync($"reports/complaint/{id}", new { Status = status });
+        _toast = status == "resolved" ? "✅ Resolved" : "📋 Marked under review";
+        await LoadData();
+        ShowToast();
+    }
+
+    void OpenCreate(string role)  { _createRole = role; _createError = ""; _createDone = false; _showCreate = true; }
+    void OpenCreateChild()   => OpenCreate("Child");
+    void OpenCreateTeacher() => OpenCreate("Teacher");
+    void OpenCreateParent()  => OpenCreate("Parent");
+    void CloseCreate()       { _showCreate = false; _createName = _createEmail = _createPassword = ""; _createError = ""; _createDone = false; }
+    Task MarkUnderReview(int id) => UpdateComplaint(id, "underReview");
+    Task MarkResolved(int id)    => UpdateComplaint(id, "resolved");
+
+    async Task CreateUser()
+    {
+        if (string.IsNullOrWhiteSpace(_createEmail) || string.IsNullOrWhiteSpace(_createPassword) || string.IsNullOrWhiteSpace(_createName))
+        { _createError = "All fields are required."; return; }
+
+        _createBusy = true; _createError = "";
+        // Use admin endpoint (bypasses pending status for teachers)
+        var ok = await Api.PostAsync("admin/users", new
+        {
+            Email       = _createEmail,
+            Password    = _createPassword,
+            DisplayName = _createName,
+            Role        = _createRole
+        });
+        _createBusy = false;
+
+        if (!ok) { _createError = "Failed. Email may already be taken."; return; }
+
+        _createDone = true;
+        _createName = _createEmail = _createPassword = "";
+        await LoadData();
+        await Task.Delay(2000);
+        CloseCreate();
+    }
+
+    void ShowToast() { StateHasChanged(); Task.Delay(3000).ContinueWith(_ => { _toast = ""; InvokeAsync(StateHasChanged); }); }
+
+    static string RoleEmoji(string role) => role switch { "Child" => "👦", "Parent" => "👨‍👩‍👦", "Teacher" => "👩‍🏫", "Admin" => "🛡️", _ => "👤" };
+    static string StatusBadge(string s)  => s switch { "resolved" => "badge-green", "underReview" => "badge-gold", _ => "badge-blue" };
+
+    RenderFragment UserRow(UserDto u) => __builder =>
+    {
+        <div class="user-row">
+            <div class="user-av">@RoleEmoji(u.Role)</div>
+            <div class="user-info">
+                <div class="user-name">@u.DisplayName</div>
+                <div class="user-email">@u.Email</div>
+            </div>
+            <div class="user-acts">
+                <span class="badge @(u.Status == "active" ? "badge-green" : u.Status == "pending" ? "badge-gold" : "badge-red")">
+                    @u.Status
+                </span>
+                @if (u.Status != "active")
+                {
+                    <button class="btn btn-sm btn-ghost" @onclick="() => Approve(u.Id)">✅</button>
+                }
+                @if (u.Status != "disabled")
+                {
+                    <button class="btn btn-sm btn-danger-o" @onclick="() => Disable(u.Id)">🚫</button>
+                }
+            </div>
+        </div>;
+    };
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+}

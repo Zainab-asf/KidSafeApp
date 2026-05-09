@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="KidSafeApp.Backend/KidSafeApp.Backend.csproj" Id="8480049d-e1af-4c77-a942-e83c3f688b3c" />
-  <Project Path="KidSafeApp.Shared/KidSafeApp.Shared.csproj" Id="cbc0d767-63f6-4a10-bd6b-42177c82e404" />
-  <Project Path="KidSafeApp/KidSafeApp.csproj" />
-</Solution>

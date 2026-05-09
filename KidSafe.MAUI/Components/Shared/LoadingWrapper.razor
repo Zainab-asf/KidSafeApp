@@ -1,0 +1,17 @@
+@* Shows a spinner while IsLoading; renders ChildContent when ready *@
+
+@if (IsLoading)
+{
+    <div class="loading-block">
+        <div class="spinner"></div>
+    </div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired] public bool            IsLoading    { get; set; }
+    [Parameter, EditorRequired] public RenderFragment? ChildContent { get; set; }
+}

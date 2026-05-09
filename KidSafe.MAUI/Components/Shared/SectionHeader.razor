@@ -1,0 +1,14 @@
+@* Reusable section heading row with optional action button *@
+
+<div class="sec-hd">
+    <h2>@Title</h2>
+    @if (Action != null)
+    {
+        @Action
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string          Title  { get; set; } = "";
+    [Parameter]                 public RenderFragment? Action { get; set; }
+}

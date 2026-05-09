@@ -1,9 +1,0 @@
-﻿global using KidSafeApp.Shared.DTOs.Admin;
-global using KidSafeApp.Shared.DTOs.Auth;
-global using KidSafeApp.Shared.DTOs.Chat;
-global using KidSafeApp.Shared.DTOs.Common;
-global using KidSafeApp.Shared.DTOs.Courses;
-global using KidSafeApp.Shared.DTOs.Notifications;
-global using KidSafeApp.Shared.DTOs.Progress;
-global using KidSafeApp.Shared.DTOs.Settings;
-global using KidSafeApp.Shared.DTOs.Teacher;

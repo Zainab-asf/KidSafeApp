@@ -1,0 +1,179 @@
+@page "/notifications"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="@(IsDesktop ? "app-root" : "mobile-root")">
+
+    @if (IsDesktop)
+    {
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon">🛡️</span>
+                <span>KidSafe</span>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="sidebar-section">Navigation</div>
+                <button class="nav-item" @onclick="GoBack"><span class="ni">← </span><span>Back</span></button>
+                <button class="nav-item active"><span class="ni">🔔</span><span>Notifications</span></button>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                    <div>
+                        <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
+                        <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
+                    </div>
+                    <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+                </div>
+            </div>
+        </aside>
+    }
+
+    <div class="@(IsDesktop ? "main-area" : "")">
+        @if (IsDesktop)
+        {
+            <div class="top-header">
+                <div class="header-title">🔔 Notifications</div>
+                <div class="header-actions">
+                    @if (_notifications.Any(n => !n.IsRead))
+                    {
+                        <button class="btn-sm btn-outline" @onclick="MarkAllRead">Mark all read</button>
+                    }
+                    <button class="header-btn" @onclick="Load" title="Refresh">🔄</button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="mobile-header">
+                <div class="mh-title">🔔 Notifications</div>
+                @if (_notifications.Any(n => !n.IsRead))
+                {
+                    <button class="btn-sm btn-outline" @onclick="MarkAllRead">Mark all read</button>
+                }
+            </div>
+        }
+
+        <div class="@(IsDesktop ? "page-content" : "mobile-content")">
+            @if (_loading)
+            {
+                <div class="loading-block">
+                    <div class="spin-ring"></div>
+                    <div>Loading…</div>
+                </div>
+            }
+            else if (!_notifications.Any())
+            {
+                <div class="empty-block">
+                    <div style="font-size:3rem">🔔</div>
+                    <div>No notifications</div>
+                    <div style="font-size:.83rem;color:var(--text-m)">You're all caught up!</div>
+                </div>
+            }
+            else
+            {
+                @foreach (var n in _notifications)
+                {
+                    <div class="notif-row @(n.IsRead ? "" : "unread")" @onclick="() => ReadNote(n)">
+                        <div class="notif-icon @n.Type">@NoteIcon(n.Type)</div>
+                        <div class="notif-body">
+                            <div class="notif-title">@n.Title</div>
+                            <div class="notif-text">@n.Body</div>
+                            <div class="notif-time">@TimeAgo(n.CreatedAt)</div>
+                        </div>
+                        @if (!n.IsRead)
+                        {
+                            <div class="notif-dot"></div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+        @if (!IsDesktop)
+        {
+            <nav class="mobile-nav">
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
+                <button class="mnav-item active"><span>🔔</span><span>Alerts</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><span>🏆</span><span>Rewards</span></button>
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+            </nav>
+        }
+    </div>
+</div>
+
+@code {
+    List<NoteItem> _notifications = new();
+    bool _loading = true;
+    bool IsDesktop => AuthState.CurrentUser?.Role is "Teacher" or "Admin" or "Parent";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
+        await Load();
+    }
+
+    async Task Load()
+    {
+        _loading = true; StateHasChanged();
+        _notifications = await Api.GetAsync<List<NoteItem>>("notifications") ?? new();
+        _loading = false; StateHasChanged();
+    }
+
+    async Task ReadNote(NoteItem n)
+    {
+        if (!n.IsRead)
+        {
+            n.IsRead = true;
+            await Api.PostAsync($"notifications/{n.Id}/read", new { });
+            StateHasChanged();
+        }
+    }
+
+    async Task MarkAllRead()
+    {
+        await Api.PostAsync("notifications/read-all", new { });
+        foreach (var n in _notifications) n.IsRead = true;
+        StateHasChanged();
+    }
+
+    static string NoteIcon(string type) => type switch
+    {
+        "alert"      => "⚠️",
+        "assignment" => "📝",
+        "badge"      => "🏆",
+        _            => "ℹ️"
+    };
+
+    static string TimeAgo(DateTime dt)
+    {
+        var diff = DateTime.UtcNow - dt;
+        if (diff.TotalMinutes < 1)  return "just now";
+        if (diff.TotalHours   < 1)  return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalDays    < 1)  return $"{(int)diff.TotalHours}h ago";
+        return $"{(int)diff.TotalDays}d ago";
+    }
+
+    void GoBack() => Nav.NavigateTo(AuthState.CurrentUser?.Role switch
+    {
+        "Admin"   => "/admin",
+        "Teacher" => "/teacher",
+        "Parent"  => "/parent",
+        _         => "/chat"
+    });
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+
+    class NoteItem
+    {
+        public int      Id        { get; set; }
+        public string   Title     { get; set; } = "";
+        public string   Body      { get; set; } = "";
+        public string   Type      { get; set; } = "system";
+        public bool     IsRead    { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

@@ -1,0 +1,80 @@
+@page "/rewards"
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="chat-root">
+
+    <!-- Header -->
+    <div class="chat-hd">
+        <button class="chat-hd-btn" @onclick="NavChat" title="Back">←</button>
+        <div style="flex:1;text-align:center">
+            <div class="chat-hd-name">My Rewards</div>
+        </div>
+        <button class="chat-hd-btn" @onclick="NavChat" title="Chat">💬</button>
+    </div>
+
+    <div class="rew-scroll">
+        <!-- Hero points card -->
+        <div class="rew-hero">
+            <div class="rew-pts-lbl">Safety Points</div>
+            <div class="rew-pts">@_points</div>
+            <div class="rew-bar-wrap">
+                <div class="rew-bar-fill" style="width:@BarWidth%"></div>
+            </div>
+            <div class="rew-next">@PointsToNext pts to next badge</div>
+        </div>
+
+        <!-- Badges -->
+        <div style="padding:1rem 1rem 0">
+            <div class="sec-hd"><h2>🎖️ Badges</h2></div>
+        </div>
+        <div class="badge-shelf">
+            @foreach (var b in _badges)
+            {
+                <div class="rew-badge @(b.Unlocked ? "unlocked" : "locked")">
+                    <div class="rew-badge-ico">@b.Icon</div>
+                    <div class="rew-badge-name">@b.Name</div>
+                    <div class="rew-badge-pts">@b.Pts pts</div>
+                    @if (b.Unlocked) { <div class="rew-badge-earned">✓ Earned</div> }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 5-item mobile nav -->
+    <nav class="mobile-nav">
+        <button class="mnav-item" @onclick="NavChat"><span>💬</span><span>Chat</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
+        <button class="mnav-item active"><span>🏆</span><span>Rewards</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+    </nav>
+
+</div>
+
+@code {
+    int _points;
+    record B(string Icon, string Name, int Pts, bool Unlocked);
+    List<B> _badges = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
+        _points = 0;
+        _badges = new() {
+            new("💬","Safe Chatter",   100,  _points >= 100),
+            new("🌟","Kind Star",      500,  _points >= 500),
+            new("🦸","Cyber Hero",    1000,  _points >= 1000),
+            new("🎓","Chat Scholar",  2000,  _points >= 2000),
+            new("👑","Safety King",   5000,  _points >= 5000),
+            new("🚀","Legend",       10000,  _points >= 10000),
+        };
+    }
+
+    int BarWidth => _badges.FirstOrDefault(b => !b.Unlocked) is { } next
+        ? (int)Math.Min(100, (_points / (double)next.Pts) * 100) : 100;
+    int PointsToNext => Math.Max(0, (_badges.FirstOrDefault(b => !b.Unlocked)?.Pts ?? 0) - _points);
+
+    void NavChat() => Nav.NavigateTo("/chat");
+}

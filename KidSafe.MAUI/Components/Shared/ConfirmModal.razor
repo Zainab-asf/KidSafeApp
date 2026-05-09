@@ -1,0 +1,47 @@
+@* Generic confirm/delete modal.
+   Usage:
+     <ConfirmModal @bind-Visible="_showConfirm"
+                   Title="Delete class?"
+                   Message="This cannot be undone."
+                   OnConfirm="DeleteAsync"
+                   DangerLabel="Delete" /> *@
+
+@if (Visible)
+{
+    <div class="modal-overlay" @onclick="Cancel">
+        <div class="modal-box confirm-modal" @onclick:stopPropagation>
+            <div class="modal-head">
+                <div class="modal-title">@Title</div>
+                <button class="modal-close" @onclick="Cancel">✕</button>
+            </div>
+            <p class="confirm-msg">@Message</p>
+            <div style="display:flex;gap:.65rem;margin-top:1.25rem">
+                <button class="btn btn-outline" @onclick="Cancel" style="flex:1">Cancel</button>
+                <button class="btn btn-danger"  @onclick="Confirm" disabled="@_busy" style="flex:1">
+                    @(_busy ? "…" : DangerLabel)
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool   Visible      { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter] public string Title        { get; set; } = "Are you sure?";
+    [Parameter] public string Message      { get; set; } = "This action cannot be undone.";
+    [Parameter] public string DangerLabel  { get; set; } = "Confirm";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    bool _busy;
+
+    async Task Confirm()
+    {
+        _busy = true;
+        await OnConfirm.InvokeAsync();
+        _busy = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    Task Cancel() => VisibleChanged.InvokeAsync(false);
+}

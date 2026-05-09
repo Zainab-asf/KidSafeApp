@@ -1,0 +1,253 @@
+@page "/teacher"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="app-root portal-teacher">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon">🛡️</span>
+            <span>KidSafe</span>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">Classroom</div>
+            <button class="nav-item active">
+                <span class="ni">🏫</span><span>Overview</span>
+            </button>
+            <button class="nav-item" @onclick="LoadData">
+                <span class="ni">🔄</span><span>Refresh</span>
+            </button>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Classroom</div>
+            <button class="nav-item" @onclick='() => Nav.NavigateTo("/classes")'>
+                <span class="ni">📚</span><span>My Classes</span>
+            </button>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Monitoring</div>
+            <button class="nav-item">
+                <span class="ni">👦</span><span>Students</span>
+                @if (_children.Count > 0)
+                {
+                    <span class="nb">@_children.Count</span>
+                }
+            </button>
+            <button class="nav-item">
+                <span class="ni">⚠️</span><span>Incidents</span>
+                @if (_flaggedMessages.Count > 0)
+                {
+                    <span class="nb">@_flaggedMessages.Count</span>
+                }
+            </button>
+            <div class="sidebar-divider"></div>
+            <button class="nav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
+                <span class="ni">🔔</span><span>Notifications</span>
+            </button>
+            <button class="nav-item" @onclick='() => Nav.NavigateTo("/profile")'>
+                <span class="ni">👤</span><span>Profile</span>
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👩‍🏫</div>
+                <div>
+                    <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Teacher")</div>
+                    <div class="sidebar-urole">Teacher</div>
+                </div>
+                <button class="sidebar-logout" @onclick="Logout" title="Logout">🚪</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── Main area ── -->
+    <div class="main-area">
+        <!-- Top header -->
+        <header class="top-header">
+            <div class="header-title">Teacher Dashboard</div>
+            <div class="header-actions" style="margin-left:auto">
+                <button class="header-btn" @onclick="LoadData" title="Refresh">🔄</button>
+                <div class="header-profile">
+                    <div class="hp-avatar">👩‍🏫</div>
+                    <div>
+                        <div class="hp-name">@(AuthState.CurrentUser?.DisplayName ?? "Teacher")</div>
+                        <div class="hp-role">Teacher</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <div class="page-content">
+
+            <div class="page-head">
+                <h1>Classroom Monitor</h1>
+                <p>Track student activity and manage incidents in real time</p>
+            </div>
+
+            <!-- Stats -->
+            @if (_stats != null)
+            {
+                <div class="grid-3" style="margin-bottom:1.5rem">
+                    <div class="stat-card">
+                        <div class="stat-icon green">👦</div>
+                        <div class="stat-body">
+                            <div class="stat-val">@_stats.TotalChildren</div>
+                            <div class="stat-label">Students</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon gold">👁️</div>
+                        <div class="stat-body">
+                            <div class="stat-val" style="color:var(--warning)">@_stats.TotalWatch</div>
+                            <div class="stat-label">Under Watch</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon coral">🚫</div>
+                        <div class="stat-body">
+                            <div class="stat-val" style="color:var(--danger)">@_stats.TotalReview</div>
+                            <div class="stat-label">For Review</div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (_loading)
+            {
+                <div class="loading-block"><div class="spinner"></div></div>
+            }
+            else
+            {
+
+            <!-- Students at risk -->
+            <div class="sec-hd"><h2>👦 Students at Risk</h2></div>
+            <div class="risk-grid" style="margin-bottom:1.5rem">
+                @foreach (var c in _children)
+                {
+                    var rClass = c.FlagCount > 3 ? "risk-hi" : c.FlagCount > 0 ? "risk-md" : "risk-ok";
+                    <div class="risk-card @rClass">
+                        <div class="risk-av">@c.Avatar</div>
+                        <div class="risk-name">@c.Name</div>
+                        <div class="risk-stat">@c.FlagCount incident(s)</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Incidents table -->
+            <div class="sec-hd"><h2>📊 Recent Incidents</h2></div>
+            @if (!_flaggedMessages.Any())
+            {
+                <div class="empty-block">
+                    <div class="empty-ico">✅</div>
+                    <div class="empty-txt">No incidents</div>
+                    <div class="empty-sub">Classroom is safe!</div>
+                </div>
+            }
+            else
+            {
+                <div class="tbl-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Message</th>
+                                <th>Label</th>
+                                <th>Score</th>
+                                <th>Time</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in _flaggedMessages.Take(20))
+                            {
+                                <tr>
+                                    <td><span style="font-weight:600">@m.SenderName</span></td>
+                                    <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@m.MaskedMessage</td>
+                                    <td><span class="badge @(m.Label == "Review" ? "badge-red" : "badge-gold")">@m.Label</span></td>
+                                    <td>
+                                        <div style="display:flex;align-items:center;gap:.5rem">
+                                            <div class="score-bar-mini">
+                                                <div class="score-fill-mini @(m.Score>=.8?"hi":m.Score>=.5?"md":"lo")"
+                                                     style="width:@((int)(m.Score*100))%"></div>
+                                            </div>
+                                            <span style="font-size:.72rem;font-weight:700">@m.Score.ToString("P0")</span>
+                                        </div>
+                                    </td>
+                                    <td style="font-size:.72rem;color:var(--text-m)">@m.Timestamp.ToLocalTime().ToString("MMM dd, HH:mm")</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-ghost" @onclick="() => FileComplaint(m)">📝 Report</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            } <!-- end !_loading -->
+
+            @if (!string.IsNullOrEmpty(_toast))
+            {
+                <div class="toast-bar" style="margin-top:1rem">@_toast</div>
+            }
+
+        </div><!-- /page-content -->
+    </div><!-- /main-area -->
+</div><!-- /app-root -->
+
+<!-- Mobile bottom nav -->
+<nav class="mobile-nav" style="display:none">
+    <button class="mnav-item active"><span>🏫</span><span>Classroom</span></button>
+    <button class="mnav-item" @onclick="LoadData"><span>🔄</span><span>Refresh</span></button>
+    <button class="mnav-item" @onclick="Logout"><span>🚪</span><span>Logout</span></button>
+</nav>
+
+@code {
+    record ChildSummary(string Name, string Avatar, int FlagCount);
+
+    DashboardStats?          _stats;
+    List<FlaggedMessageItem> _flaggedMessages = new();
+    List<ChildSummary>       _children        = new();
+    bool   _loading = true;
+    string _toast   = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated || AuthState.CurrentUser?.Role != "Teacher")
+        { Nav.NavigateTo("/login"); return; }
+        await LoadData();
+    }
+
+    async Task LoadData()
+    {
+        _loading = true; StateHasChanged();
+        _stats           = await Api.GetDashboardStatsAsync();
+        _flaggedMessages = await Api.GetFlaggedMessagesAsync();
+
+        var avatars = new[] { "😊","🎮","🦄","🌟","🎨","🐼","🦊","🐸","🦁","🐧" };
+        var rng     = new Random(42);
+        _children   = _flaggedMessages
+            .GroupBy(f => f.SenderName)
+            .Select(g => new ChildSummary(g.Key, avatars[rng.Next(avatars.Length)], g.Count()))
+            .OrderByDescending(c => c.FlagCount)
+            .ToList();
+
+        if (!_children.Any())
+            _children.Add(new ChildSummary("No incidents", "✅", 0));
+
+        _loading = false; StateHasChanged();
+    }
+
+    async Task FileComplaint(FlaggedMessageItem m)
+    {
+        var ok = await Api.FileComplaintAsync($"Incident: {m.SenderName} — {m.Label} (score {m.Score:P0})");
+        _toast = ok ? "📝 Complaint filed successfully" : "Failed to file complaint";
+        StateHasChanged();
+        await Task.Delay(3000);
+        _toast = ""; StateHasChanged();
+    }
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+}
