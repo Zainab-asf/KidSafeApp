@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ── JWT Auth ──────────────────────────────────────────────────────────────────
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -77,14 +77,11 @@ builder.Services.AddCors(opt =>
 // ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── DB init + Admin seed ──────────────────────────────────────────────────────
+// ── DB init: apply migrations + seed ─────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // Drop + recreate so schema always matches entities (dev only)
-    // Remove EnsureDeleted before production
-    db.Database.EnsureDeleted();
-    db.Database.EnsureCreated();
+    await db.Database.MigrateAsync();   // creates DB if absent, applies pending migrations
     await SeedAdminAsync(db, app.Configuration);
     await SeedDemoDataAsync(db);
 }
