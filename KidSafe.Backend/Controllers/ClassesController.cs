@@ -155,6 +155,37 @@ public class ClassesController : ControllerBase
         return NoContent();
     }
 
+    // ── GET /classes/classmates  (Child: list classmates in same class) ──
+    [HttpGet("classmates")]
+    [Authorize(Roles = "Child")]
+    public async Task<IActionResult> GetMyClassmates()
+    {
+        var uid = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        var myClass = await _db.ClassStudents
+            .Where(cs => cs.StudentId == uid)
+            .Include(cs => cs.Class)
+                .ThenInclude(c => c.Students)
+                    .ThenInclude(s => s.Student)
+            .Select(cs => cs.Class)
+            .FirstOrDefaultAsync();
+
+        if (myClass is null)
+            return Ok(new { className = (string?)null, section = (string?)null,
+                            classmates = Array.Empty<object>() });
+
+        var classmates = myClass.Students
+            .Where(s => s.StudentId != uid)
+            .Select(s => new
+            {
+                s.Student.Id,
+                s.Student.DisplayName,
+                Avatar = s.Student.AvatarEmoji ?? "😊"
+            }).ToList();
+
+        return Ok(new { className = myClass.Name, section = myClass.Section, classmates });
+    }
+
     // ── GET /classes/{id}/messages  (class group chat history) ────
 
     [HttpGet("{id:int}/messages")]

@@ -59,10 +59,24 @@
         <!-- Page content -->
         <div class="page-content">
 
+            <!-- Profile card -->
+            <div class="dash-profile-card" style="margin-bottom:1.25rem">
+                <div class="dpc-avatar">🛡️</div>
+                <div class="dpc-info">
+                    <div class="dpc-name">@(AuthState.CurrentUser?.DisplayName ?? "Administrator")</div>
+                    <div class="dpc-role">System Administrator</div>
+                    <div class="dpc-meta">@_allUsers.Count users · @_classes.Count classes · @_parentLinks.Count parent links</div>
+                </div>
+                <div class="dpc-actions">
+                    <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/profile")'>👤 Profile</button>
+                    <button class="btn btn-sm btn-outline" @onclick='() => SetTab("Classes")'>📚 Classes</button>
+                </div>
+            </div>
+
             <!-- Page heading -->
             <div class="page-head">
                 <h1>Admin Dashboard</h1>
-                <p>Manage users, review flagged content, and handle complaints</p>
+                <p>Manage users, classes, parent-child links, and review flagged content</p>
             </div>
 
             <!-- Stats row -->
@@ -558,6 +572,19 @@
                     <input class="field-input" @bind="_createPassword" placeholder="••••••••" type="password" />
                 </div>
             </div>
+            @if (_createRole == "Child")
+            {
+                <div class="field">
+                    <label class="field-label">Assign to Class <span style="color:var(--text-m);font-weight:400">(optional)</span></label>
+                    <select class="form-input" @bind="_createClassId">
+                        <option value="0">— No class yet —</option>
+                        @foreach (var cl in _classes)
+                        {
+                            <option value="@cl.Id">@cl.Name · Section @cl.Section @(cl.Teacher != null ? $"({cl.Teacher})" : "")</option>
+                        }
+                    </select>
+                </div>
+            }
             <div style="display:flex;gap:.65rem;margin-top:.25rem">
                 <button class="btn btn-outline" @onclick="CloseCreate" style="flex:1">Cancel</button>
                 <button class="btn btn-primary" @onclick="CreateUser" disabled="@_createBusy" style="flex:2">
@@ -596,6 +623,7 @@
     // Create user modal
     bool   _showCreate, _createBusy, _createDone;
     string _createRole = "Child", _createName = "", _createEmail = "", _createPassword = "", _createError = "";
+    int    _createClassId;
 
     static readonly (string role, string icon, string label)[] _roles = {
         ("Child","👦","Student"), ("Parent","👨‍👩‍👦","Parent"), ("Teacher","👩‍🏫","Teacher")
@@ -727,7 +755,7 @@
     void OpenCreateChild()   => OpenCreate("Child");
     void OpenCreateTeacher() => OpenCreate("Teacher");
     void OpenCreateParent()  => OpenCreate("Parent");
-    void CloseCreate()       { _showCreate = false; _createName = _createEmail = _createPassword = ""; _createError = ""; _createDone = false; }
+    void CloseCreate()       { _showCreate = false; _createName = _createEmail = _createPassword = ""; _createError = ""; _createDone = false; _createClassId = 0; }
     Task MarkUnderReview(int id) => UpdateComplaint(id, "underReview");
     Task MarkResolved(int id)    => UpdateComplaint(id, "resolved");
 
@@ -743,7 +771,8 @@
             Email       = _createEmail,
             Password    = _createPassword,
             DisplayName = _createName,
-            Role        = _createRole
+            Role        = _createRole,
+            ClassId     = (_createRole == "Child" && _createClassId > 0) ? _createClassId : (int?)null
         });
         _createBusy = false;
 

@@ -1,0 +1,187 @@
+@page "/child-home"
+@inject ApiService Api
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="child-home">
+
+    <!-- Top bar -->
+    <div class="ch-topbar">
+        <div class="ch-logo"><span>🛡️</span> KidSafe</div>
+        <div class="ch-topbar-right">
+            <button class="ch-icon-btn" @onclick='() => Nav.NavigateTo("/notifications")'>
+                🔔
+                @if (_unreadCount > 0) { <span class="ch-notif-dot">@_unreadCount</span> }
+            </button>
+            <button class="ch-icon-btn" @onclick="Logout">🚪</button>
+        </div>
+    </div>
+
+    <div class="ch-body">
+
+        <!-- Hero greeting card -->
+        <div class="ch-hero-card">
+            <div class="ch-hero-content">
+                <div class="ch-hero-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")</div>
+                <div class="ch-hero-text">
+                    <div class="ch-hero-greet">@Greeting 🌟</div>
+                    <div class="ch-hero-name">Hi, @FirstName!</div>
+                    <div class="ch-hero-sub">
+                        @if (!string.IsNullOrEmpty(_className))
+                        {
+                            @_className
+                            @if (!string.IsNullOrEmpty(_section)) { <text> · Section @_section</text> }
+                        }
+                        @if (_streak > 0) { <text> · 🔥 @(_streak)-day safe streak</text> }
+                    </div>
+                </div>
+            </div>
+            <div class="ch-hero-badge">🛡️</div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="ch-stats">
+            <div class="ch-stat-card">
+                <div class="ch-stat-ico green-ico">💬</div>
+                <div class="ch-stat-num">@(_reward?.SafeMessages ?? 0)</div>
+                <div class="ch-stat-lbl">Total Chats</div>
+            </div>
+            <div class="ch-stat-card">
+                <div class="ch-stat-ico blue-ico">🛡️</div>
+                <div class="ch-stat-num">@(_reward?.Points ?? 0)</div>
+                <div class="ch-stat-lbl">Stars Earned</div>
+            </div>
+            <div class="ch-stat-card">
+                <div class="ch-stat-ico gold-ico">🏆</div>
+                <div class="ch-stat-num">@EarnedBadgeCount</div>
+                <div class="ch-stat-lbl">Badges</div>
+            </div>
+        </div>
+
+        <!-- Stars progress -->
+        @if (_reward != null)
+        {
+            <div class="ch-card">
+                <div class="ch-card-header">
+                    <span class="ch-card-title">⭐ Stars Progress</span>
+                    <span class="ch-pts-badge">@_reward.Points / @NextMilestone</span>
+                </div>
+                <div class="ch-progress">
+                    <div class="ch-progress-bar" style="width:@ProgressPct%"></div>
+                </div>
+                <div class="ch-progress-note">@(NextMilestone - _reward.Points) more stars to unlock @NextBadge badge!</div>
+            </div>
+        }
+
+        <!-- Start chatting CTA -->
+        <div class="ch-cta" @onclick='() => Nav.NavigateTo("/chat")'>
+            <div class="ch-cta-left">
+                <div class="ch-cta-ico">💬</div>
+                <div>
+                    <div class="ch-cta-title">Start Chatting!</div>
+                    <div class="ch-cta-sub">Safe &amp; fun with AI protection 🛡️</div>
+                </div>
+            </div>
+            <div class="ch-cta-arrow">→</div>
+        </div>
+
+        <!-- My Badges -->
+        <div class="ch-card">
+            <div class="ch-card-header">
+                <span class="ch-card-title">My Badges</span>
+                <button class="ch-view-all" @onclick='() => Nav.NavigateTo("/rewards")'>View All</button>
+            </div>
+            <div class="ch-badges">
+                @foreach (var b in _badges.Where(x => !x.Locked).Take(4))
+                {
+                    <div class="ch-badge">
+                        <div class="ch-badge-circle" style="background:@b.BgColor">@b.Icon</div>
+                        <div class="ch-badge-name">@b.Name</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Tip of the day -->
+        <div class="ch-tip">
+            <div class="ch-tip-ico">💡</div>
+            <div>
+                <div class="ch-tip-head">Tip of the Day 💡</div>
+                <div class="ch-tip-body">@CurrentTip</div>
+            </div>
+        </div>
+
+        <div style="height:5rem"></div>
+    </div>
+
+    <!-- Bottom nav -->
+    <nav class="mobile-nav">
+        <button class="mnav-item active"><span>🏠</span><span>Home</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
+            <span>🔔</span><span>Alerts</span>
+            @if (_unreadCount > 0) { <span class="mnav-dot">@_unreadCount</span> }
+        </button>
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
+    </nav>
+</div>
+
+@code {
+    record RewardDto(int Points, string BadgeLevel, int SafeMessages, string? Badges);
+    record ClassmatesResponse(string? ClassName, string? Section, object[]? Classmates);
+    record BadgeDef(string Icon, string Name, string BgColor, bool Locked);
+
+    RewardDto? _reward;
+    string _className = "", _section = "";
+    int _unreadCount, _streak;
+
+    static readonly BadgeDef[] _badges =
+    [
+        new("❤️", "Kind Communicator", "#FFE4E8", false),
+        new("🛡️", "Safe Chatter",      "#D4EFDF", false),
+        new("⭐", "Star Student",       "#FEF9E7", false),
+        new("😊", "Emoji Master",       "#D6EAF8", false),
+        new("🔥", "Streak Champion",    "#FDEBD0", false),
+        new("🤝", "Helpful Friend",     "#E8DAEF", false),
+        new("🕊️", "Peacemaker",        "#D5F5E3", false),
+        new("🦸", "Super Communicator","#EAECEE", true),
+        new("🦾", "Digital Hero",      "#EAECEE", true),
+    ];
+
+    static readonly string[] _tips =
+    [
+        "Kind words are like sunshine — they make everyone feel warm and happy. Try giving someone a compliment today!",
+        "Being safe online means thinking before you type. Is this kind, true, and necessary?",
+        "If something makes you feel uncomfortable online, tell a trusted adult right away!",
+        "You earn stars for every safe message! Keep chatting kindly to unlock new badges.",
+        "Remember: behind every screen is a real person with real feelings. Be kind!",
+        "Great friends support each other. Share something positive with your classmates today!"
+    ];
+
+    string Greeting       => DateTime.Now.Hour < 12 ? "Good morning!" : DateTime.Now.Hour < 17 ? "Good afternoon!" : "Good evening!";
+    string FirstName      => AuthState.CurrentUser?.DisplayName?.Split(' ').First() ?? "Student";
+    int    NextMilestone  => (_reward?.Points ?? 0) < 100 ? 100 : (_reward?.Points ?? 0) < 250 ? 250 : (_reward?.Points ?? 0) < 500 ? 500 : 1000;
+    int    ProgressPct    => _reward is null ? 0 : (int)Math.Min(100, _reward.Points * 100.0 / NextMilestone);
+    string NextBadge      => NextMilestone == 100 ? "Star Student" : NextMilestone == 250 ? "Streak Champion" : "Super Communicator";
+    int    EarnedBadgeCount => _badges.Count(b => !b.Locked);
+    string CurrentTip     => _tips[DateTime.Today.DayOfYear % _tips.Length];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthState.InitAsync();
+        if (!AuthState.IsAuthenticated || !AuthState.IsChild) { Nav.NavigateTo("/login"); return; }
+
+        var t1 = Api.GetAsync<RewardDto>("rewards/my");
+        var t2 = Api.GetAsync<ClassmatesResponse>("classes/classmates");
+        var t3 = Api.GetAsync<int>("notifications/unread-count");
+        await Task.WhenAll(t1, t2, t3);
+
+        _reward      = t1.Result;
+        _className   = t2.Result?.ClassName ?? "";
+        _section     = t2.Result?.Section ?? "";
+        _unreadCount = t3.Result;
+        _streak      = Math.Min(7, (_reward?.SafeMessages ?? 0) / 5);
+    }
+
+    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+}

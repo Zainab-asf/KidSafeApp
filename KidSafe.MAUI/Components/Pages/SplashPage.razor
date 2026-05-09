@@ -22,7 +22,7 @@
         Nav.NavigateTo(!AuthState.IsAuthenticated ? "/login" :
             AuthState.CurrentUser?.Role switch {
                 "Admin"   => "/admin",
-                "Child"   => "/chat",
+                "Child"   => "/child-home",
                 "Teacher" => "/teacher",
                 _         => "/dashboard"
             });

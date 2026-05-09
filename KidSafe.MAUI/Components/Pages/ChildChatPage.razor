@@ -9,18 +9,44 @@
 
     <!-- Chat header -->
     <div class="chat-hd">
-        <div class="chat-hd-av">😊</div>
+        <button class="chat-back-btn" @onclick='() => Nav.NavigateTo("/child-home")'>←</button>
+        <div class="chat-hd-av">@(_selectedClassmate?.Avatar ?? (AuthState.CurrentUser?.AvatarEmoji ?? "😊"))</div>
         <div class="chat-hd-info">
-            <div class="chat-hd-name">@(AuthState.CurrentUser?.DisplayName ?? "Student")</div>
+            <div class="chat-hd-name">@(_selectedClassmate?.DisplayName ?? (_className.Length > 0 ? _className : "Class Chat"))</div>
             <div class="chat-hd-status">
                 <span class="conn-dot @(_hubState == HubState.Connected ? "on" : "")"></span>
-                @StatusText
+                Online · AI Protected
             </div>
         </div>
-        <div class="chat-pts-pill" @onclick="GoRewards">⭐ @_points pts</div>
-        <button class="chat-hd-btn" @onclick="GoRewards" title="Rewards">🏆</button>
-        <button class="chat-hd-btn" @onclick="Logout" title="Logout">🚪</button>
+        <div class="chat-shield-pill">🛡️ AI Shield ON</div>
     </div>
+
+    <!-- Classmates row -->
+    @if (_loadingClassmates)
+    {
+        <div class="classmates-row">
+            <div class="cm-loading">Loading classmates…</div>
+        </div>
+    }
+    else if (_classmates.Any())
+    {
+        <div class="classmates-row">
+            @foreach (var cm in _classmates)
+            {
+                <div class="cm-item @(_selectedClassmate?.Id == cm.Id ? "cm-selected" : "")"
+                     @onclick="() => SelectClassmate(cm)">
+                    <div class="cm-av">@cm.Avatar</div>
+                    <div class="cm-name">@ShortName(cm.DisplayName)</div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="classmates-row">
+            <div class="cm-loading">No classmates yet — ask admin to enroll you in a class</div>
+        </div>
+    }
 
     <!-- Toast -->
     @if (!string.IsNullOrEmpty(_toast))
@@ -34,7 +60,11 @@
         {
             <div class="chat-empty">
                 <div class="chat-empty-ico">💬</div>
-                <div class="chat-empty-txt">Say hello to your classmates!</div>
+                <div class="chat-empty-txt">
+                    @(_selectedClassmate != null
+                        ? $"Say hi to {ShortName(_selectedClassmate.DisplayName)}!"
+                        : "Say hello to your classmates!")
+                </div>
                 <div class="chat-empty-sub">Be kind, be safe 🌟</div>
             </div>
         }
@@ -44,15 +74,30 @@
             <div class="msg-row @(mine ? "mine" : "")">
                 @if (!mine)
                 {
-                    <div class="msg-av">😊</div>
+                    <div class="msg-av">@(_selectedClassmate?.Avatar ?? "😊")</div>
                 }
                 <div class="bbl-wrap">
-                    <div class="bbl @BubbleClass(msg)">@msg.Content</div>
+                    @if (msg.Label == "Review")
+                    {
+                        <div class="bbl blocked-msg">★★★ This message was blocked for safety ★★★</div>
+                    }
+                    else
+                    {
+                        <div class="bbl @BubbleClass(msg)">@msg.Content</div>
+                    }
                     <div class="bbl-meta">
                         <span class="bbl-time">@msg.Timestamp.ToLocalTime().ToString("HH:mm")</span>
-                        @if (msg.Label is not ("Safe" or "pending"))
+                        @if (msg.Label == "Safe" && mine)
                         {
-                            <span class="bbl-badge @msg.Label.ToLower()">@msg.Label</span>
+                            <span class="bbl-safe">🛡️ Safe</span>
+                        }
+                        @if (msg.Label == "Review")
+                        {
+                            <span class="bbl-badge blocked">🚫 Blocked</span>
+                        }
+                        @if (msg.Label == "Watch")
+                        {
+                            <span class="bbl-badge watch">👁️ Watch</span>
                         }
                         @if (!mine)
                         {
@@ -90,55 +135,66 @@
         </div>
         <div class="input-row">
             <input class="msg-field" @bind="_input" @bind:event="oninput"
-                   @onkeyup="OnKey" placeholder="Type a friendly message 😊" />
+                   @onkeyup="OnKey" placeholder="Type a kind message…" />
             <button class="send-btn @(_sending ? "busy" : "")" @onclick="Send" disabled="@_sending">
                 @(_sending ? "⏳" : "➤")
             </button>
         </div>
     </div>
 
-    <!-- 5-item mobile nav -->
+    <!-- Bottom nav -->
     <nav class="mobile-nav">
+        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/child-home")'><span>🏠</span><span>Home</span></button>
         <button class="mnav-item active"><span>💬</span><span>Chat</span></button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
         <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
-        <button class="mnav-item" @onclick="GoRewards"><span>🏆</span><span>Rewards</span></button>
         <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'><span>👤</span><span>Profile</span></button>
     </nav>
-
 </div>
 
 @code {
-    List<ChatMessage> _messages = new();
-    string _input = "", _toast = "", _toastClass = "", _typingUser = "";
-    bool _sending;
-    int _points;
-    HubState _hubState = HubState.Disconnected;
+    record ClassmateDto(int Id, string DisplayName, string Avatar);
+    record ClassmatesResponse(string? ClassName, string? Section, List<ClassmateDto>? Classmates);
 
-    string StatusText => _hubState switch {
-        HubState.Connected    => "Safe Chat • Online",
-        HubState.Connecting   => "Connecting…",
-        HubState.Reconnecting => "Reconnecting…",
-        _                     => "Offline"
-    };
+    List<ChatMessage>  _messages          = new();
+    List<ClassmateDto> _classmates        = new();
+    ClassmateDto?      _selectedClassmate;
+    string             _className         = "";
+    string             _input = "", _toast = "", _toastClass = "", _typingUser = "";
+    bool               _sending, _loadingClassmates = true;
+    HubState           _hubState          = HubState.Disconnected;
 
-    static readonly string[] _quickReplies = { "Hello! 👋", "How are you? 😊", "That's cool! 🎉", "Thanks! 🙏", "LOL 😂", "Sure! 👍" };
+    static readonly string[] _quickReplies = { "That's great! 😊", "Sure, let's do it! 👍", "I agree with you!", "Thanks for sharing!" };
     static readonly string[] _emojis       = { "😊","😂","❤️","👍","🎉","🌟","🦄","🎮","🍕","⚽","🌈","🦋" };
 
     protected override async Task OnInitializedAsync()
     {
         await AuthState.InitAsync();
         if (!AuthState.IsAuthenticated || !AuthState.IsChild) { Nav.NavigateTo("/login"); return; }
+
         Hub.OnMessageReceived += OnMsg;
         Hub.OnUserTyping      += OnTyping;
         Hub.OnStateChanged    += OnHubState;
         await Hub.StartAsync(AuthState.CurrentUser!.Token);
+
+        // Load classmates (same class/section only)
+        var resp = await Api.GetAsync<ClassmatesResponse>("classes/classmates");
+        _classmates = resp?.Classmates ?? new();
+        _className  = resp?.ClassName ?? "";
+        if (_classmates.Any()) _selectedClassmate = _classmates[0];
+        _loadingClassmates = false;
+        StateHasChanged();
+    }
+
+    void SelectClassmate(ClassmateDto cm)
+    {
+        _selectedClassmate = cm;
+        _messages.Clear();
+        StateHasChanged();
     }
 
     void OnMsg(ChatMessage m)
     {
         _messages.Add(m);
-        if (m.Label == "Safe") _points += 10;
         InvokeAsync(StateHasChanged);
     }
 
@@ -161,12 +217,20 @@
     {
         if (string.IsNullOrWhiteSpace(_input) || _sending) return;
         _sending = true;
-        var text = _input; _input = "";
+        var text       = _input; _input = "";
+        var receiverId = _selectedClassmate?.Id ?? 0;
 
-        var local = new ChatMessage { SenderId = AuthState.CurrentUser!.UserId, SenderName = "You", Content = text, Label = "pending" };
+        var local = new ChatMessage
+        {
+            SenderId   = AuthState.CurrentUser!.UserId,
+            SenderName = "You",
+            Content    = text,
+            Label      = "pending",
+            Timestamp  = DateTime.UtcNow
+        };
         _messages.Add(local); StateHasChanged();
 
-        var result = await Api.SendMessageAsync(new SendMessageRequest(0, text));
+        var result = await Api.SendMessageAsync(new SendMessageRequest(receiverId, text));
         _messages.Remove(local);
 
         if (result != null)
@@ -175,13 +239,13 @@
             local.Content = result.Label == "Watch" ? result.MaskedMessage ?? text : text;
             _messages.Add(local);
 
-            (_toast, _toastClass) = result.Label switch {
+            (_toast, _toastClass) = result.Label switch
+            {
                 "Safe"   => ("✅ Sent! +10 points", "t-safe"),
                 "Watch"  => ("👁️ Message flagged and masked.", "t-warn"),
                 "Review" => ("🚫 Message blocked — please be kind!", "t-block"),
                 _        => ("", "")
             };
-            if (result.Label == "Safe") _points += 10;
         }
 
         _sending = false; StateHasChanged();
@@ -203,8 +267,7 @@
         _toast = ""; StateHasChanged();
     }
 
-    void GoRewards() => Nav.NavigateTo("/rewards");
-    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
+    static string ShortName(string name) => name.Split(' ').First();
 
     public async ValueTask DisposeAsync()
     {

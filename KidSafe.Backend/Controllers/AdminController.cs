@@ -48,6 +48,19 @@ public class AdminController : ControllerBase
         _db.Users.Add(user);
         _db.Rewards.Add(new Reward { User = user });
         await _db.SaveChangesAsync();
+
+        // Enroll student in class immediately if ClassId provided
+        if (dto.ClassId.HasValue && dto.Role == "Child")
+        {
+            var cls = await _db.Classes.FindAsync(dto.ClassId.Value);
+            if (cls != null && !await _db.ClassStudents.AnyAsync(
+                    cs => cs.ClassId == dto.ClassId.Value && cs.StudentId == user.Id))
+            {
+                _db.ClassStudents.Add(new ClassStudent { ClassId = dto.ClassId.Value, StudentId = user.Id });
+                await _db.SaveChangesAsync();
+            }
+        }
+
         return Ok(new { user.Id, user.Email, user.DisplayName, user.Role });
     }
 
@@ -196,5 +209,5 @@ public class AdminController : ControllerBase
 }
 
 public record ApplyModerationDto(string Type, int TargetUserId, int? FlaggedMessageId, string? Notes);
-public record CreateUserDto(string Email, string Password, string DisplayName, string Role, string? AvatarEmoji);
+public record CreateUserDto(string Email, string Password, string DisplayName, string Role, string? AvatarEmoji, int? ClassId = null);
 public record ParentLinkDto(int ParentId, int ChildId);

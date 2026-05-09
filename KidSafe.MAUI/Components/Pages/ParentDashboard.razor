@@ -91,6 +91,20 @@
         <!-- Page content -->
         <div class="page-content">
 
+            <!-- Profile card -->
+            <div class="dash-profile-card" style="margin-bottom:1.25rem">
+                <div class="dpc-avatar">@(AuthState.CurrentUser?.AvatarEmoji ?? "👨‍👩‍👦")</div>
+                <div class="dpc-info">
+                    <div class="dpc-name">@(AuthState.CurrentUser?.DisplayName ?? "Parent")</div>
+                    <div class="dpc-role">Parent Account</div>
+                    <div class="dpc-meta">@_children.Count linked @(_children.Count == 1 ? "child" : "children") · @_flaggedMessages.Count flags to review</div>
+                </div>
+                <div class="dpc-actions">
+                    <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/profile")'>👤 Profile</button>
+                    <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/notifications")'>🔔 Alerts</button>
+                </div>
+            </div>
+
             <!-- Hero banner -->
             @if (_stats != null)
             {

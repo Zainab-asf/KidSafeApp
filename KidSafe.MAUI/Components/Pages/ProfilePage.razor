@@ -31,9 +31,11 @@
     }
 
     <div class="@(IsDesktop ? "main-area" : "")">
+
         @if (!IsDesktop)
         {
             <div class="mobile-header">
+                <button class="mobile-back" @onclick="GoBack">←</button>
                 <div class="mh-title">👤 Profile</div>
             </div>
         }
@@ -46,76 +48,159 @@
 
         <div class="@(IsDesktop ? "page-content" : "mobile-content")">
 
-            <!-- Profile hero -->
-            <div class="profile-hero">
-                <div class="profile-av-wrap">
-                    <div class="profile-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+            <!-- ── Profile hero card ── -->
+            <div class="profile-hero-v2">
+                <div class="phv2-gradient">
+                    <div class="phv2-av-wrap" @onclick="ScrollToAvatarPicker">
+                        <div class="phv2-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "😊")</div>
+                        @if (IsChild) { <div class="phv2-edit-badge">✏️</div> }
+                    </div>
+                    <div class="phv2-info">
+                        <div class="phv2-name">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
+                        @if (!string.IsNullOrEmpty(_className))
+                        {
+                            <div class="phv2-class">@_className · Section @_section</div>
+                        }
+                        <div class="phv2-role-pill">@AuthState.CurrentUser?.Role</div>
+                    </div>
+                    @if (IsChild && _reward != null)
+                    {
+                        <div class="phv2-quick-stats">
+                            <div class="phv2-qs">
+                                <div class="phv2-qs-val">@_reward.Points</div>
+                                <div class="phv2-qs-lbl">⭐ Stars</div>
+                            </div>
+                            <div class="phv2-qs">
+                                <div class="phv2-qs-val">@EarnedBadges</div>
+                                <div class="phv2-qs-lbl">🏆 Badges</div>
+                            </div>
+                            <div class="phv2-qs">
+                                <div class="phv2-qs-val">@_reward.SafeMessages</div>
+                                <div class="phv2-qs-lbl">✅ Safe</div>
+                            </div>
+                        </div>
+                    }
                 </div>
-                <div class="profile-name">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
-                <div class="profile-email">@(AuthState.CurrentUser?.Email ?? "")</div>
-                <div class="profile-role-pill @RolePillClass()">@AuthState.CurrentUser?.Role</div>
             </div>
 
-            <!-- Stats (child only) -->
-            @if (IsChild && _reward != null)
+            @if (!IsChild)
             {
+                <!-- Non-child: compact stats -->
                 <div class="card" style="margin-bottom:1rem">
-                    <div style="font-weight:700;margin-bottom:.75rem">⭐ My Progress</div>
-                    <div class="grid-3">
-                        <div class="mini-stat">
-                            <div class="mini-stat-val">@_reward.Points</div>
-                            <div class="mini-stat-label">Points</div>
-                        </div>
-                        <div class="mini-stat">
-                            <div class="mini-stat-val">@_reward.BadgeLevel</div>
-                            <div class="mini-stat-label">Badge</div>
-                        </div>
-                        <div class="mini-stat">
-                            <div class="mini-stat-val">@_reward.SafeMessages</div>
-                            <div class="mini-stat-label">Safe msgs</div>
-                        </div>
+                    <div class="profile-actions">
+                        <button class="btn btn-outline" @onclick="GoBack">← Back</button>
+                        <button class="btn btn-danger-o" @onclick="Logout">🚪 Logout</button>
                     </div>
                 </div>
             }
 
-            <!-- Avatar picker -->
-            <div class="card" style="margin-bottom:1rem">
-                <div style="font-weight:700;margin-bottom:.75rem">🎨 Avatar</div>
-                <div class="avatar-grid">
-                    @foreach (var e in _avatarOptions)
+            @if (IsChild)
+            {
+                <!-- ── All Badges grid ── -->
+                <div class="card" style="margin-bottom:1rem" id="badges-section">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+                        <div style="font-weight:800;font-size:.92rem">All Badges (@EarnedBadges/@_allBadges.Length)</div>
+                        <button class="btn btn-sm btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>⭐ Rewards</button>
+                    </div>
+                    <div class="badges-grid">
+                        @foreach (var b in _allBadges.Where(x => !x.Locked))
+                        {
+                            <div class="badge-tile earned">
+                                <div class="badge-tile-ico" style="background:@b.BgColor;border-radius:50%;width:3rem;height:3rem;display:flex;align-items:center;justify-content:center;margin:0 auto .35rem;font-size:1.4rem">@b.Icon</div>
+                                <div class="badge-tile-name">@b.Name</div>
+                                <div class="badge-tile-desc">@b.Desc</div>
+                            </div>
+                        }
+                    </div>
+                    @if (_allBadges.Any(b => b.Locked))
                     {
-                        <button class="av-opt @(_selectedAvatar == e ? "selected" : "")"
-                                @onclick="() => _selectedAvatar = e">@e</button>
+                        <div style="font-size:.7rem;font-weight:700;color:var(--text-m);margin:.85rem 0 .5rem;text-transform:uppercase;letter-spacing:.06em">LOCKED</div>
+                        <div class="badges-grid">
+                            @foreach (var b in _allBadges.Where(x => x.Locked))
+                            {
+                                <div class="badge-tile locked">
+                                    <span class="lock-ico">🔒</span>
+                                    <div class="badge-tile-ico" style="font-size:1.4rem;margin-bottom:.35rem">@b.Icon</div>
+                                    <div class="badge-tile-name">@b.Name</div>
+                                    <div class="badge-tile-desc">@b.Desc</div>
+                                </div>
+                            }
+                        </div>
                     }
                 </div>
-                @if (!string.IsNullOrEmpty(_avatarMsg))
-                {
-                    <div class="@(_avatarOk ? "alert-ok" : "alert-err")" style="margin-top:.5rem">@_avatarMsg</div>
-                }
-                <button class="btn btn-primary" style="margin-top:.75rem" @onclick="SaveAvatar">Save Avatar</button>
-            </div>
 
-            <!-- Account actions -->
-            <div class="card">
-                <div style="font-weight:700;margin-bottom:.75rem">⚙️ Account</div>
-                <div class="profile-actions">
-                    @if (IsChild)
-                    {
-                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>🏆 My Rewards</button>
-                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/classes")'>📚 My Classes</button>
-                    }
-                    <button class="btn btn-danger-o" @onclick="Logout">🚪 Logout</button>
+                <!-- ── Privacy Settings ── -->
+                <div class="card" style="margin-bottom:1rem">
+                    <div style="font-weight:800;font-size:.92rem;margin-bottom:.75rem">🔒 Privacy Settings</div>
+                    <div class="privacy-row">
+                        <div>
+                            <div class="privacy-label">Show Online Status</div>
+                            <div class="privacy-desc">Let friends see when you're online</div>
+                        </div>
+                        <label class="toggle-sw">
+                            <input type="checkbox" @bind="_showOnline" />
+                            <div class="toggle-track"></div>
+                        </label>
+                    </div>
+                    <div class="privacy-row">
+                        <div>
+                            <div class="privacy-label">Allow Messages</div>
+                            <div class="privacy-desc">Receive messages from classmates</div>
+                        </div>
+                        <label class="toggle-sw">
+                            <input type="checkbox" @bind="_allowMessages" />
+                            <div class="toggle-track"></div>
+                        </label>
+                    </div>
+                    <div class="privacy-row">
+                        <div>
+                            <div class="privacy-label">Share Progress</div>
+                            <div class="privacy-desc">Share your badges with teacher</div>
+                        </div>
+                        <label class="toggle-sw">
+                            <input type="checkbox" @bind="_shareProgress" />
+                            <div class="toggle-track"></div>
+                        </label>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <!-- ── Avatar picker ── -->
+                <div class="card" id="avatar-section" style="margin-bottom:1rem">
+                    <div style="font-weight:700;margin-bottom:.75rem">🎨 Change Avatar</div>
+                    <div class="avatar-grid">
+                        @foreach (var e in _avatarOptions)
+                        {
+                            <button class="av-opt @(_selectedAvatar == e ? "selected" : "")"
+                                    @onclick="() => _selectedAvatar = e">@e</button>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(_avatarMsg))
+                    {
+                        <div class="@(_avatarOk ? "alert-ok" : "alert-err")" style="margin-top:.5rem">@_avatarMsg</div>
+                    }
+                    <button class="btn btn-primary" style="margin-top:.75rem;width:100%" @onclick="SaveAvatar">Save Avatar</button>
+                </div>
+
+                <!-- ── Quick actions ── -->
+                <div class="card">
+                    <div style="font-weight:700;margin-bottom:.75rem">⚙️ Quick Actions</div>
+                    <div class="profile-actions">
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/child-home")'>🏠 Home</button>
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/chat")'>💬 Chat</button>
+                        <button class="btn btn-outline" @onclick='() => Nav.NavigateTo("/rewards")'>🏆 Rewards</button>
+                        <button class="btn btn-danger-o" @onclick="Logout">🚪 Logout</button>
+                    </div>
+                </div>
+            }
+
+        </div><!-- /content -->
 
         @if (!IsDesktop)
         {
             <nav class="mobile-nav">
+                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/child-home")'><span>🏠</span><span>Home</span></button>
                 <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'><span>💬</span><span>Chat</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/classes")'><span>📚</span><span>Classes</span></button>
                 <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'><span>🔔</span><span>Alerts</span></button>
-                <button class="mnav-item" @onclick='() => Nav.NavigateTo("/rewards")'><span>🏆</span><span>Rewards</span></button>
                 <button class="mnav-item active"><span>👤</span><span>Profile</span></button>
             </nav>
         }
@@ -123,10 +208,28 @@
 </div>
 
 @code {
+    record RewardData(int Points, string BadgeLevel, int SafeMessages);
+    record ClassmatesResp(string? ClassName, string? Section, object[]? Classmates);
+    record BadgeDef(string Icon, string Name, string Desc, string BgColor, bool Locked);
+
     RewardData? _reward;
     string _selectedAvatar = "😊";
+    string _className = "", _section = "";
     string _avatarMsg = "";
-    bool _avatarOk;
+    bool   _avatarOk, _showOnline = true, _allowMessages = true, _shareProgress;
+
+    static readonly BadgeDef[] _allBadges =
+    [
+        new("❤️","Kind Communicator","Send 30 kind messages",  "#FFE4E8", false),
+        new("🛡️","Safe Chatter",     "7 days of safe chatting","#D4EFDF", false),
+        new("⭐","Star Student",      "Earned 100 stars",       "#FEF9E7", false),
+        new("😊","Emoji Master",      "Used 20 positive emojis","#D6EAF8", false),
+        new("🔥","Streak Champion",   "5-day safe streak",      "#FDEBD0", false),
+        new("🤝","Helpful Friend",    "Helped 2 classmates",    "#E8DAEF", false),
+        new("🕊️","Peacemaker",       "Resolved a conflict kindly","#D5F5E3", false),
+        new("🦸","Super Communicator","Send 200 safe messages", "#EAECEE", true),
+        new("🦾","Digital Hero",      "30-day safe streak",     "#EAECEE", true),
+    ];
 
     static readonly string[] _avatarOptions =
     {
@@ -136,13 +239,20 @@
 
     bool IsDesktop => AuthState.CurrentUser?.Role is "Teacher" or "Admin" or "Parent";
     bool IsChild   => AuthState.CurrentUser?.Role == "Child";
+    int  EarnedBadges => _allBadges.Count(b => !b.Locked);
 
     protected override async Task OnInitializedAsync()
     {
         await AuthState.InitAsync();
         if (!AuthState.IsAuthenticated) { Nav.NavigateTo("/login"); return; }
         _selectedAvatar = AuthState.CurrentUser?.AvatarEmoji ?? "😊";
-        if (IsChild) _reward = await Api.GetAsync<RewardData>("rewards/my");
+        if (IsChild)
+        {
+            _reward = await Api.GetAsync<RewardData>("rewards/my");
+            var cls = await Api.GetAsync<ClassmatesResp>("classes/classmates");
+            _className = cls?.ClassName ?? "";
+            _section   = cls?.Section   ?? "";
+        }
     }
 
     async Task SaveAvatar()
@@ -155,23 +265,15 @@
         _avatarMsg = ""; StateHasChanged();
     }
 
-    string RolePillClass() => AuthState.CurrentUser?.Role switch
-    {
-        "Admin"   => "pill-admin",
-        "Teacher" => "pill-teacher",
-        "Parent"  => "pill-parent",
-        _         => "pill-child"
-    };
+    void ScrollToAvatarPicker() { /* JS interop if needed; for now just a visual cue */ }
 
     void GoBack() => Nav.NavigateTo(AuthState.CurrentUser?.Role switch
     {
         "Admin"   => "/admin",
         "Teacher" => "/teacher",
-        "Parent"  => "/parent",
-        _         => "/chat"
+        "Parent"  => "/dashboard",
+        _         => "/child-home"
     });
 
     async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
-
-    record RewardData(int Points, string BadgeLevel, int SafeMessages);
 }
