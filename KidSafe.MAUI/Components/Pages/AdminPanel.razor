@@ -5,8 +5,11 @@
 
 <div class="app-root portal-admin">
 
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay @(_drawerOpen ? "visible" : "")" @onclick="() => _drawerOpen = false"></div>
+
     <!-- ── Sidebar ── -->
-    <aside class="sidebar">
+    <aside class="sidebar @(_drawerOpen ? "drawer-open" : "")">
         <div class="sidebar-logo">
             <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
@@ -44,6 +47,9 @@
     <div class="main-area">
         <!-- Top header -->
         <header class="top-header">
+            <button class="sidebar-toggle" @onclick="() => _drawerOpen = !_drawerOpen" title="Menu">
+                <i class="bi bi-list"></i>
+            </button>
             <div class="header-search">
                 <span class="search-icon"><i class="bi bi-search"></i></span>
                 <input type="text" placeholder="Search users, complaints…" />
@@ -529,14 +535,14 @@
     </div>
 }
 
-<!-- ── Create user modal ── -->
+<!-- ── Create user modal (Parent / Teacher) ── -->
 @if (_showCreate)
 {
     <div class="modal-overlay" @onclick="CloseCreate">
         <div class="modal-box" @onclick:stopPropagation>
             <div class="modal-head">
                 <div class="modal-title"><i class="bi bi-person-plus-fill"></i> Create Account</div>
-                <button class="modal-close" @onclick="CloseCreate">✕</button>
+                <button class="modal-close" @onclick="CloseCreate"><i class="bi bi-x-lg"></i></button>
             </div>
 
             @if (!string.IsNullOrEmpty(_createError))
@@ -545,10 +551,9 @@
             }
             @if (_createDone)
             {
-                <div class="auth-success" style="margin-bottom:.85rem"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> Account created successfully!</div>
+                <div class="auth-success" style="margin-bottom:.85rem"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> Account created!</div>
             }
 
-            <!-- Role selector -->
             <div class="field">
                 <label class="field-label">Account Type</label>
                 <div class="role-pick">
@@ -562,9 +567,8 @@
                     }
                 </div>
             </div>
-
             <div class="field">
-                <label class="field-label">Display Name</label>
+                <label class="field-label">Full Name</label>
                 <div class="field-wrap">
                     <span class="field-icon"><i class="bi bi-person-fill"></i></span>
                     <input class="field-input" @bind="_createName" placeholder="Full name" />
@@ -578,29 +582,157 @@
                 </div>
             </div>
             <div class="field">
-                <label class="field-label">Temporary Password</label>
+                <label class="field-label">Password</label>
                 <div class="field-wrap">
                     <span class="field-icon"><i class="bi bi-key-fill"></i></span>
-                    <input class="field-input" @bind="_createPassword" placeholder="••••••••" type="password" />
+                    <input class="field-input" @bind="_createPassword" placeholder="Min 6 characters" type="password" />
                 </div>
             </div>
-            @if (_createRole == "Child")
-            {
-                <div class="field">
-                    <label class="field-label">Assign to Class <span style="color:var(--text-m);font-weight:400">(optional)</span></label>
-                    <select class="form-input" @bind="_createClassId">
-                        <option value="0">— No class yet —</option>
-                        @foreach (var cl in _classes)
-                        {
-                            <option value="@cl.Id">@cl.Name · Section @cl.Section @(cl.Teacher != null ? $"({cl.Teacher})" : "")</option>
-                        }
-                    </select>
-                </div>
-            }
-            <div style="display:flex;gap:.65rem;margin-top:.25rem">
+            <div style="display:flex;gap:.65rem;margin-top:.5rem">
                 <button class="btn btn-outline" @onclick="CloseCreate" style="flex:1">Cancel</button>
                 <button class="btn btn-primary" @onclick="CreateUser" disabled="@_createBusy" style="flex:2">
                     @(_createBusy ? "Creating…" : "Create Account")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Create student modal (atomic: student + class + parent) ── -->
+@if (_showCreateStudent)
+{
+    <div class="modal-overlay" @onclick="CloseCreateStudent">
+        <div class="modal-box" style="max-width:540px;max-height:92vh;overflow-y:auto" @onclick:stopPropagation>
+            <div class="modal-head">
+                <div class="modal-title"><i class="bi bi-person-plus-fill"></i> Add New Student</div>
+                <button class="modal-close" @onclick="CloseCreateStudent"><i class="bi bi-x-lg"></i></button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_stuError))
+            {
+                <div class="auth-error" style="margin-bottom:.85rem"><i class="bi bi-exclamation-triangle-fill"></i> @_stuError</div>
+            }
+            @if (_stuDone)
+            {
+                <div class="auth-success" style="margin-bottom:.85rem"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> Student created successfully!</div>
+            }
+
+            <!-- ── Student Info ── -->
+            <div class="modal-section-hd"><i class="bi bi-person-fill"></i> Student Information</div>
+
+            <div class="field">
+                <label class="field-label">Full Name <span class="req-star">*</span></label>
+                <div class="field-wrap">
+                    <span class="field-icon"><i class="bi bi-person-fill"></i></span>
+                    <input class="field-input" @bind="_stuName" placeholder="e.g. Ahmed Raza" />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">Email <span class="req-star">*</span></label>
+                <div class="field-wrap">
+                    <span class="field-icon"><i class="bi bi-envelope-fill"></i></span>
+                    <input class="field-input" @bind="_stuEmail" type="email" placeholder="student@school.edu" />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">Password <span class="req-star">*</span></label>
+                <div class="field-wrap">
+                    <span class="field-icon"><i class="bi bi-key-fill"></i></span>
+                    <input class="field-input" @bind="_stuPassword" type="password" placeholder="Min 6 characters" />
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">
+                    Roll Number <span class="req-star">*</span>
+                    <span style="color:var(--text-m);font-weight:400;margin-left:.35rem">(must be unique)</span>
+                </label>
+                <div class="field-wrap">
+                    <span class="field-icon"><i class="bi bi-hash"></i></span>
+                    <input class="field-input" @bind="_stuRoll" placeholder="e.g. 2024-CS-001" />
+                </div>
+            </div>
+
+            <!-- ── Class Assignment ── -->
+            <div class="modal-section-hd"><i class="bi bi-journal-bookmark-fill"></i> Class Assignment</div>
+
+            <div class="field">
+                <label class="field-label">Class <span class="req-star">*</span></label>
+                <select class="form-input" @bind="_stuClassId">
+                    <option value="0">— Select a class —</option>
+                    @foreach (var cl in _classes)
+                    {
+                        <option value="@cl.Id">@cl.Name · Section @cl.Section @(cl.Teacher != null ? $"({cl.Teacher})" : "")</option>
+                    }
+                </select>
+            </div>
+
+            <!-- ── Parent Assignment ── -->
+            <div class="modal-section-hd"><i class="bi bi-people-fill"></i> Parent Account <span class="req-star">*</span></div>
+
+            <div class="field">
+                <div class="parent-mode-pick">
+                    <div class="pmode-tile @(_stuParentMode == "existing" ? "selected" : "")"
+                         @onclick='() => { _stuParentMode = "existing"; StateHasChanged(); }'>
+                        <i class="bi bi-person-check-fill"></i>
+                        <span>Existing Parent</span>
+                    </div>
+                    <div class="pmode-tile @(_stuParentMode == "new" ? "selected" : "")"
+                         @onclick='() => { _stuParentMode = "new"; StateHasChanged(); }'>
+                        <i class="bi bi-person-plus-fill"></i>
+                        <span>Create New Parent</span>
+                    </div>
+                </div>
+            </div>
+
+            @if (_stuParentMode == "existing")
+            {
+                <div class="field">
+                    <label class="field-label">Select Parent <span class="req-star">*</span></label>
+                    <select class="form-input" @bind="_stuExistingParentId">
+                        <option value="0">— Choose parent account —</option>
+                        @foreach (var p in _allUsers.Where(u => u.Role == "Parent"))
+                        {
+                            <option value="@p.Id">@p.DisplayName (@p.Email)</option>
+                        }
+                    </select>
+                    @if (!_allUsers.Any(u => u.Role == "Parent"))
+                    {
+                        <div style="font-size:.75rem;color:var(--text-m);margin-top:.35rem">
+                            <i class="bi bi-info-circle-fill"></i> No parent accounts yet — switch to "Create New Parent"
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="field">
+                    <label class="field-label">Parent Full Name <span class="req-star">*</span></label>
+                    <div class="field-wrap">
+                        <span class="field-icon"><i class="bi bi-person-fill"></i></span>
+                        <input class="field-input" @bind="_stuParentName" placeholder="Parent's full name" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label">Parent Email <span class="req-star">*</span></label>
+                    <div class="field-wrap">
+                        <span class="field-icon"><i class="bi bi-envelope-fill"></i></span>
+                        <input class="field-input" @bind="_stuParentEmail" type="email" placeholder="parent@example.com" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label">Parent Password <span class="req-star">*</span></label>
+                    <div class="field-wrap">
+                        <span class="field-icon"><i class="bi bi-key-fill"></i></span>
+                        <input class="field-input" @bind="_stuParentPassword" type="password" placeholder="Min 6 characters" />
+                    </div>
+                </div>
+            }
+
+            <div style="display:flex;gap:.65rem;margin-top:.85rem;padding-top:.65rem;border-top:1px solid var(--border)">
+                <button class="btn btn-outline" @onclick="CloseCreateStudent" style="flex:1">Cancel</button>
+                <button class="btn btn-primary" @onclick="CreateStudent" disabled="@_stuBusy" style="flex:2">
+                    @if (_stuBusy) { <text><i class="bi bi-hourglass-split"></i> Creating…</text> }
+                    else { <text><i class="bi bi-check-circle-fill"></i> Create Student</text> }
                 </button>
             </div>
         </div>
@@ -623,6 +755,7 @@
     List<ClassDto>           _classes         = new();
     List<ParentLinkDto>      _parentLinks     = new();
     bool   _loading = true;
+    bool   _drawerOpen;
     string _activeTab = "Pending";
     string _toast = "";
 
@@ -637,14 +770,20 @@
         ("Links","bi-link-45deg","Links")
     };
 
-    // Create user modal
+    // Create user modal (Parent / Teacher only)
     bool   _showCreate, _createBusy, _createDone;
-    string _createRole = "Child", _createName = "", _createEmail = "", _createPassword = "", _createError = "";
-    int    _createClassId;
+    string _createRole = "Parent", _createName = "", _createEmail = "", _createPassword = "", _createError = "";
 
     static readonly (string role, string icon, string label)[] _roles = {
-        ("Child","bi-person-fill","Student"), ("Parent","bi-people-fill","Parent"), ("Teacher","bi-mortarboard-fill","Teacher")
+        ("Parent","bi-people-fill","Parent"), ("Teacher","bi-mortarboard-fill","Teacher")
     };
+
+    // Student creation modal (atomic: student + class + parent)
+    bool   _showCreateStudent, _stuBusy, _stuDone;
+    string _stuName = "", _stuEmail = "", _stuPassword = "", _stuRoll = "", _stuError = "";
+    string _stuParentMode = "existing";   // "existing" | "new"
+    int    _stuClassId, _stuExistingParentId;
+    string _stuParentName = "", _stuParentEmail = "", _stuParentPassword = "";
 
     // Create class modal
     bool   _showCreateClass, _clsBusy, _clsOk;
@@ -769,10 +908,71 @@
     }
 
     void OpenCreate(string role)  { _createRole = role; _createError = ""; _createDone = false; _showCreate = true; }
-    void OpenCreateChild()   => OpenCreate("Child");
     void OpenCreateTeacher() => OpenCreate("Teacher");
     void OpenCreateParent()  => OpenCreate("Parent");
-    void CloseCreate()       { _showCreate = false; _createName = _createEmail = _createPassword = ""; _createError = ""; _createDone = false; _createClassId = 0; }
+    void CloseCreate()       { _showCreate = false; _createName = _createEmail = _createPassword = ""; _createError = ""; _createDone = false; }
+
+    void OpenCreateChild()
+    {
+        _stuName = _stuEmail = _stuPassword = _stuRoll = _stuError = "";
+        _stuParentName = _stuParentEmail = _stuParentPassword = "";
+        _stuParentMode = "existing";
+        _stuClassId = _stuExistingParentId = 0;
+        _stuDone = false;
+        _showCreateStudent = true;
+    }
+
+    void CloseCreateStudent()
+    {
+        _showCreateStudent = false;
+        _stuName = _stuEmail = _stuPassword = _stuRoll = _stuError = "";
+        _stuParentName = _stuParentEmail = _stuParentPassword = "";
+        _stuDone = false;
+    }
+
+    async Task CreateStudent()
+    {
+        if (string.IsNullOrWhiteSpace(_stuName))     { _stuError = "Student name is required."; return; }
+        if (string.IsNullOrWhiteSpace(_stuEmail))    { _stuError = "Student email is required."; return; }
+        if (string.IsNullOrWhiteSpace(_stuPassword)) { _stuError = "Password is required (min 6 chars)."; return; }
+        if (string.IsNullOrWhiteSpace(_stuRoll))     { _stuError = "Roll number is required."; return; }
+        if (_stuClassId == 0)                        { _stuError = "Please select a class."; return; }
+
+        if (_stuParentMode == "existing" && _stuExistingParentId == 0)
+            { _stuError = "Please select an existing parent account."; return; }
+        if (_stuParentMode == "new")
+        {
+            if (string.IsNullOrWhiteSpace(_stuParentName))     { _stuError = "Parent name is required."; return; }
+            if (string.IsNullOrWhiteSpace(_stuParentEmail))    { _stuError = "Parent email is required."; return; }
+            if (string.IsNullOrWhiteSpace(_stuParentPassword)) { _stuError = "Parent password is required."; return; }
+        }
+
+        _stuBusy = true; _stuError = ""; StateHasChanged();
+
+        var payload = new
+        {
+            Name               = _stuName.Trim(),
+            Email              = _stuEmail.Trim(),
+            Password           = _stuPassword,
+            RollNumber         = _stuRoll.Trim(),
+            ClassId            = _stuClassId,
+            ExistingParentId   = _stuParentMode == "existing" ? _stuExistingParentId : (int?)null,
+            ParentName         = _stuParentMode == "new" ? _stuParentName.Trim()     : (string?)null,
+            ParentEmail        = _stuParentMode == "new" ? _stuParentEmail.Trim()    : (string?)null,
+            ParentPassword     = _stuParentMode == "new" ? _stuParentPassword        : (string?)null,
+        };
+
+        var (ok, error) = await Api.PostWithErrorAsync("admin/students", payload);
+        _stuBusy = false;
+
+        if (!ok) { _stuError = string.IsNullOrEmpty(error) ? "Failed to create student." : error; StateHasChanged(); return; }
+
+        _stuDone = true;
+        await LoadData();
+        await Task.Delay(2000);
+        CloseCreateStudent();
+    }
+
     Task MarkUnderReview(int id) => UpdateComplaint(id, "underReview");
     Task MarkResolved(int id)    => UpdateComplaint(id, "resolved");
 
@@ -782,14 +982,12 @@
         { _createError = "All fields are required."; return; }
 
         _createBusy = true; _createError = "";
-        // Use admin endpoint (bypasses pending status for teachers)
         var ok = await Api.PostAsync("admin/users", new
         {
-            Email       = _createEmail,
+            Email       = _createEmail.Trim(),
             Password    = _createPassword,
-            DisplayName = _createName,
-            Role        = _createRole,
-            ClassId     = (_createRole == "Child" && _createClassId > 0) ? _createClassId : (int?)null
+            DisplayName = _createName.Trim(),
+            Role        = _createRole
         });
         _createBusy = false;
 

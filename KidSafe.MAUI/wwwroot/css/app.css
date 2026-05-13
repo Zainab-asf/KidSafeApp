@@ -676,16 +676,46 @@ html, body { font-family: var(--font); background: var(--bg); color: var(--text)
 .fw-700 { font-weight: 700; }
 .divider { height: 1px; background: var(--border); margin: 1rem 0; }
 
+/* ══════════════════════════════════════════════════════════
+   DRAWER SIDEBAR — responsive sliding panel
+   ══════════════════════════════════════════════════════════ */
+
+/* Hamburger toggle (visible only on mobile) */
+.sidebar-toggle {
+  display: none; width: 36px; height: 36px; border-radius: var(--r-sm);
+  background: none; border: 1.5px solid var(--border); cursor: pointer;
+  align-items: center; justify-content: center; color: var(--text-s);
+  font-size: 1.1rem; flex-shrink: 0; transition: all var(--tr);
+}
+.sidebar-toggle:hover { background: var(--green-light); color: var(--green); border-color: var(--green); }
+
+/* Overlay backdrop (mobile only) */
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 149; opacity: 0; transition: opacity .25s;
+}
+.sidebar-overlay.visible { opacity: 1; }
+
 /* ── Mobile overrides (< 700px) ───────────────────────────── */
 @media (max-width:699px) {
-  .sidebar { display: none; }
+  /* Sidebar becomes off-canvas drawer */
+  .sidebar {
+    position: fixed; left: -260px; top: 0; bottom: 0; z-index: 150;
+    width: 260px; min-width: 260px;
+    transition: left .28s cubic-bezier(.4,0,.2,1);
+    box-shadow: none;
+  }
+  .sidebar.drawer-open {
+    left: 0;
+    box-shadow: 4px 0 24px rgba(0,0,0,.18);
+  }
+  .sidebar-overlay { display: block; }
+  .sidebar-toggle  { display: flex; }
+
   .app-root { flex-direction: column; }
   .main-area { height: 100vh; }
-  .page-content { padding: 1rem; padding-bottom: calc(64px + 1rem); }
-  .mobile-nav {
-    display: flex !important; height: 64px; background: var(--surface);
-    border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  }
+  .page-content { padding: 1rem; padding-bottom: 1.5rem; }
+
   .grid-3, .grid-4 { grid-template-columns: repeat(2,1fr); }
   .hero-banner { flex-direction: column; padding: 1.5rem; }
   .hero-emoji { display: none; }
@@ -765,6 +795,27 @@ html, body { font-family: var(--font); background: var(--bg); color: var(--text)
 .role-tile:hover    { border-color:var(--green-mid); background:var(--green-light); }
 .rt-icon  { font-size:1.6rem; display:block; margin-bottom:.3rem; }
 .rt-lbl   { font-size:.72rem; font-weight:700; color:var(--text); }
+
+/* ── Modal section header (multi-section modals) ─────────── */
+.modal-section-hd {
+  font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
+  color:var(--text-m); margin:1.1rem 0 .65rem;
+  padding-bottom:.4rem; border-bottom:1.5px solid var(--border);
+  display:flex; align-items:center; gap:.45rem;
+}
+.req-star { color:var(--danger); font-weight:700; }
+
+/* ── Parent-mode picker (student creation modal) ─────────── */
+.parent-mode-pick { display:grid; grid-template-columns:1fr 1fr; gap:.55rem; }
+.pmode-tile {
+  display:flex; align-items:center; gap:.55rem; padding:.75rem 1rem;
+  border-radius:var(--r-sm); border:1.5px solid var(--border);
+  background:var(--bg); cursor:pointer; transition:all var(--tr);
+  font-size:.82rem; font-weight:600; color:var(--text-s);
+}
+.pmode-tile i { font-size:1.1rem; }
+.pmode-tile.selected { border-color:var(--green); background:var(--green-light); color:var(--text); }
+.pmode-tile:hover    { border-color:var(--green-mid); background:var(--green-light); }
 
 /* ── Modal overlay (admin create user) ───────────────────── */
 .modal-overlay {
@@ -1124,6 +1175,13 @@ textarea.form-input { resize:vertical; min-height:80px; }
 
 /* ── Profile action buttons ──────────────────────────────── */
 .profile-actions { display:flex; flex-wrap:wrap; gap:.6rem; }
+
+/* ── Profile info read-only rows ─────────────────────────── */
+.profile-info-row { display:flex; align-items:center; gap:.75rem; padding:.6rem 0;
+  border-bottom:1px solid var(--border); font-size:.85rem; }
+.profile-info-row:last-of-type { border-bottom:none; }
+.pir-label { min-width:90px; font-weight:600; color:var(--text-m); font-size:.78rem; display:flex; align-items:center; gap:.35rem; }
+.pir-val   { color:var(--text); font-weight:500; }
 
 /* ── Responsive overrides for new pages ──────────────────── */
 @media (max-width:699px) {

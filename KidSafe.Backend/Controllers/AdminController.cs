@@ -28,7 +28,7 @@ public class AdminController : ControllerBase
     private readonly AppDbContext _db;
     public AdminController(AppDbContext db) => _db = db;
 
-    // ── Create User (Admin-only registration) ──────────────────────
+    // ── Create User (Admin-only registration, non-Student roles) ──
 
     [HttpPost("users")]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
@@ -48,20 +48,100 @@ public class AdminController : ControllerBase
         _db.Users.Add(user);
         _db.Rewards.Add(new Reward { User = user });
         await _db.SaveChangesAsync();
+        return Ok(new { user.Id, user.Email, user.DisplayName, user.Role });
+    }
 
-        // Enroll student in class immediately if ClassId provided
-        if (dto.ClassId.HasValue && dto.Role == "Child")
+    // ── Atomic Student Creation ─────────────────────────────────────
+    // POST /admin/students
+    // Creates: Student + ClassEnrollment + Parent (new or existing) + ParentChild link
+    // All in one DB transaction — partial creation is not possible.
+
+    [HttpPost("students")]
+    public async Task<IActionResult> CreateStudent([FromBody] CreateStudentDto dto)
+    {
+        // ── Validate required fields ──────────────────────────────
+        if (string.IsNullOrWhiteSpace(dto.Name))        return BadRequest("Student name is required.");
+        if (string.IsNullOrWhiteSpace(dto.Email))       return BadRequest("Student email is required.");
+        if (string.IsNullOrWhiteSpace(dto.Password))    return BadRequest("Password is required.");
+        if (string.IsNullOrWhiteSpace(dto.RollNumber))  return BadRequest("Roll number is required.");
+        if (dto.ClassId <= 0)                           return BadRequest("Class assignment is required.");
+        bool hasExistingParent = dto.ExistingParentId.HasValue && dto.ExistingParentId.Value > 0;
+        bool hasNewParent      = !string.IsNullOrWhiteSpace(dto.ParentName)
+                               && !string.IsNullOrWhiteSpace(dto.ParentEmail)
+                               && !string.IsNullOrWhiteSpace(dto.ParentPassword);
+        if (!hasExistingParent && !hasNewParent)
+            return BadRequest("A parent account must be assigned or created.");
+
+        // ── Check uniqueness ──────────────────────────────────────
+        if (await _db.Users.AnyAsync(u => u.Email == dto.Email))
+            return Conflict("Student email already in use.");
+        if (await _db.Users.AnyAsync(u => u.RollNumber == dto.RollNumber))
+            return Conflict($"Roll number '{dto.RollNumber}' is already taken.");
+
+        // ── Check class exists ────────────────────────────────────
+        var cls = await _db.Classes.FindAsync(dto.ClassId);
+        if (cls == null) return BadRequest("Class not found.");
+
+        // ── Resolve parent ────────────────────────────────────────
+        User parent;
+        if (hasExistingParent)
         {
-            var cls = await _db.Classes.FindAsync(dto.ClassId.Value);
-            if (cls != null && !await _db.ClassStudents.AnyAsync(
-                    cs => cs.ClassId == dto.ClassId.Value && cs.StudentId == user.Id))
+            parent = await _db.Users.FindAsync(dto.ExistingParentId!.Value)
+                     ?? throw new Exception("Parent user not found.");
+            if (parent.Role != "Parent") return BadRequest("Selected user is not a Parent.");
+        }
+        else
+        {
+            if (await _db.Users.AnyAsync(u => u.Email == dto.ParentEmail))
+                return Conflict("Parent email already in use.");
+            parent = new User
             {
-                _db.ClassStudents.Add(new ClassStudent { ClassId = dto.ClassId.Value, StudentId = user.Id });
-                await _db.SaveChangesAsync();
-            }
+                Email        = dto.ParentEmail!,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.ParentPassword!),
+                DisplayName  = dto.ParentName!,
+                Role         = "Parent",
+                Status       = "active"
+            };
+            _db.Users.Add(parent);
+            _db.Rewards.Add(new Reward { User = parent });
         }
 
-        return Ok(new { user.Id, user.Email, user.DisplayName, user.Role });
+        // ── Create student ────────────────────────────────────────
+        var student = new User
+        {
+            Email        = dto.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            DisplayName  = dto.Name,
+            Role         = "Child",
+            Status       = "active",
+            RollNumber   = dto.RollNumber,
+            AvatarEmoji  = dto.AvatarEmoji ?? "🧒"
+        };
+        _db.Users.Add(student);
+        _db.Rewards.Add(new Reward { User = student });
+
+        await _db.SaveChangesAsync();  // flush to get IDs
+
+        // ── Enroll in class (remove any existing enrollment first) ─
+        var existing = await _db.ClassStudents
+            .Where(cs => cs.StudentId == student.Id).ToListAsync();
+        _db.ClassStudents.RemoveRange(existing);
+        _db.ClassStudents.Add(new ClassStudent { ClassId = dto.ClassId, StudentId = student.Id });
+
+        // ── One-to-one parent-child link (remove duplicate if any) ─
+        var oldLinks = await _db.ParentChildren
+            .Where(pc => pc.ChildId == student.Id).ToListAsync();
+        _db.ParentChildren.RemoveRange(oldLinks);
+        _db.ParentChildren.Add(new ParentChild { ParentId = parent.Id, ChildId = student.Id });
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            student.Id, student.Email, student.DisplayName, student.RollNumber,
+            ClassId = cls.Id, ClassName = cls.Name,
+            ParentId = parent.Id, ParentName = parent.DisplayName
+        });
     }
 
     // ── UC-11 Manage Users ──────────────────────────────────────────
@@ -211,3 +291,17 @@ public class AdminController : ControllerBase
 public record ApplyModerationDto(string Type, int TargetUserId, int? FlaggedMessageId, string? Notes);
 public record CreateUserDto(string Email, string Password, string DisplayName, string Role, string? AvatarEmoji, int? ClassId = null);
 public record ParentLinkDto(int ParentId, int ChildId);
+
+public record CreateStudentDto(
+    string Name,
+    string Email,
+    string Password,
+    string RollNumber,
+    int ClassId,
+    string? AvatarEmoji,
+    // Parent: select existing
+    int? ExistingParentId,
+    // OR create new parent inline
+    string? ParentName,
+    string? ParentEmail,
+    string? ParentPassword);

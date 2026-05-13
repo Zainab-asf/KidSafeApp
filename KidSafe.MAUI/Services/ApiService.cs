@@ -88,6 +88,35 @@ public class ApiService
         return resp.IsSuccessStatusCode;
     }
 
+    public async Task<T?> PatchRawAsync<T>(string url, object body)
+    {
+        var json    = JsonSerializer.Serialize(body);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var resp    = await _http.PatchAsync(url, content);
+        if (!resp.IsSuccessStatusCode) return default;
+        return await resp.Content.ReadFromJsonAsync<T>();
+    }
+
+    /// <summary>Returns (success, errorMessage). On failure, tries to extract message from JSON body.</summary>
+    public async Task<(bool Ok, string Error)> PostWithErrorAsync(string url, object body)
+    {
+        try
+        {
+            var resp = await _http.PostAsJsonAsync(url, body);
+            if (resp.IsSuccessStatusCode) return (true, "");
+            var raw = await resp.Content.ReadAsStringAsync();
+            try
+            {
+                var el = JsonSerializer.Deserialize<JsonElement>(raw);
+                if (el.TryGetProperty("message", out var m)) return (false, m.GetString() ?? raw);
+                if (el.TryGetProperty("title",   out var t)) return (false, t.GetString() ?? raw);
+            }
+            catch { }
+            return (false, string.IsNullOrWhiteSpace(raw) ? "Request failed." : raw.Trim('"'));
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     // ── Reports / Complaints ─────────────────────────────────────────
 
     public async Task<bool> ReportAbuseAsync(string reason, int? flaggedMessageId = null)

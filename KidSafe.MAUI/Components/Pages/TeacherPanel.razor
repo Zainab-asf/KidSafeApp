@@ -5,8 +5,11 @@
 
 <div class="app-root portal-teacher">
 
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay @(_drawerOpen ? "visible" : "")" @onclick="() => _drawerOpen = false"></div>
+
     <!-- ── Sidebar ── -->
-    <aside class="sidebar">
+    <aside class="sidebar @(_drawerOpen ? "drawer-open" : "")">
         <div class="sidebar-logo">
             <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
@@ -62,6 +65,9 @@
     <div class="main-area">
         <!-- Top header -->
         <header class="top-header">
+            <button class="sidebar-toggle" @onclick="() => _drawerOpen = !_drawerOpen" title="Menu">
+                <i class="bi bi-list"></i>
+            </button>
             <div class="header-title">Teacher Dashboard</div>
             <div class="header-actions" style="margin-left:auto">
                 <button class="header-btn" @onclick="LoadData" title="Refresh">🔄</button>
@@ -222,6 +228,7 @@
     List<FlaggedMessageItem> _flaggedMessages = new();
     List<ChildSummary>       _children        = new();
     bool   _loading = true;
+    bool   _drawerOpen;
     string _toast   = "";
 
     protected override async Task OnInitializedAsync()

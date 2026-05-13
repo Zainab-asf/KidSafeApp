@@ -8,8 +8,11 @@
 
 <div class="app-root portal-parent">
 
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay @(_drawerOpen ? "visible" : "")" @onclick="() => _drawerOpen = false"></div>
+
     <!-- ── Sidebar ── -->
-    <aside class="sidebar">
+    <aside class="sidebar @(_drawerOpen ? "drawer-open" : "")">
         <div class="sidebar-logo">
             <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
@@ -72,6 +75,9 @@
     <div class="main-area">
         <!-- Top header -->
         <header class="top-header">
+            <button class="sidebar-toggle" @onclick="() => _drawerOpen = !_drawerOpen" title="Menu">
+                <i class="bi bi-list"></i>
+            </button>
             <div class="header-title">Parent Dashboard</div>
             @if (!string.IsNullOrEmpty(_fcmToast))
             {
@@ -275,6 +281,7 @@
     List<ChildItem>          _children        = new();
     string _filter = "All";
     bool   _loading = true;
+    bool   _drawerOpen;
     string _fcmToast = "";
     int    _selectedChildId = 0;   // 0 = all children
 

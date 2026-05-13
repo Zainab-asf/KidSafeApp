@@ -3,160 +3,252 @@
 @inject AuthStateService AuthState
 @inject NavigationManager Nav
 
-<div class="child-home">
+<div class="app-root portal-child">
 
-    <!-- Top bar -->
-    <div class="ch-topbar">
-        <div class="ch-logo">
+    <!-- ── Sidebar overlay (mobile) ── -->
+    <div class="sidebar-overlay @(_drawerOpen ? "visible" : "")" @onclick="CloseDrawer"></div>
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar @(_drawerOpen ? "drawer-open" : "")">
+        <div class="sidebar-logo">
             <i class="bi bi-shield-check-fill ks-logo-icon"></i>
             <span>KidSafe</span>
         </div>
-        <div class="ch-topbar-right">
-            <button class="ch-icon-btn" @onclick='() => Nav.NavigateTo("/notifications")'>
-                <i class="bi bi-bell-fill"></i>
-                @if (_unreadCount > 0) { <span class="ch-notif-dot">@_unreadCount</span> }
+        <nav class="sidebar-nav">
+            <div class="sidebar-section">My Space</div>
+            <button class="nav-item active">
+                <span class="ni"><i class="bi bi-house-fill"></i></span><span>Home</span>
             </button>
-            <button class="ch-icon-btn" @onclick="Logout">
-                <i class="bi bi-box-arrow-right"></i>
+            <button class="nav-item" @onclick='() => NavigateTo("/chat")'>
+                <span class="ni"><i class="bi bi-chat-fill"></i></span><span>Chat</span>
             </button>
-        </div>
-    </div>
-
-    <div class="ch-body">
-
-        <!-- Hero greeting card -->
-        <div class="ch-hero-card">
-            <div class="ch-hero-content">
-                <div class="ch-hero-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")</div>
-                <div class="ch-hero-text">
-                    <div class="ch-hero-greet">@Greeting</div>
-                    <div class="ch-hero-name">Hi, @FirstName!</div>
-                    <div class="ch-hero-sub">
-                        @if (!string.IsNullOrEmpty(_className))
-                        {
-                            @_className
-                            @if (!string.IsNullOrEmpty(_section)) { <text> · Section @_section</text> }
-                        }
-                        @if (_streak > 0)
-                        {
-                            <text> · <i class="bi bi-fire"></i> @(_streak)-day streak</text>
-                        }
-                    </div>
-                </div>
-            </div>
-            <div class="ch-hero-badge">
-                <i class="bi bi-shield-check-fill" style="font-size:2rem;opacity:.55;color:white"></i>
-            </div>
-        </div>
-
-        <!-- Stats row -->
-        <div class="ch-stats">
-            <div class="ch-stat-card">
-                <div class="ch-stat-ico green-ico">
-                    <i class="bi bi-chat-dots-fill ico-green"></i>
-                </div>
-                <div class="ch-stat-num">@(_reward?.SafeMessages ?? 0)</div>
-                <div class="ch-stat-lbl">Safe Chats</div>
-            </div>
-            <div class="ch-stat-card">
-                <div class="ch-stat-ico blue-ico">
-                    <i class="bi bi-star-fill ico-blue"></i>
-                </div>
-                <div class="ch-stat-num">@(_reward?.Points ?? 0)</div>
-                <div class="ch-stat-lbl">Stars</div>
-            </div>
-            <div class="ch-stat-card">
-                <div class="ch-stat-ico gold-ico">
-                    <i class="bi bi-award-fill ico-gold"></i>
-                </div>
-                <div class="ch-stat-num">@EarnedBadgeCount</div>
-                <div class="ch-stat-lbl">Badges</div>
-            </div>
-        </div>
-
-        <!-- Stars progress -->
-        @if (_reward != null)
-        {
-            <div class="ch-card">
-                <div class="ch-card-header">
-                    <span class="ch-card-title">
-                        <i class="bi bi-star-fill" style="color:var(--warning)"></i> Stars Progress
-                    </span>
-                    <span class="ch-pts-badge">@_reward.Points / @NextMilestone</span>
-                </div>
-                <div class="ch-progress">
-                    <div class="ch-progress-bar" style="width:@ProgressPct%"></div>
-                </div>
-                <div class="ch-progress-note">@(NextMilestone - _reward.Points) more stars to unlock @NextBadge badge!</div>
-            </div>
-        }
-
-        <!-- Start chatting CTA -->
-        <button class="ch-cta" @onclick='() => Nav.NavigateTo("/chat")'>
-            <div class="ch-cta-left">
-                <div class="ch-cta-ico">
-                    <i class="bi bi-chat-dots-fill" style="font-size:1.8rem"></i>
+            <button class="nav-item" @onclick='() => NavigateTo("/classes")'>
+                <span class="ni"><i class="bi bi-journal-bookmark-fill"></i></span><span>Courses</span>
+            </button>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Progress</div>
+            <button class="nav-item" @onclick='() => NavigateTo("/rewards")'>
+                <span class="ni"><i class="bi bi-trophy-fill"></i></span><span>Rewards</span>
+            </button>
+            <button class="nav-item" @onclick='() => NavigateTo("/notifications")'>
+                <span class="ni"><i class="bi bi-bell-fill"></i></span>
+                <span>Notifications</span>
+                @if (_unreadCount > 0) { <span class="nb">@_unreadCount</span> }
+            </button>
+            <div class="sidebar-divider"></div>
+            <button class="nav-item" @onclick='() => NavigateTo("/profile")'>
+                <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
+                    @if (!string.IsNullOrEmpty(AuthState.CurrentUser?.AvatarEmoji))
+                    { <text>@AuthState.CurrentUser.AvatarEmoji</text> }
+                    else { <i class="bi bi-person-circle" style="color:var(--green)"></i> }
                 </div>
                 <div>
-                    <div class="ch-cta-title">Start Chatting!</div>
-                    <div class="ch-cta-sub">Safe &amp; fun with AI protection
-                        <i class="bi bi-shield-check-fill"></i>
+                    <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Student")</div>
+                    <div class="sidebar-urole">Student</div>
+                </div>
+                <button class="sidebar-logout" @onclick="Logout" title="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── Main area ── -->
+    <div class="main-area">
+        <!-- Top header -->
+        <header class="top-header">
+            <button class="sidebar-toggle" @onclick="ToggleDrawer" title="Menu">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="header-title">
+                <i class="bi bi-shield-check-fill" style="color:var(--green)"></i> KidSafe
+            </div>
+            @if (_unreadCount > 0)
+            {
+                <div class="badge badge-coral" style="font-size:.72rem;padding:.25rem .65rem">
+                    <i class="bi bi-bell-fill"></i> @_unreadCount
+                </div>
+            }
+            <div class="header-actions" style="margin-left:auto">
+                <button class="header-btn" @onclick='() => NavigateTo("/notifications")' title="Notifications">
+                    <i class="bi bi-bell-fill"></i>
+                    @if (_unreadCount > 0) { <span class="header-badge">@_unreadCount</span> }
+                </button>
+                <div class="header-profile">
+                    <div class="hp-avatar" style="font-size:1rem">
+                        @(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")
+                    </div>
+                    <div>
+                        <div class="hp-name">@FirstName</div>
+                        <div class="hp-role">Student</div>
                     </div>
                 </div>
             </div>
-            <i class="bi bi-arrow-right-circle-fill ch-cta-arrow"></i>
-        </button>
+        </header>
 
-        <!-- My Badges -->
-        <div class="ch-card">
-            <div class="ch-card-header">
-                <span class="ch-card-title">My Badges</span>
-                <button class="ch-view-all" @onclick='() => Nav.NavigateTo("/rewards")'>View All</button>
-            </div>
-            <div class="ch-badges">
-                @foreach (var b in _badges.Where(x => !x.Locked).Take(4))
-                {
-                    <div class="ch-badge">
-                        <div class="ch-badge-circle" style="background:@b.BgColor">
-                            <i class="bi @b.IconClass" style="color:@b.Color;font-size:1.2rem"></i>
+        <!-- Page content -->
+        <div class="page-content">
+
+            <!-- Hero greeting card -->
+            <div class="ch-hero-card" style="margin-bottom:1.25rem">
+                <div class="ch-hero-content">
+                    <div class="ch-hero-av">@(AuthState.CurrentUser?.AvatarEmoji ?? "🧒")</div>
+                    <div class="ch-hero-text">
+                        <div class="ch-hero-greet">@Greeting</div>
+                        <div class="ch-hero-name">Hi, @FirstName!</div>
+                        <div class="ch-hero-sub">
+                            @if (!string.IsNullOrEmpty(_className))
+                            {
+                                @_className
+                                @if (!string.IsNullOrEmpty(_section)) { <text> · Section @_section</text> }
+                            }
+                            @if (_streak > 0)
+                            {
+                                <text> · <i class="bi bi-fire"></i> @(_streak)-day streak</text>
+                            }
                         </div>
-                        <div class="ch-badge-name">@b.Name</div>
                     </div>
-                }
+                </div>
+                <i class="bi bi-shield-check-fill" style="font-size:2.5rem;opacity:.4;color:white"></i>
             </div>
-        </div>
 
-        <!-- Tip of the day -->
-        <div class="ch-tip">
-            <div class="ch-tip-ico">
-                <i class="bi bi-lightbulb-fill" style="color:var(--warning)"></i>
+            <!-- Stats row -->
+            <div class="grid-3" style="margin-bottom:1.25rem">
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="bi bi-chat-dots-fill"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" style="color:var(--green)">@(_reward?.SafeMessages ?? 0)</div>
+                        <div class="stat-label">Safe Chats</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon gold"><i class="bi bi-star-fill"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" style="color:var(--warning)">@(_reward?.Points ?? 0)</div>
+                        <div class="stat-label">Stars</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="bi bi-award-fill"></i></div>
+                    <div class="stat-body">
+                        <div class="stat-val" style="color:var(--purple)">@EarnedBadgeCount</div>
+                        <div class="stat-label">Badges</div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <div class="ch-tip-head">Tip of the Day</div>
-                <div class="ch-tip-body">@CurrentTip</div>
+
+            <!-- Stars progress -->
+            @if (_reward != null)
+            {
+                <div class="card" style="margin-bottom:1.25rem">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem">
+                        <span style="font-weight:800;font-size:.9rem">
+                            <i class="bi bi-star-fill" style="color:var(--warning)"></i> Stars Progress
+                        </span>
+                        <span class="badge badge-gold">@_reward.Points / @NextMilestone</span>
+                    </div>
+                    <div class="ch-progress">
+                        <div class="ch-progress-bar" style="width:@ProgressPct%"></div>
+                    </div>
+                    <div class="ch-progress-note" style="margin-top:.45rem;font-size:.75rem;color:var(--text-m)">
+                        @(NextMilestone - _reward.Points) more stars to unlock <strong>@NextBadge</strong> badge!
+                    </div>
+                </div>
+            }
+
+            <!-- Quick action modules -->
+            <div class="sec-hd" style="margin-bottom:.75rem"><h2><i class="bi bi-grid-fill"></i> Quick Actions</h2></div>
+            <div class="grid-2" style="margin-bottom:1.25rem">
+                <button class="ch-cta" @onclick='() => NavigateTo("/chat")'>
+                    <div class="ch-cta-left">
+                        <div class="ch-cta-ico"><i class="bi bi-chat-dots-fill" style="font-size:1.6rem"></i></div>
+                        <div>
+                            <div class="ch-cta-title">Chat</div>
+                            <div class="ch-cta-sub">Chat with classmates <i class="bi bi-shield-check-fill"></i></div>
+                        </div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle-fill ch-cta-arrow"></i>
+                </button>
+                <button class="ch-cta" @onclick='() => NavigateTo("/classes")'>
+                    <div class="ch-cta-left">
+                        <div class="ch-cta-ico"><i class="bi bi-journal-bookmark-fill" style="font-size:1.6rem"></i></div>
+                        <div>
+                            <div class="ch-cta-title">Courses</div>
+                            <div class="ch-cta-sub">
+                                @if (!string.IsNullOrEmpty(_className)) { @($"{_className}") }
+                                else { <text>View your classes</text> }
+                            </div>
+                        </div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle-fill ch-cta-arrow"></i>
+                </button>
+                <button class="ch-cta" @onclick='() => NavigateTo("/rewards")'>
+                    <div class="ch-cta-left">
+                        <div class="ch-cta-ico"><i class="bi bi-trophy-fill" style="font-size:1.6rem"></i></div>
+                        <div>
+                            <div class="ch-cta-title">Rewards</div>
+                            <div class="ch-cta-sub">@(_reward?.Points ?? 0) stars earned</div>
+                        </div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle-fill ch-cta-arrow"></i>
+                </button>
+                <button class="ch-cta" @onclick='() => NavigateTo("/notifications")'>
+                    <div class="ch-cta-left">
+                        <div class="ch-cta-ico"><i class="bi bi-bell-fill" style="font-size:1.6rem"></i></div>
+                        <div>
+                            <div class="ch-cta-title">Notifications</div>
+                            <div class="ch-cta-sub">
+                                @if (_unreadCount > 0) { @($"{_unreadCount} unread") }
+                                else { <text>All caught up!</text> }
+                            </div>
+                        </div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle-fill ch-cta-arrow"></i>
+                </button>
             </div>
-        </div>
 
-        <div style="height:5rem"></div>
-    </div>
+            <!-- My Badges -->
+            <div class="card" style="margin-bottom:1.25rem">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">
+                    <span style="font-weight:800;font-size:.9rem">
+                        <i class="bi bi-award-fill" style="color:var(--warning)"></i> My Badges
+                    </span>
+                    <button class="btn btn-sm btn-outline" @onclick='() => NavigateTo("/rewards")'>
+                        View All
+                    </button>
+                </div>
+                <div class="ch-badges">
+                    @foreach (var b in _badges.Where(x => !x.Locked).Take(4))
+                    {
+                        <div class="ch-badge">
+                            <div class="ch-badge-circle" style="background:@b.BgColor">
+                                <i class="bi @b.IconClass" style="color:@b.Color;font-size:1.2rem"></i>
+                            </div>
+                            <div class="ch-badge-name">@b.Name</div>
+                        </div>
+                    }
+                </div>
+            </div>
 
-    <!-- Bottom nav -->
-    <nav class="mobile-nav">
-        <button class="mnav-item active">
-            <i class="bi bi-house-fill"></i><span>Home</span>
-        </button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/chat")'>
-            <i class="bi bi-chat-fill"></i><span>Chat</span>
-        </button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/notifications")'>
-            <i class="bi bi-bell-fill"></i><span>Alerts</span>
-            @if (_unreadCount > 0) { <span class="mnav-dot">@_unreadCount</span> }
-        </button>
-        <button class="mnav-item" @onclick='() => Nav.NavigateTo("/profile")'>
-            <i class="bi bi-person-circle"></i><span>Profile</span>
-        </button>
-    </nav>
-</div>
+            <!-- Safety tip -->
+            <div class="ch-tip" style="margin-bottom:1.5rem">
+                <div class="ch-tip-ico">
+                    <i class="bi bi-lightbulb-fill" style="color:var(--warning)"></i>
+                </div>
+                <div>
+                    <div class="ch-tip-head">Safety Tip of the Day</div>
+                    <div class="ch-tip-body">@CurrentTip</div>
+                </div>
+            </div>
+
+        </div><!-- /page-content -->
+    </div><!-- /main-area -->
+</div><!-- /app-root -->
 
 @code {
     record RewardDto(int Points, string BadgeLevel, int SafeMessages, string? Badges);
@@ -166,6 +258,7 @@
     RewardDto? _reward;
     string _className = "", _section = "";
     int _unreadCount, _streak;
+    bool _drawerOpen;
 
     static readonly BadgeDef[] _badges =
     [
@@ -182,21 +275,26 @@
 
     static readonly string[] _tips =
     [
-        "Kind words are like sunshine — they make everyone feel warm and happy. Try giving someone a compliment today!",
-        "Being safe online means thinking before you type. Is this kind, true, and necessary?",
+        "Kind words are like sunshine — they make everyone feel warm and happy!",
+        "Being safe online means thinking before you type. Is it kind, true, and necessary?",
         "If something makes you feel uncomfortable online, tell a trusted adult right away!",
-        "You earn stars for every safe message! Keep chatting kindly to unlock new badges.",
+        "You earn stars for every safe message — keep chatting kindly to unlock new badges.",
         "Remember: behind every screen is a real person with real feelings. Be kind!",
         "Great friends support each other. Share something positive with your classmates today!"
     ];
 
-    string Greeting       => DateTime.Now.Hour < 12 ? "Good morning!" : DateTime.Now.Hour < 17 ? "Good afternoon!" : "Good evening!";
-    string FirstName      => AuthState.CurrentUser?.DisplayName?.Split(' ').First() ?? "Student";
-    int    NextMilestone  => (_reward?.Points ?? 0) < 100 ? 100 : (_reward?.Points ?? 0) < 250 ? 250 : (_reward?.Points ?? 0) < 500 ? 500 : 1000;
-    int    ProgressPct    => _reward is null ? 0 : (int)Math.Min(100, _reward.Points * 100.0 / NextMilestone);
-    string NextBadge      => NextMilestone == 100 ? "Star Student" : NextMilestone == 250 ? "Streak Champion" : "Super Communicator";
+    string Greeting      => DateTime.Now.Hour < 12 ? "Good morning!" : DateTime.Now.Hour < 17 ? "Good afternoon!" : "Good evening!";
+    string FirstName     => AuthState.CurrentUser?.DisplayName?.Split(' ').First() ?? "Student";
+    int    NextMilestone => (_reward?.Points ?? 0) < 100 ? 100 : (_reward?.Points ?? 0) < 250 ? 250 : (_reward?.Points ?? 0) < 500 ? 500 : 1000;
+    int    ProgressPct   => _reward is null ? 0 : (int)Math.Min(100, _reward.Points * 100.0 / NextMilestone);
+    string NextBadge     => NextMilestone == 100 ? "Star Student" : NextMilestone == 250 ? "Streak Champion" : "Super Communicator";
     int    EarnedBadgeCount => _badges.Count(b => !b.Locked);
-    string CurrentTip     => _tips[DateTime.Today.DayOfYear % _tips.Length];
+    string CurrentTip    => _tips[DateTime.Today.DayOfYear % _tips.Length];
+
+    void ToggleDrawer() { _drawerOpen = !_drawerOpen; StateHasChanged(); }
+    void CloseDrawer()  { _drawerOpen = false; StateHasChanged(); }
+
+    void NavigateTo(string url) { CloseDrawer(); Nav.NavigateTo(url); }
 
     protected override async Task OnInitializedAsync()
     {

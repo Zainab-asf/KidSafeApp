@@ -25,6 +25,8 @@ public class AppDbContext : DbContext
     {
         // ── User ──────────────────────────────────────────────────
         m.Entity<User>().HasIndex(u => u.Email).IsUnique();
+        m.Entity<User>().HasIndex(u => u.RollNumber).IsUnique()
+            .HasFilter("[RollNumber] IS NOT NULL");
 
         // ── FlaggedMessage ────────────────────────────────────────
         m.Entity<FlaggedMessage>()
