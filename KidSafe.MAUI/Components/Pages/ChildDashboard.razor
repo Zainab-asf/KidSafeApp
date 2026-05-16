@@ -1,68 +1,47 @@
 @page "/child-home"
 @inject ApiService Api
 @inject AuthStateService AuthState
+@inject SidebarService Sidebar
 @inject NavigationManager Nav
 
 <div class="app-root portal-child">
 
-    <!-- ── Sidebar overlay (mobile) ── -->
-    <div class="sidebar-overlay @(_drawerOpen ? "visible" : "")" @onclick="CloseDrawer"></div>
-
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar @(_drawerOpen ? "drawer-open" : "")">
-        <div class="sidebar-logo">
-            <i class="bi bi-shield-check-fill ks-logo-icon"></i>
-            <span>KidSafe</span>
-        </div>
-        <nav class="sidebar-nav">
-            <div class="sidebar-section">My Space</div>
-            <button class="nav-item active">
-                <span class="ni"><i class="bi bi-house-fill"></i></span><span>Home</span>
-            </button>
-            <button class="nav-item" @onclick='() => NavigateTo("/chat")'>
-                <span class="ni"><i class="bi bi-chat-fill"></i></span><span>Chat</span>
-            </button>
-            <button class="nav-item" @onclick='() => NavigateTo("/classes")'>
-                <span class="ni"><i class="bi bi-journal-bookmark-fill"></i></span><span>Courses</span>
-            </button>
-            <div class="sidebar-divider"></div>
-            <div class="sidebar-section">Progress</div>
-            <button class="nav-item" @onclick='() => NavigateTo("/rewards")'>
-                <span class="ni"><i class="bi bi-trophy-fill"></i></span><span>Rewards</span>
-            </button>
-            <button class="nav-item" @onclick='() => NavigateTo("/notifications")'>
-                <span class="ni"><i class="bi bi-bell-fill"></i></span>
-                <span>Notifications</span>
-                @if (_unreadCount > 0) { <span class="nb">@_unreadCount</span> }
-            </button>
-            <div class="sidebar-divider"></div>
-            <button class="nav-item" @onclick='() => NavigateTo("/profile")'>
-                <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
-            </button>
-        </nav>
-        <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="sidebar-avatar" style="font-size:1.3rem;display:flex;align-items:center;justify-content:center">
-                    @if (!string.IsNullOrEmpty(AuthState.CurrentUser?.AvatarEmoji))
-                    { <text>@AuthState.CurrentUser.AvatarEmoji</text> }
-                    else { <i class="bi bi-person-circle" style="color:var(--green)"></i> }
-                </div>
-                <div>
-                    <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "Student")</div>
-                    <div class="sidebar-urole">Student</div>
-                </div>
-                <button class="sidebar-logout" @onclick="Logout" title="Logout">
-                    <i class="bi bi-box-arrow-right"></i>
+    <AppSidebar>
+        <NavContent>
+            <NavGroup Title="My Space">
+                <button class="nav-item active">
+                    <span class="ni"><i class="bi bi-house-fill"></i></span><span>Home</span>
                 </button>
-            </div>
-        </div>
-    </aside>
+                <button class="nav-item" @onclick='() => NavigateTo("/chat")'>
+                    <span class="ni"><i class="bi bi-chat-fill"></i></span><span>Chat</span>
+                </button>
+                <button class="nav-item" @onclick='() => NavigateTo("/classes")'>
+                    <span class="ni"><i class="bi bi-journal-bookmark-fill"></i></span><span>Courses</span>
+                </button>
+            </NavGroup>
+            <NavGroup Title="Progress">
+                <button class="nav-item" @onclick='() => NavigateTo("/rewards")'>
+                    <span class="ni"><i class="bi bi-trophy-fill"></i></span><span>Rewards</span>
+                </button>
+                <button class="nav-item" @onclick='() => NavigateTo("/notifications")'>
+                    <span class="ni"><i class="bi bi-bell-fill"></i></span>
+                    <span>Notifications</span>
+                    @if (_unreadCount > 0) { <span class="nb">@_unreadCount</span> }
+                </button>
+            </NavGroup>
+            <NavGroup Title="Account">
+                <button class="nav-item" @onclick='() => NavigateTo("/profile")'>
+                    <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
+                </button>
+            </NavGroup>
+        </NavContent>
+    </AppSidebar>
 
     <!-- ── Main area ── -->
     <div class="main-area">
         <!-- Top header -->
         <header class="top-header">
-            <button class="sidebar-toggle" @onclick="ToggleDrawer" title="Menu">
+            <button class="sidebar-toggle" @onclick="Sidebar.ToggleDrawer" title="Menu">
                 <i class="bi bi-list"></i>
             </button>
             <div class="header-title">
@@ -258,8 +237,6 @@
     RewardDto? _reward;
     string _className = "", _section = "";
     int _unreadCount, _streak;
-    bool _drawerOpen;
-
     static readonly BadgeDef[] _badges =
     [
         new("bi-heart-fill",         "#E74C3C", "Kind Communicator", "#FFE4E8", false),
@@ -291,10 +268,7 @@
     int    EarnedBadgeCount => _badges.Count(b => !b.Locked);
     string CurrentTip    => _tips[DateTime.Today.DayOfYear % _tips.Length];
 
-    void ToggleDrawer() { _drawerOpen = !_drawerOpen; StateHasChanged(); }
-    void CloseDrawer()  { _drawerOpen = false; StateHasChanged(); }
-
-    void NavigateTo(string url) { CloseDrawer(); Nav.NavigateTo(url); }
+    void NavigateTo(string url) { Sidebar.CloseDrawer(); Nav.NavigateTo(url); }
 
     protected override async Task OnInitializedAsync()
     {
@@ -313,5 +287,4 @@
         _streak      = Math.Min(7, (_reward?.SafeMessages ?? 0) / 5);
     }
 
-    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
 }

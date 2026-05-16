@@ -1,60 +1,42 @@
 @page "/profile"
 @inject ApiService Api
 @inject AuthStateService AuthState
+@inject SidebarService Sidebar
 @inject NavigationManager Nav
 
 <div class="app-root">
 
-    <!-- Sidebar overlay (mobile) -->
-    <div class="sidebar-overlay @(_drawerOpen ? "visible" : "")" @onclick="CloseDrawer"></div>
-
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar @(_drawerOpen ? "drawer-open" : "")">
-        <div class="sidebar-logo">
-            <i class="bi bi-shield-check-fill ks-logo-icon"></i>
-            <span>KidSafe</span>
-        </div>
-        <nav class="sidebar-nav">
-            <div class="sidebar-section">Navigation</div>
-            <button class="nav-item" @onclick="GoBack">
-                <span class="ni"><i class="bi bi-arrow-left"></i></span><span>Back</span>
-            </button>
-            <button class="nav-item active">
-                <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
-            </button>
-            <div class="sidebar-divider"></div>
+    <AppSidebar>
+        <NavContent>
+            <NavGroup Title="Navigation">
+                <button class="nav-item" @onclick="GoBack">
+                    <span class="ni"><i class="bi bi-arrow-left"></i></span><span>Back</span>
+                </button>
+                <button class="nav-item active">
+                    <span class="ni"><i class="bi bi-person-circle"></i></span><span>Profile</span>
+                </button>
+            </NavGroup>
             @if (IsChild)
             {
-                <button class="nav-item" @onclick='() => NavigateTo("/chat")'>
-                    <span class="ni"><i class="bi bi-chat-fill"></i></span><span>Chat</span>
-                </button>
-                <button class="nav-item" @onclick='() => NavigateTo("/rewards")'>
-                    <span class="ni"><i class="bi bi-trophy-fill"></i></span><span>Rewards</span>
-                </button>
+                <NavGroup Title="Quick Links">
+                    <button class="nav-item" @onclick='() => NavigateTo("/chat")'>
+                        <span class="ni"><i class="bi bi-chat-fill"></i></span><span>Chat</span>
+                    </button>
+                    <button class="nav-item" @onclick='() => NavigateTo("/rewards")'>
+                        <span class="ni"><i class="bi bi-trophy-fill"></i></span><span>Rewards</span>
+                    </button>
+                    <button class="nav-item" @onclick='() => NavigateTo("/notifications")'>
+                        <span class="ni"><i class="bi bi-bell-fill"></i></span><span>Notifications</span>
+                    </button>
+                </NavGroup>
             }
-        </nav>
-        <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="sidebar-avatar" style="font-size:1.2rem;display:flex;align-items:center;justify-content:center">
-                    @if (!string.IsNullOrEmpty(AuthState.CurrentUser?.AvatarEmoji))
-                    { <text>@AuthState.CurrentUser.AvatarEmoji</text> }
-                    else { <i class="bi bi-person-circle"></i> }
-                </div>
-                <div>
-                    <div class="sidebar-uname">@(AuthState.CurrentUser?.DisplayName ?? "User")</div>
-                    <div class="sidebar-urole">@AuthState.CurrentUser?.Role</div>
-                </div>
-                <button class="sidebar-logout" @onclick="Logout" title="Logout">
-                    <i class="bi bi-box-arrow-right"></i>
-                </button>
-            </div>
-        </div>
-    </aside>
+        </NavContent>
+    </AppSidebar>
 
     <!-- ── Main area ── -->
     <div class="main-area">
         <header class="top-header">
-            <button class="sidebar-toggle" @onclick="ToggleDrawer" title="Menu">
+            <button class="sidebar-toggle" @onclick="Sidebar.ToggleDrawer" title="Menu">
                 <i class="bi bi-list"></i>
             </button>
             <div class="header-title"><i class="bi bi-person-circle"></i> My Profile</div>
@@ -390,7 +372,6 @@
     ProfileDto? _profile;
     RewardData? _reward;
     bool   _loading = true;
-    bool   _drawerOpen;
 
     // Profile edit (Parent/Teacher/Admin)
     string _editName = "", _editPhone = "";
@@ -504,9 +485,7 @@
         Task.Delay(3000).ContinueWith(_ => { _toast = ""; InvokeAsync(StateHasChanged); });
     }
 
-    void ToggleDrawer() { _drawerOpen = !_drawerOpen; StateHasChanged(); }
-    void CloseDrawer()  { _drawerOpen = false; StateHasChanged(); }
-    void NavigateTo(string url) { CloseDrawer(); Nav.NavigateTo(url); }
+    void NavigateTo(string url) { Sidebar.CloseDrawer(); Nav.NavigateTo(url); }
 
     void GoBack() => Nav.NavigateTo(AuthState.CurrentUser?.Role switch
     {
@@ -515,6 +494,4 @@
         "Parent"  => "/dashboard",
         _         => "/child-home"
     });
-
-    async Task Logout() { await AuthState.LogoutAsync(); Nav.NavigateTo("/login"); }
 }

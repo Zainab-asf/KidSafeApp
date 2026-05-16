@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace KidSafe.Backend.Controllers;
 
+/// <summary>Reports and Complaints (SDD UC-19, UC-20)</summary>
+
 /// <summary>
 /// Reports &amp; Complaints (SDD UC-19, UC-20):
 ///   POST /reports/abuse           – child/parent/teacher submits abuse report
@@ -24,19 +26,39 @@ public class ReportsController : ControllerBase
 
     public ReportsController(AppDbContext db) => _db = db;
 
-    // ── UC-19 Report Abuse ──────────────────────────────────────────
+    // ── UC-19 Report Abuse — creates report + in-app notification for all admins ──
 
     [HttpPost("abuse")]
     public async Task<IActionResult> ReportAbuse([FromBody] AbuseReportDto dto)
     {
-        var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var userId   = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        var reporter = await _db.Users.FindAsync(userId);
+
         var report = new AbuseReport
         {
-            ReporterId           = userId,
-            ReferencedMessageId  = dto.FlaggedMessageId,
-            Reason               = dto.Reason
+            ReporterId          = userId,
+            ReferencedMessageId = dto.FlaggedMessageId,
+            Reason              = dto.Reason
         };
         _db.AbuseReports.Add(report);
+
+        // Notify all Admins via in-app notification
+        var adminIds = await _db.Users
+            .Where(u => u.Role == "Admin" && u.Status == "active")
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        foreach (var adminId in adminIds)
+        {
+            _db.Notifications.Add(new Notification
+            {
+                UserId = adminId,
+                Title  = "Abuse Report Filed",
+                Body   = $"{reporter?.DisplayName ?? "A student"} reported: {dto.Reason}",
+                Type   = "alert"
+            });
+        }
+
         await _db.SaveChangesAsync();
         return Ok(new { report.Id, report.Timestamp });
     }

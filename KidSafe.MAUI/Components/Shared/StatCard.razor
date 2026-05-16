@@ -2,7 +2,7 @@
    Color: "green" | "gold" | "coral" | "purple" | "blue" *@
 
 <div class="stat-card">
-    <div class="stat-icon @Color">@Icon</div>
+    <div class="stat-icon @Color"><i class="bi @IconClass"></i></div>
     <div class="stat-body">
         <div class="stat-val" style="@ValueStyle">@Value</div>
         <div class="stat-label">@Label</div>
@@ -10,7 +10,7 @@
 </div>
 
 @code {
-    [Parameter, EditorRequired] public string Icon  { get; set; } = "📊";
+    [Parameter, EditorRequired] public string IconClass { get; set; } = "bi-bar-chart-fill";
     [Parameter, EditorRequired] public string Value { get; set; } = "0";
     [Parameter, EditorRequired] public string Label { get; set; } = "";
     [Parameter]                 public string Color { get; set; } = "green";

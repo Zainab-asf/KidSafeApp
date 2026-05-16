@@ -22,6 +22,7 @@ public static class MauiProgram
 
         // ── Singleton services ────────────────────────────────────────
         builder.Services.AddSingleton<AuthStateService>();
+        builder.Services.AddSingleton<SidebarService>();
         builder.Services.AddSingleton<ChatHubService>();
         builder.Services.AddSingleton<FcmService>();
 
